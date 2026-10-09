@@ -1,0 +1,765 @@
+@model ERP_Core.Dtos.TeamAccessIndexViewModel
+@{
+    ViewData["Title"] = "Team Access & Roles";
+    ViewData["SubTitle"] = "Configure security roles, manage team assignments, and control system module accessibility.";
+}
+
+<div class="teamaccess-container">
+
+    <!-- ========================================================================== -->
+    <!-- 1. PAGE HEADER / TOOLBAR                                                   -->
+    <!-- ========================================================================== -->
+    <div class="toolbar" style="margin-bottom: 20px;">
+        <div>
+            <div style="margin-bottom: 4px;">
+                <span class="badge badge-teal" style="font-size: 11px; padding: 4px 10px; letter-spacing: 0.05em; text-transform: uppercase;">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Access &amp; Permissions
+                </span>
+            </div>
+            <div class="section-title" style="margin-bottom: 2px;">Team Access &amp; Role Management</div>
+            <div class="section-desc" style="margin-bottom: 0;">Configure security roles, manage team assignments, and control module permissions.</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn ghost" onclick="openCreateModuleModal()" style="padding: 7px 14px; font-size: 12.5px;">
+                <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+                <span>Add New Module</span>
+            </button>
+            <button type="button" class="btn brass" onclick="openCreateRoleModal()" style="padding: 7px 16px; font-size: 12.5px;">
+                <svg viewBox="0 0 24 24" width="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                <span>Create New Role</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:20px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:20px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    <!-- ========================================================================== -->
+    <!-- 2. KPI METRICS STRIP                                                       -->
+    <!-- ========================================================================== -->
+    <div class="teamaccess-stat-grid">
+        <div class="stat-card teal-accent">
+            <div class="stat-info">
+                <span class="stat-label">Total Security Roles</span>
+                <span class="stat-value tnum">@Model.TotalRoles</span>
+                <span class="stat-sub">Configured role profiles</span>
+            </div>
+            <div class="stat-icon teal">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+        </div>
+
+        <div class="stat-card blue-accent">
+            <div class="stat-info">
+                <span class="stat-label">Assigned Members</span>
+                <span class="stat-value tnum" style="color:#38bdf8;">@Model.TotalEmployees</span>
+                <span class="stat-sub">Active staff members</span>
+            </div>
+            <div class="stat-icon blue">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+
+        <div class="stat-card purple-accent">
+            <div class="stat-info">
+                <span class="stat-label">System Modules</span>
+                <span class="stat-value tnum" style="color:#a855f7;">@Model.TotalModules</span>
+                <span class="stat-sub">Available security targets</span>
+            </div>
+            <div class="stat-icon purple">
+                <i class="fa-solid fa-cubes"></i>
+            </div>
+        </div>
+
+        <div class="stat-card green-accent">
+            <div class="stat-info">
+                <span class="stat-label">Active Roles</span>
+                <span class="stat-value tnum" style="color:var(--green-text);">@Model.ActiveRolesCount</span>
+                <span class="stat-sub">Ready for assignment</span>
+            </div>
+            <div class="stat-icon green">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================== -->
+    <!-- 3. ROLES GRID & MANAGEMENT VIEW                                            -->
+    <!-- ========================================================================== -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-head" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fa-solid fa-list-check" style="color:var(--teal-text);"></i>
+                <h3 style="margin:0; font-size:15px; font-weight:600;">Configured System Roles</h3>
+                <span class="badge badge-gray" style="font-size:11px;">@Model.Roles.Count Roles</span>
+            </div>
+
+            <!-- Search box -->
+            <div class="search" style="min-width:240px;">
+
+            </div>
+        </div>
+
+        <div style="padding: 20px;">
+            @if (Model.Roles.Any())
+            {
+                <div class="roles-grid" id="rolesGridContainer">
+                    @foreach (var role in Model.Roles)
+                    {
+                        var rolePercent = Model.TotalModules > 0 ? (int)Math.Round((double)role.ModuleCount / Model.TotalModules * 100) : 0;
+                        var isSuperAdmin = role.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) || role.RoleName.Equals("Owner", StringComparison.OrdinalIgnoreCase) || role.RoleName.Equals("Super Admin", StringComparison.OrdinalIgnoreCase) || role.Id == 1;
+
+                        <div class="role-grid-item" data-role-name="@role.RoleName.ToLower()">
+                            <div class="role-card">
+                                <!-- Role Header -->
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px;">
+                                        <div style="display:flex; align-items:center; gap:12px;">
+                                            <div class="role-badge-icon @(isSuperAdmin ? "admin" : "standard")">
+                                                <i class="fa-solid @(isSuperAdmin ? "fa-crown" : "fa-shield-halved")"></i>
+                                            </div>
+                                            <div>
+                                                <h4 style="margin:0; font-size:16px; font-weight:700; color:var(--text);">@role.RoleName</h4>
+                                                <span style="font-size:11px; color:var(--text-dim); font-family:monospace;">Role ID: #@role.Id</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            @if (role.Active)
+                                            {
+                                                <span class="badge" style="background:var(--green-dim); color:var(--green-text); font-weight:600; padding:4px 10px; border-radius:6px;">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge" style="background:var(--red-dim); color:var(--red-text); font-weight:600; padding:4px 10px; border-radius:6px;">Inactive</span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <hr style="border:0; border-top:1px solid var(--border); margin:14px 0;" />
+
+                                    <!-- Assigned Members Section -->
+                                    <div style="margin-bottom:14px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                            <span style="color:var(--text-dim); font-size:11px; font-weight:600; text-transform:uppercase;">Team Members</span>
+                                            <span class="badge" style="background:var(--surface3); color:var(--text); font-size:11px; padding:3px 8px; border-radius:6px;">@role.EmployeeCount Assigned</span>
+                                        </div>
+
+                                        @if (role.EmployeeCount > 0)
+                                        {
+                                            var displayInitials = role.EmployeeInitials.Take(4).ToList();
+                                            var remaining = role.EmployeeCount - displayInitials.Count;
+                                            var tooltipText = string.Join(", ", role.EmployeeNames);
+
+                                            <div style="display:flex; align-items:center; gap:4px;" title="@tooltipText">
+                                                @foreach (var initial in displayInitials)
+                                                {
+                                                    <span class="avatar-pill">@initial</span>
+                                                }
+                                                @if (remaining > 0)
+                                                {
+                                                    <span class="avatar-pill remaining">+@remaining</span>
+                                                }
+                                                <span style="color:var(--text-dim); font-size:12px; margin-left:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;">
+                                                    @role.EmployeeNames.First() @(role.EmployeeCount > 1 ? $"& {role.EmployeeCount - 1} more" : "")
+                                                </span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div style="color:var(--text-dim); font-size:12px; font-style:italic; padding:4px 0;">
+                                                <i class="fa-regular fa-user" style="margin-right:4px; opacity:0.5;"></i> No team members assigned yet
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Module Permissions Counter -->
+                                    <div style="margin-bottom:16px;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                            <span style="color:var(--text-dim); font-size:11px; font-weight:600; text-transform:uppercase;">Module Access</span>
+                                            <span style="color:var(--teal-text); font-size:12px; font-weight:700;">
+                                                @role.ModuleCount of @Model.TotalModules Modules (@rolePercent%)
+                                            </span>
+                                        </div>
+                                        <div class="progress-bar-track">
+                                            <div class="progress-bar-fill" style="width:@(rolePercent)%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Actions Footer -->
+                                <div style="padding-top:14px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                    <div style="display:flex; gap:6px;">
+                                        <button type="button" class="btn ghost"
+                                                onclick="openEditRoleModal(@role.Id, '@Html.Raw(role.RoleName.Replace("'", "\\'"))', @(role.Active ? "true" : "false"))"
+                                                style="padding:6px 10px; font-size:12px;" title="Rename / Edit Role">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+
+                                        @if (!isSuperAdmin)
+                                        {
+                                            <button type="button" class="btn ghost"
+                                                    onclick="openDeleteRoleModal(@role.Id, '@Html.Raw(role.RoleName.Replace("'", "\\'"))', @role.EmployeeCount)"
+                                                    style="padding:6px 10px; font-size:12px; color:var(--red-text);" title="Delete Role">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        }
+                                    </div>
+
+                                    <a asp-controller="TeamAccess" asp-action="Details" asp-route-id="@role.Id" class="btn brass" style="padding:6px 14px; font-size:12px; text-decoration:none;">
+                                        <span>Manage Access</span>
+                                        <svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="text-align:center; padding:50px 20px; color:var(--text-dim);">
+                    <i class="fa-solid fa-shield-halved" style="font-size:42px; opacity:0.3; display:block; margin-bottom:12px;"></i>
+                    <h4 style="color:var(--text); margin-bottom:6px;">No Security Roles Found</h4>
+                    <p style="font-size:13px; margin-bottom:18px;">Create your first security role to begin configuring permissions.</p>
+                    <button type="button" class="btn brass" onclick="openCreateRoleModal()">
+                        + Create Role Now
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================== -->
+<!-- 4. CREATE ROLE MODAL                                                       -->
+<!-- ========================================================================== -->
+<div id="createRoleModal" class="custom-modal-overlay" style="display:none;">
+    <div class="custom-dark-modal">
+        <div class="custom-modal-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="modal-icon-badge">
+                    <i class="fa-solid fa-shield-plus"></i>
+                </div>
+                <div>
+                    <h5 style="margin:0; font-weight:700; color:var(--text); font-size:15px;">Create Security Role</h5>
+                    <span style="color:var(--text-dim); font-size:11.5px;">Define a new access role for team members</span>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeCreateRoleModal()">&times;</button>
+        </div>
+
+        <form asp-controller="TeamAccess" asp-action="CreateRole" method="post">
+            @Html.AntiForgeryToken()
+            <div class="custom-modal-body">
+                <div class="field" style="margin-bottom:16px;">
+                    <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Role Name <span style="color:var(--red-text);">*</span></label>
+                    <input type="text" name="roleName" class="dark-modal-input" placeholder="e.g. Sales Executive, Cashier, Auditor" required />
+                </div>
+
+                <div class="field" style="margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text);">
+                        <input type="checkbox" name="active" value="true" checked style="accent-color:var(--teal);" />
+                        <span>Active Role (Ready for user assignment)</span>
+                    </label>
+                </div>
+
+                <div style="background:var(--surface3); padding:12px; border-radius:8px; border:1px solid var(--border); font-size:12px; color:var(--text-dim); line-height:1.4;">
+                    <i class="fa-solid fa-circle-info" style="color:var(--teal-text); margin-right:4px;"></i>
+                    After creating the role, you can immediately assign team members and configure module permissions on the Role Details page.
+                </div>
+            </div>
+
+            <div class="custom-modal-footer">
+                <button type="button" class="btn ghost" onclick="closeCreateRoleModal()">Cancel</button>
+                <button type="submit" class="btn brass">Create Role</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================== -->
+<!-- 5. EDIT ROLE MODAL                                                         -->
+<!-- ========================================================================== -->
+<div id="editRoleModal" class="custom-modal-overlay" style="display:none;">
+    <div class="custom-dark-modal">
+        <div class="custom-modal-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="modal-icon-badge">
+                    <i class="fa-solid fa-pen"></i>
+                </div>
+                <div>
+                    <h5 style="margin:0; font-weight:700; color:var(--text); font-size:15px;">Edit Security Role</h5>
+                    <span style="color:var(--text-dim); font-size:11.5px;">Modify role name or status</span>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeEditRoleModal()">&times;</button>
+        </div>
+
+        <form asp-controller="TeamAccess" asp-action="EditRole" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="editRoleId" value="0" />
+
+            <div class="custom-modal-body">
+                <div class="field" style="margin-bottom:16px;">
+                    <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Role Name <span style="color:var(--red-text);">*</span></label>
+                    <input type="text" name="roleName" id="editRoleName" class="dark-modal-input" required />
+                </div>
+
+                <div class="field" style="margin-bottom:16px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text);">
+                        <input type="checkbox" name="active" value="true" id="editRoleActive" style="accent-color:var(--teal);" />
+                        <span>Active Role</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="custom-modal-footer">
+                <button type="button" class="btn ghost" onclick="closeEditRoleModal()">Cancel</button>
+                <button type="submit" class="btn brass">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================== -->
+<!-- 6. DELETE ROLE MODAL                                                       -->
+<!-- ========================================================================== -->
+<div id="deleteRoleModal" class="custom-modal-overlay" style="display:none;">
+    <div class="custom-dark-modal" style="max-width:440px;">
+        <div class="custom-modal-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="modal-icon-badge" style="background:var(--red-dim); color:var(--red-text);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h5 style="margin:0; font-weight:700; color:var(--text); font-size:15px;">Delete Role</h5>
+                    <span style="color:var(--text-dim); font-size:11.5px;">Permanent removal confirmation</span>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeDeleteRoleModal()">&times;</button>
+        </div>
+
+        <form asp-controller="TeamAccess" asp-action="DeleteRole" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteRoleId" value="0" />
+
+            <div class="custom-modal-body">
+                <p style="font-size:13.5px; color:var(--text); margin-bottom:14px;">
+                    Are you sure you want to permanently delete the role <strong id="deleteRoleName" style="color:var(--brass-text);"></strong>?
+                </p>
+
+                <div id="deleteRoleMemberWarning" style="background:var(--red-dim); color:var(--red-text); padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:12px; margin-bottom:10px;">
+                    <i class="fa-solid fa-users" style="margin-right:4px;"></i>
+                    <span id="deleteRoleMemberCountText"></span>
+                </div>
+
+                <div style="font-size:12px; color:var(--text-dim);">
+                    All module permissions linked to this role will be removed.
+                </div>
+            </div>
+
+            <div class="custom-modal-footer">
+                <button type="button" class="btn ghost" onclick="closeDeleteRoleModal()">Cancel</button>
+                <button type="submit" class="btn" style="background:var(--red-text); color:#fff; border:none; padding:8px 16px;">
+                    <i class="fa-solid fa-trash-can" style="margin-right:4px;"></i>
+                    Delete Role
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================== -->
+<!-- 7. CREATE MODULE MODAL                                                     -->
+<!-- ========================================================================== -->
+<div id="createModuleModal" class="custom-modal-overlay" style="display:none;">
+    <div class="custom-dark-modal" style="max-width:500px;">
+        <div class="custom-modal-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="modal-icon-badge">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <div>
+                    <h5 style="margin:0; font-weight:700; color:var(--text); font-size:15px;">Add New System Module</h5>
+                    <span style="color:var(--text-dim); font-size:11.5px;">Register a new form / page in the navigation &amp; permissions tree</span>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeCreateModuleModal()">&times;</button>
+        </div>
+
+        <form asp-controller="TeamAccess" asp-action="CreateModule" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="custom-modal-body">
+                <div class="field" style="margin-bottom:14px;">
+                    <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Module Display Name <span style="color:var(--red-text);">*</span></label>
+                    <input type="text" name="name" class="dark-modal-input" placeholder="e.g. Nature of Account, Fish Inventory" required />
+                </div>
+
+                <div class="field" style="margin-bottom:14px;">
+                    <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Target Controller / URL Route <span style="color:var(--text-dim); font-size:11px;">(Use '#' for category header)</span></label>
+                    <input type="text" name="url" class="dark-modal-input" placeholder="e.g. NatureofAccount, daily-purchase, #" />
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                    <div class="field">
+                        <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Parent Section / Category</label>
+                        <select name="parentModuleId" class="dark-modal-input">
+                            <option value="0">-- None (Root / Top-Level) --</option>
+                            @foreach (var parent in Model.AvailableParentModules)
+                            {
+                                <option value="@parent.Id">@parent.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label style="color:var(--text); font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Display Sort Order</label>
+                        <input type="number" name="order" class="dark-modal-input" value="@(Model.TotalModules + 1)" min="1" />
+                    </div>
+                </div>
+
+                <div class="field" style="margin-bottom:12px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text);">
+                        <input type="checkbox" name="assignToAllRoles" value="true" checked style="accent-color:var(--teal);" />
+                        <span>Automatically grant access to all existing roles</span>
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text);">
+                        <input type="checkbox" name="active" value="true" checked style="accent-color:var(--teal);" />
+                        <span>Active Module</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="custom-modal-footer">
+                <button type="button" class="btn ghost" onclick="closeCreateModuleModal()">Cancel</button>
+                <button type="submit" class="btn brass">Create Module</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* 1. Stat Grid */
+    .teamaccess-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card.teal-accent { border-left: 4px solid var(--teal); }
+    .stat-card.blue-accent { border-left: 4px solid #38bdf8; }
+    .stat-card.purple-accent { border-left: 4px solid #a855f7; }
+    .stat-card.green-accent { border-left: 4px solid #22c55e; }
+
+    .stat-info { display: flex; flex-direction: column; }
+    .stat-label {
+        color: var(--text-dim);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .stat-value {
+        color: var(--text);
+        font-size: 26px;
+        font-weight: 700;
+        margin-top: 4px;
+        line-height: 1.1;
+    }
+    .stat-sub {
+        color: var(--text-dim);
+        font-size: 11.5px;
+        margin-top: 4px;
+    }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .stat-icon.teal { background: rgba(47, 111, 94, 0.25); color: var(--teal-text); }
+    .stat-icon.blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .stat-icon.purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .stat-icon.green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+
+    /* 2. Roles Grid */
+    .roles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 18px;
+    }
+
+    .role-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        transition: all 0.2s ease;
+    }
+
+    .role-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--brass);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .role-badge-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        color: #FFFFFF;
+    }
+
+    .role-badge-icon.admin {
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+    }
+
+    .role-badge-icon.standard {
+        background: linear-gradient(135deg, var(--teal), #1E4E42);
+    }
+
+    .avatar-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 700;
+        color: #FFFFFF;
+        background: var(--teal);
+        border: 2px solid var(--surface);
+    }
+
+    .avatar-pill.remaining {
+        background: var(--surface3);
+        color: var(--text);
+    }
+
+    .progress-bar-track {
+        height: 6px;
+        border-radius: 4px;
+        background: var(--surface3);
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: var(--teal);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    /* 3. Dark Modal Styles */
+    .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .custom-dark-modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        width: 90%;
+        max-width: 480px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+    }
+
+    .custom-modal-header {
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .custom-modal-body {
+        padding: 20px;
+    }
+
+    .custom-modal-footer {
+        background: var(--surface2);
+        border-top: 1px solid var(--border);
+        padding: 14px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .modal-close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        font-size: 22px;
+        cursor: pointer;
+        padding: 0 4px;
+        line-height: 1;
+    }
+
+    .modal-close-btn:hover {
+        color: var(--text);
+    }
+
+    .modal-icon-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(47, 111, 94, 0.25);
+        color: var(--teal-text);
+        font-size: 15px;
+    }
+
+    .dark-modal-input {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 12px;
+        color: var(--text);
+        font-size: 13.5px;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .dark-modal-input:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 2px rgba(47, 111, 94, 0.25);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function filterRolesGrid() {
+            var query = (document.getElementById('roleSearchInput').value || '').toLowerCase().trim();
+            var items = document.querySelectorAll('.role-grid-item');
+            items.forEach(function (item) {
+                var name = (item.getAttribute('data-role-name') || '').toLowerCase();
+                if (!query || name.indexOf(query) > -1) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function openCreateRoleModal() {
+            document.getElementById('createRoleModal').style.display = 'flex';
+        }
+        function closeCreateRoleModal() {
+            document.getElementById('createRoleModal').style.display = 'none';
+        }
+
+        function openEditRoleModal(id, name, active) {
+            document.getElementById('editRoleId').value = id;
+            document.getElementById('editRoleName').value = name;
+            document.getElementById('editRoleActive').checked = (active === true || active === 'true');
+            document.getElementById('editRoleModal').style.display = 'flex';
+        }
+        function closeEditRoleModal() {
+            document.getElementById('editRoleModal').style.display = 'none';
+        }
+
+        function openDeleteRoleModal(id, name, memberCount) {
+            document.getElementById('deleteRoleId').value = id;
+            document.getElementById('deleteRoleName').innerText = name;
+            var memberWarn = document.getElementById('deleteRoleMemberWarning');
+            var memberText = document.getElementById('deleteRoleMemberCountText');
+            if (memberCount > 0) {
+                memberText.innerText = memberCount + ' member(s) assigned to this role will be unassigned.';
+                memberWarn.style.display = 'block';
+            } else {
+                memberWarn.style.display = 'none';
+            }
+            document.getElementById('deleteRoleModal').style.display = 'flex';
+        }
+        function closeDeleteRoleModal() {
+            document.getElementById('deleteRoleModal').style.display = 'none';
+        }
+
+        function openCreateModuleModal() {
+            document.getElementById('createModuleModal').style.display = 'flex';
+        }
+        function closeCreateModuleModal() {
+            document.getElementById('createModuleModal').style.display = 'none';
+        }
+
+        // Close on backdrop click
+        window.addEventListener('click', function (e) {
+            var createModal = document.getElementById('createRoleModal');
+            var editModal = document.getElementById('editRoleModal');
+            var deleteModal = document.getElementById('deleteRoleModal');
+            var createModModal = document.getElementById('createModuleModal');
+
+            if (e.target === createModal) closeCreateRoleModal();
+            if (e.target === editModal) closeEditRoleModal();
+            if (e.target === deleteModal) closeDeleteRoleModal();
+            if (e.target === createModModal) closeCreateModuleModal();
+        });
+    </script>
+}

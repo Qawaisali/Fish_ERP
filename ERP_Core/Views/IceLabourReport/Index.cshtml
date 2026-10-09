@@ -1,0 +1,855 @@
+@model ERP_Core.Dtos.IceLabourReportViewModel
+
+@{
+    ViewData["Title"] = "Ice & Labour Report";
+    ViewData["SubTitle"] = "Mandi boat-wise Ice (Loading / برف) aur Labour (مزدوری) expenses statement & reconciliation.";
+    bool isIceOnly = string.Equals(Model.ExpenseType, "Ice", StringComparison.OrdinalIgnoreCase);
+    bool isLabourOnly = string.Equals(Model.ExpenseType, "Labour", StringComparison.OrdinalIgnoreCase);
+    bool isBoth = !isIceOnly && !isLabourOnly;
+}
+
+@section Styles {
+    <!-- TomSelect CSS for Searchable Dropdown -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+    <style>
+        .filter-bar-modern {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-grid-payable {
+            display: grid;
+            grid-template-columns: 170px 170px minmax(240px, 1.4fr) 190px auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 1200px) {
+            .filter-grid-payable {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .filter-grid-payable {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Stat Cards Matching Supplier Payable */
+        .stat-grid-payable {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .stat-grid-two {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        @@media (max-width: 992px) {
+            .stat-grid-payable {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .stat-grid-payable, .stat-grid-two {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box-modern {
+            background: linear-gradient(135deg, var(--surface, #132420) 0%, var(--surface2, #1A2F2A) 100%);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-box-modern:hover {
+            transform: translateY(-2px);
+            border-color: var(--brass, #C68A3E);
+        }
+
+        .stat-box-modern .stat-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-dim, #9FB6AF);
+            margin-bottom: 6px;
+        }
+
+        .stat-box-modern .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text, #EAF1EE);
+            line-height: 1.1;
+        }
+
+        .stat-box-modern .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-faint, #5E7873);
+            margin-top: 4px;
+        }
+
+        .stat-glow-green .stat-num { color: var(--green-text, #6FE0A0); }
+        .stat-glow-red .stat-num { color: var(--red-text, #FF8A7A); }
+        .stat-glow-brass .stat-num { color: var(--brass-text, #E3AE66); }
+
+        /* Party Header Banner */
+        .party-banner {
+            background: rgba(198, 138, 62, 0.08);
+            border: 1px solid rgba(198, 138, 62, 0.35);
+            border-radius: var(--radius, 10px);
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Outstanding Balance Summary Box at bottom of Report */
+        .outstanding-box {
+            background: linear-gradient(135deg, rgba(198,138,62,0.12) 0%, rgba(198,138,62,0.04) 100%);
+            border: 1px solid rgba(198,138,62,0.45);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        /* TomSelect Dark Overrides */
+        .ts-wrapper .ts-control {
+            background-color: var(--surface2, #1A2F2A) !important;
+            border: 1px solid var(--border, #2C4740) !important;
+            color: var(--text, #EAF1EE) !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            padding: 7px 12px !important;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-wrapper .ts-control .item {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-dropdown {
+            background-color: #0E1A17 !important;
+            border: 1px solid rgba(198, 138, 62, 0.4) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+            color: #EAF1EE !important;
+            z-index: 999999 !important;
+        }
+
+        .ts-dropdown .option {
+            color: #EAF1EE !important;
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .ts-dropdown .option.active, .ts-dropdown .option:hover {
+            background-color: #1B302B !important;
+            color: #E3AE66 !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #2F6F5E !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+    </style>
+}
+
+<!-- Page Toolbar -->
+<div class="toolbar" style="margin-bottom:14px;">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Ice &amp; Labour Expenses Report</div>
+        <div class="section-desc" style="margin-bottom:0;">
+            Mandi boat-wise Ice (Loading / برف) aur Labour (مزدوری) expenses statement &amp; reconciliation.
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- 4-FIELD FILTER BAR (From Date, To Date, Supplier Dropdown, Expense Type)   -->
+<!-- ========================================================================= -->
+<div class="filter-bar-modern no-print">
+    <form method="get" asp-controller="IceLabourReport" asp-action="Index" id="iceLabourFilterForm">
+        <div class="filter-grid-payable">
+            <!-- Field 1: From Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                <input type="date" name="fromDate" id="filterFromDate" value="@Model.FromDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 2: To Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                <input type="date" name="toDate" id="filterToDate" value="@Model.ToDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 3: Supplier Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Supplier (Boat / Farmer)</label>
+                <select name="supplierId" id="filterSupplierSelect" class="searchable-select">
+                    <option value="">-- All Suppliers (Summary) --</option>
+                    @if (Model.SuppliersList != null)
+                    {
+                        @foreach (var s in Model.SuppliersList)
+                        {
+                            <option value="@s.Id" selected="@(Model.SelectedSupplierId == s.Id)">
+                                @s.DisplayText
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Field 4: Expense Type Dropdown (Ice / Labour / All) -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Expense Type</label>
+                <select name="expenseType" id="filterExpenseType" style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;">
+                    <option value="All" selected="@(isBoth)">All (Ice &amp; Labour)</option>
+                    <option value="Ice" selected="@(isIceOnly)">Ice Only (برف)</option>
+                    <option value="Labour" selected="@(isLabourOnly)">Labour Only (مزدوری)</option>
+                </select>
+            </div>
+
+            <!-- Filter Actions -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn brass" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    Filter Report
+                </button>
+                <a href="/IceLabourReport" class="btn ghost" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;">
+                    Reset
+                </a>
+                <button type="button" class="btn brass" id="btnIceLabourPrintReport" onclick="printIceLabourReportModal()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                    Print
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- OPTIONAL BANNER: SELECTED SUPPLIER                                        -->
+<!-- ========================================================================= -->
+@if (!string.IsNullOrEmpty(Model.SelectedSupplierName))
+{
+    <div class="party-banner no-print">
+        <div>
+            <div style="font-size:11.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;">Filtered for Boat / Supplier:</div>
+            <div style="font-size:17px;font-weight:700;color:var(--text);margin-top:2px;">
+                @Model.SelectedSupplierName
+                @if (!string.IsNullOrEmpty(Model.SelectedSupplierAccountCode))
+                {
+                    <span style="font-size:12px;color:var(--brass-text);margin-left:8px;font-family:monospace;">(@Model.SelectedSupplierAccountCode)</span>
+                }
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                Village / Jetty: <strong style="color:var(--text);">@Model.SelectedSupplierVillage</strong> &nbsp;·&nbsp;
+                Phone: <strong style="color:var(--text);">@Model.SelectedSupplierPhone</strong>
+            </div>
+        </div>
+        <div>
+            <a href="/IceLabourReport" class="btn ghost btn-sm" style="font-size:12px;height:30px;">
+                Clear Supplier Filter ✕
+            </a>
+        </div>
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- STAT CARDS (DYNAMIC: ONLY RELEVANT CARDS DISPLAYED ACCORDING TO FILTER)   -->
+<!-- ========================================================================= -->
+@if (isIceOnly)
+{
+    <!-- Ice Only Selected: Only Total Bills and Total Ice Expense -->
+    <div class="stat-grid-two no-print">
+        <div class="stat-box-modern">
+            <div class="stat-lbl">TOTAL BILLS (WITH ICE)</div>
+            <div class="stat-num tnum">@Model.TotalBillsCount</div>
+            <div class="stat-sub">Bills with ice expense in selected period</div>
+        </div>
+        <div class="stat-box-modern stat-glow-green">
+            <div class="stat-lbl">TOTAL ICE EXPENSE (برف)</div>
+            <div class="stat-num tnum">Rs @Model.TotalIceExpense.ToString("N0")</div>
+            <div class="stat-sub">Loading / Ice charges borne by boat</div>
+        </div>
+    </div>
+}
+else if (isLabourOnly)
+{
+    <!-- Labour Only Selected: Only Total Bills and Total Labour Expense -->
+    <div class="stat-grid-two no-print">
+        <div class="stat-box-modern">
+            <div class="stat-lbl">TOTAL BILLS (WITH LABOUR)</div>
+            <div class="stat-num tnum">@Model.TotalBillsCount</div>
+            <div class="stat-sub">Bills with labour expense in selected period</div>
+        </div>
+        <div class="stat-box-modern stat-glow-red">
+            <div class="stat-lbl">TOTAL LABOUR EXPENSE (مزدوری)</div>
+            <div class="stat-num tnum">Rs @Model.TotalLabourExpense.ToString("N0")</div>
+            <div class="stat-sub">Catch handling &amp; labour charges</div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Both (All) Selected: Display Both Columns' Stats AND Combined Total -->
+    <div class="stat-grid-payable no-print">
+        <div class="stat-box-modern">
+            <div class="stat-lbl">TOTAL BILLS / AUCTIONS</div>
+            <div class="stat-num tnum">@Model.TotalBillsCount</div>
+            <div class="stat-sub">Bills with expenses in selected period</div>
+        </div>
+        <div class="stat-box-modern stat-glow-green">
+            <div class="stat-lbl">TOTAL ICE EXPENSE (برف)</div>
+            <div class="stat-num tnum">Rs @Model.TotalIceExpense.ToString("N0")</div>
+            <div class="stat-sub">Loading / Ice charges borne by boat</div>
+        </div>
+        <div class="stat-box-modern stat-glow-red">
+            <div class="stat-lbl">TOTAL LABOUR EXPENSE (مزدوری)</div>
+            <div class="stat-num tnum">Rs @Model.TotalLabourExpense.ToString("N0")</div>
+            <div class="stat-sub">Catch handling &amp; labour charges</div>
+        </div>
+        <div class="stat-box-modern stat-glow-brass">
+            <div class="stat-lbl">COMBINED EXPENSES (ICE + LABOUR)</div>
+            <div class="stat-num tnum font-weight-bold" style="color:var(--brass-text);">
+                Rs @Model.TotalCombinedExpense.ToString("N0")
+            </div>
+            <div class="stat-sub">Total Deductions Due</div>
+        </div>
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- EXPENSE BREAKDOWN TABLE (DYNAMIC COLUMNS BASED ON EXPENSE TYPE DROPDOWN)  -->
+<!-- ========================================================================= -->
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);">
+                @(isIceOnly ? "Ice Expense Breakdown (برف خرچ)" : (isLabourOnly ? "Labour Expense Breakdown (مزدوری خرچ)" : "Ice & Labour Expense Breakdown (برف اور مزدوری)"))
+            </h3>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">
+                Period: @DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")
+                &nbsp;·&nbsp; Filter: <strong style="color:var(--brass-text);">@(isIceOnly ? "Ice Only (برف)" : (isLabourOnly ? "Labour Only (مزدوری)" : "Both (Ice & Labour)"))</strong>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+            <input type="text" id="reportSearchInput" placeholder="Quick search table..." class="form-control"
+                   style="background:var(--surface2);border:1px solid var(--border);color:var(--text);height:34px;font-size:12px;width:220px;border-radius:6px;"
+                   onkeyup="filterReportTable()" />
+            <button type="button" class="btn brass btn-sm" onclick="printIceLabourReportModal()" style="height:34px;padding:0 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                Print Report
+            </button>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="dynamic-table" id="iceLabourTable">
+            <thead>
+                <tr>
+                    <th style="width:45px;text-align:center;">#</th>
+                    <th style="width:110px;">Bill #</th>
+                    <th style="width:110px;">Date</th>
+                    <th style="min-width:200px;">Supplier (Boat / Farmer)</th>
+                    <th style="min-width:180px;">Buyer(s)</th>
+                    @if (isIceOnly)
+                    {
+                        <!-- Only Ice Column when Ice Only selected -->
+                        <th style="text-align:right;color:var(--green-text);">Ice Expense (برف)</th>
+                    }
+                    else if (isLabourOnly)
+                    {
+                        <!-- Only Labour Column when Labour Only selected -->
+                        <th style="text-align:right;color:var(--red-text);">Labour Expense (مزدوری)</th>
+                    }
+                    else
+                    {
+                        <!-- Both Columns and Combine Value when Both selected -->
+                        <th style="text-align:right;color:var(--green-text);">Ice Expense (برف)</th>
+                        <th style="text-align:right;color:var(--red-text);">Labour Expense (مزدوری)</th>
+                        <th style="text-align:right;color:var(--brass-text);">Total Expense</th>
+                    }
+                    <th style="text-align:center;width:90px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Items != null && Model.Items.Any())
+                {
+                    int idx = 1;
+                    foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td style="text-align:center;color:var(--text-dim);font-weight:600;">@idx</td>
+                            <td>
+                                <strong style="color:var(--brass-text);font-family:monospace;">@item.BillNo</strong>
+                            </td>
+                            <td class="tnum">@item.BillDate.ToString("dd-MMM-yyyy")</td>
+                            <td>
+                                <strong>@item.SupplierName</strong>
+                                @if (!string.IsNullOrEmpty(item.SupplierCity) && item.SupplierCity != "-")
+                                {
+                                    <div style="font-size:11px;color:var(--text-dim);">@item.SupplierCity</div>
+                                }
+                            </td>
+                            <td>
+                                <span style="color:var(--text-dim);line-height:1.3;display:block;">@item.BuyerNames</span>
+                            </td>
+
+                            @if (isIceOnly)
+                            {
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">
+                                    Rs @item.IceExpense.ToString("N0")
+                                </td>
+                            }
+                            else if (isLabourOnly)
+                            {
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">
+                                    Rs @item.LabourExpense.ToString("N0")
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">
+                                    Rs @item.IceExpense.ToString("N0")
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">
+                                    Rs @item.LabourExpense.ToString("N0")
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text);">
+                                    Rs @item.CombinedExpense.ToString("N0")
+                                </td>
+                            }
+
+                            <td style="text-align:center;">
+                                <span class="badge @(item.Status == "Paid" ? "badge-green" : "badge-amber")" style="font-size:10.5px;padding:3px 8px;">
+                                    @item.Status
+                                </span>
+                            </td>
+                        </tr>
+                        idx++;
+                    }
+                }
+            </tbody>
+            <tfoot>
+                <tr style="background:var(--surface2);border-top:2px solid var(--border);font-weight:bold;">
+                    <td colspan="5" style="padding:11px 12px;text-align:right;color:var(--text);font-weight:700;">Grand Totals (@Model.TotalBillsCount Bills):</td>
+                    @if (isIceOnly)
+                    {
+                        <td class="tnum" style="padding:11px 12px;text-align:right;color:var(--green-text);font-weight:800;font-size:13.5px;">Rs @Model.TotalIceExpense.ToString("N0")</td>
+                    }
+                    else if (isLabourOnly)
+                    {
+                        <td class="tnum" style="padding:11px 12px;text-align:right;color:var(--red-text);font-weight:800;font-size:13.5px;">Rs @Model.TotalLabourExpense.ToString("N0")</td>
+                    }
+                    else
+                    {
+                        <td class="tnum" style="padding:11px 12px;text-align:right;color:var(--green-text);font-weight:700;">Rs @Model.TotalIceExpense.ToString("N0")</td>
+                        <td class="tnum" style="padding:11px 12px;text-align:right;color:var(--red-text);font-weight:700;">Rs @Model.TotalLabourExpense.ToString("N0")</td>
+                        <td class="tnum" style="padding:11px 12px;text-align:right;color:var(--brass-text);font-weight:800;font-size:14px;">Rs @Model.TotalCombinedExpense.ToString("N0")</td>
+                    }
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- OUTSTANDING / TOTAL EXPENSE SUMMARY BOX (MATCHING FILTERED SCOPE)         -->
+<!-- ========================================================================= -->
+<div class="outstanding-box no-print">
+    <div>
+        <span style="font-size:11px;text-transform:uppercase;color:var(--text-dim);font-weight:700;letter-spacing:0.5px;display:block;">
+            @(isIceOnly ? "ICE EXPENSE SUMMARY" : (isLabourOnly ? "LABOUR EXPENSE SUMMARY" : "SUMMARY PERIOD EXPENSES"))
+        </span>
+        <strong style="font-size:15px;color:var(--text);">@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")</strong>
+    </div>
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+        @if (isIceOnly)
+        {
+            <div>
+                <span style="font-size:11px;color:var(--text-dim);display:block;text-align:right;">TOTAL ICE (برف)</span>
+                <strong style="font-size:20px;color:var(--green-text);font-family:monospace;">Rs @Model.TotalIceExpense.ToString("N0")</strong>
+            </div>
+        }
+        else if (isLabourOnly)
+        {
+            <div>
+                <span style="font-size:11px;color:var(--text-dim);display:block;text-align:right;">TOTAL LABOUR (مزدوری)</span>
+                <strong style="font-size:20px;color:var(--red-text);font-family:monospace;">Rs @Model.TotalLabourExpense.ToString("N0")</strong>
+            </div>
+        }
+        else
+        {
+            <div>
+                <span style="font-size:11px;color:var(--text-dim);display:block;text-align:right;">TOTAL ICE (برف)</span>
+                <strong style="font-size:16px;color:var(--green-text);font-family:monospace;">Rs @Model.TotalIceExpense.ToString("N0")</strong>
+            </div>
+            <div>
+                <span style="font-size:11px;color:var(--text-dim);display:block;text-align:right;">TOTAL LABOUR (مزدوری)</span>
+                <strong style="font-size:16px;color:var(--red-text);font-family:monospace;">Rs @Model.TotalLabourExpense.ToString("N0")</strong>
+            </div>
+            <div style="padding-left:16px;border-left:1px solid var(--border);">
+                <span style="font-size:11px;color:var(--brass-text);font-weight:700;display:block;text-align:right;">COMBINED TOTAL</span>
+                <strong style="font-size:20px;color:var(--brass-text);font-family:monospace;">Rs @Model.TotalCombinedExpense.ToString("N0")</strong>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <!-- TomSelect JS for Searchable Select -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Searchable Dropdown for Supplier matching Supplier Payable
+            var supEl = document.getElementById('filterSupplierSelect');
+            if (supEl) {
+                new TomSelect(supEl, {
+                    create: false,
+                    placeholder: '-- All Suppliers (Summary) --',
+                    allowEmptyOption: true,
+                    maxOptions: 500
+                });
+            }
+        });
+
+        // Client-side quick filter
+        function filterReportTable() {
+            var input = document.getElementById('reportSearchInput');
+            if (!input) return;
+            var filter = input.value;
+
+            if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#iceLabourTable')) {
+                jQuery('#iceLabourTable').DataTable().search(filter).draw();
+                return;
+            }
+
+            var table = document.getElementById('iceLabourTable');
+            if (!table) return;
+            var tbody = table.getElementsByTagName('tbody')[0];
+            if (!tbody) return;
+            var trs = tbody.getElementsByTagName('tr');
+
+            for (var i = 0; i < trs.length; i++) {
+                var text = trs[i].textContent || trs[i].innerText;
+                if (text.toLowerCase().indexOf(filter.toLowerCase()) > -1) {
+                    trs[i].style.display = '';
+                } else {
+                    trs[i].style.display = 'none';
+                }
+            }
+        }
+
+        // Print Ice & Labour Expenses Report using universal AarhatApp modal (matching Supplier Payable)
+        function printIceLabourReportModal() {
+            const fromDate = '@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")';
+            const toDate = '@DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")';
+            const rawCompName = '@(Model.CompanyName ?? "ZAHID HUSSAIN & SONS")';
+            const compName = rawCompName.replace(/\s*-\s*Fish Commission Agent/gi, '')
+                                        .replace(/Fish Commission Agents?/gi, '')
+                                        .trim();
+            const compAddress = '@(Model.CompanyAddress ?? "Karachi Fish Harbour, West Wharf, Karachi")';
+            const compPhone = '@(Model.Phone ?? "+92 21 32310000")';
+            const filterExpense = '@Model.ExpenseType';
+            const selectedSupplier = '@(string.IsNullOrEmpty(Model.SelectedSupplierName) ? "All Boats / Suppliers (Summary)" : Model.SelectedSupplierName.Replace("'", "\\'"))';
+            const isIce = filterExpense === 'Ice';
+            const isLabour = filterExpense === 'Labour';
+            const isBoth = !isIce && !isLabour;
+
+            let rowsHtml = '';
+            @{
+                var printItems = Model.Items ?? new List<ERP_Core.Dtos.IceLabourReportItemDto>();
+                var sumIce = Model.TotalIceExpense;
+                var sumLabour = Model.TotalLabourExpense;
+                var sumCombined = Model.TotalCombinedExpense;
+                var countBills = Model.TotalBillsCount;
+            }
+
+            @if (printItems.Any())
+            {
+                int rIdx = 1;
+                foreach (var item in printItems)
+                {
+                    <text>
+                    rowsHtml += `
+                        <tr>
+                            <td class="sup-center" style="font-size:10px;padding:6px 3px;">@rIdx</td>
+                            <td class="sup-center" style="font-size:10.5px;padding:6px 4px;font-family:monospace;font-weight:700;color:#153229;">@item.BillNo</td>
+                            <td class="sup-center" style="font-size:10px;padding:6px 4px;white-space:nowrap;">@item.BillDate.ToString("dd-MMM-yyyy")</td>
+                            <td class="sup-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="font-weight:600;line-height:1.25;">@item.SupplierName.Replace("'", "\\'")</div>
+                                @if (!string.IsNullOrEmpty(item.SupplierCity) && item.SupplierCity != "-")
+                                {
+                                    <div style="font-size:9.5px;color:#666;">@item.SupplierCity.Replace("'", "\\'")</div>
+                                }
+                            </td>
+                            <td class="sup-name" style="font-size:10px;padding:6px 5px;color:#555;">
+                                <div style="line-height:1.25;">@(string.IsNullOrWhiteSpace(item.BuyerNames) ? "General Buyer" : item.BuyerNames.Replace("'", "\\'"))</div>
+                            </td>
+                            ${isIce ? `
+                                <td class="sup-num" style="font-size:10.5px;padding:6px 5px;font-weight:700;color:#0f5132;">
+                                    Rs @item.IceExpense.ToString("N0")
+                                </td>
+                            ` : ''}
+                            ${isLabour ? `
+                                <td class="sup-num" style="font-size:10.5px;padding:6px 5px;font-weight:700;color:#842029;">
+                                    Rs @item.LabourExpense.ToString("N0")
+                                </td>
+                            ` : ''}
+                            ${isBoth ? `
+                                <td class="sup-num" style="font-size:10.5px;padding:6px 5px;font-weight:600;color:#0f5132;">
+                                    Rs @item.IceExpense.ToString("N0")
+                                </td>
+                                <td class="sup-num" style="font-size:10.5px;padding:6px 5px;font-weight:600;color:#842029;">
+                                    Rs @item.LabourExpense.ToString("N0")
+                                </td>
+                                <td class="sup-num" style="font-size:11px;padding:6px 5px;font-weight:700;color:#8a5a1e;">
+                                    Rs @item.CombinedExpense.ToString("N0")
+                                </td>
+                            ` : ''}
+                        </tr>
+                    `;
+                    </text>
+                    rIdx++;
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sup-summary-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sup-summary-tbl th,
+                    .sup-summary-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sup-summary-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 7px 4px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                    }
+                    .sup-summary-tbl td {
+                        padding: 6px 5px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sup-summary-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 5px !important;
+                        line-height: 1.25 !important;
+                    }
+                    .sup-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sup-center {
+                        text-align: center !important;
+                    }
+                    .sup-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ${compName}
+                        <div class="sub">${compAddress} · Phone: ${compPhone}</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>${isIce ? 'ICE EXPENSE REPORT (برف رپورٹ)' : (isLabour ? 'LABOUR EXPENSE REPORT (مزدوری رپورٹ)' : 'ICE & LABOUR EXPENSES REPORT')}</h2>
+                        <div class="sub">${isIce ? 'Ice & Loading Deductions' : (isLabour ? 'Labour & Handling Deductions' : 'برف اور مزدوری رپورٹ · Mandi Expense Breakdown')}</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Boat / Supplier:</span>
+                        <strong style="font-size:13.5px;color:#153229;">${selectedSupplier}</strong>
+                    </div>
+                    <div style="text-align:center;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Expense Filter:</span>
+                        <strong style="font-size:12.5px;color:#8a5a1e;">${isIce ? 'Ice Only (برف)' : (isLabour ? 'Labour Only (مزدوری)' : 'Both (Ice & Labour)')}</strong>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Statement Period:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                    </div>
+                </div>
+
+                <table class="sup-summary-tbl">
+                    <thead>
+                        <tr>
+                            ${isIce ? `
+                                <th style="width:5%;">#</th>
+                                <th style="width:14%;">Bill #</th>
+                                <th style="width:14%;">Date</th>
+                                <th style="width:28%;text-align:left;padding-left:6px !important;">Supplier (Boat / Farmer)</th>
+                                <th style="width:23%;text-align:left;padding-left:6px !important;">Buyer(s)</th>
+                                <th style="width:16%;text-align:right;padding-right:6px !important;">Ice Expense (برف)</th>
+                            ` : ''}
+                            ${isLabour ? `
+                                <th style="width:5%;">#</th>
+                                <th style="width:14%;">Bill #</th>
+                                <th style="width:14%;">Date</th>
+                                <th style="width:28%;text-align:left;padding-left:6px !important;">Supplier (Boat / Farmer)</th>
+                                <th style="width:23%;text-align:left;padding-left:6px !important;">Buyer(s)</th>
+                                <th style="width:16%;text-align:right;padding-right:6px !important;">Labour Expense (مزدوری)</th>
+                            ` : ''}
+                            ${isBoth ? `
+                                <th style="width:4%;">#</th>
+                                <th style="width:11%;">Bill #</th>
+                                <th style="width:11%;">Date</th>
+                                <th style="width:24%;text-align:left;padding-left:6px !important;">Supplier (Boat / Farmer)</th>
+                                <th style="width:19%;text-align:left;padding-left:6px !important;">Buyer(s)</th>
+                                <th style="width:10%;text-align:right;padding-right:6px !important;">Ice (برف)</th>
+                                <th style="width:10%;text-align:right;padding-right:6px !important;">Labour (مزدوری)</th>
+                                <th style="width:11%;text-align:right;padding-right:6px !important;">Total (Ice+Labour)</th>
+                            ` : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="${isBoth ? 8 : 6}" style="text-align:center;padding:16px;">No records found for the selected period and criteria.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" style="text-align:left;font-weight:700;padding-left:6px !important;">Grand Totals (@countBills Bills):</td>
+                            ${isIce ? `
+                                <td class="sup-num" style="font-weight:800;color:#0f5132;">Rs @sumIce.ToString("N0")</td>
+                            ` : ''}
+                            ${isLabour ? `
+                                <td class="sup-num" style="font-weight:800;color:#842029;">Rs @sumLabour.ToString("N0")</td>
+                            ` : ''}
+                            ${isBoth ? `
+                                <td class="sup-num" style="font-weight:700;color:#0f5132;">Rs @sumIce.ToString("N0")</td>
+                                <td class="sup-num" style="font-weight:700;color:#842029;">Rs @sumLabour.ToString("N0")</td>
+                                <td class="sup-num" style="font-weight:800;color:#8a5a1e;">Rs @sumCombined.ToString("N0")</td>
+                            ` : ''}
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:18px;margin-bottom:24px;">
+                    <div style="background:#fff8ec;border:2px solid #c68a3e;border-radius:8px;padding:12px 24px;text-align:right;min-width:320px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;font-weight:800;color:#8a5a1e;letter-spacing:0.5px;">
+                            ${isIce ? 'TOTAL ICE EXPENSE:' : (isLabour ? 'TOTAL LABOUR EXPENSE:' : 'TOTAL EXPENSES (ICE + LABOUR):')}
+                        </span>
+                        <strong style="font-size:22px;color:#8a5a1e;margin-left:20px;">
+                            Rs ${isIce ? '@sumIce.ToString("N0")' : (isLabour ? '@sumLabour.ToString("N0")' : '@sumCombined.ToString("N0")')}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:40px;">
+                    <div>Prepared By</div>
+                    <div>Verified By</div>
+                    <div>Accountant / Munshi</div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal(isIce ? "Print Ice Expense Report" : (isLabour ? "Print Labour Expense Report" : "Print Ice & Labour Expense Report"), content);
+            } else {
+                window.print();
+            }
+        }
+    </script>
+}

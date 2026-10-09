@@ -1,0 +1,374 @@
+@model ERP_Core.Dtos.UserRightsViewModel
+
+@{
+    ViewData["Title"] = "User Rights";
+    ViewData["SubTitle"] = "Staff accounts aur unki permissions manage karein.";
+}
+
+<div class="toolbar">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">User Rights &amp; Access Control</div>
+        <div class="section-desc" style="margin-bottom:0;">Staff accounts, permissions aur passwords manage karein.</div>
+    </div>
+    <button type="button" class="btn brass" onclick="AarhatApp.toggleForm('userForm')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add User
+    </button>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:rgba(46,125,50,0.15);color:var(--green-text,#2e7d32);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid rgba(46,125,50,0.3);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(198,40,40,0.15);color:var(--red-text,#c62828);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid rgba(198,40,40,0.3);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Add User Collapsible Form Card -->
+<div class="form-card" id="userForm" style="display:none;margin-bottom:20px;">
+    <form asp-controller="UserRights" asp-action="AddUser" method="post">
+        @Html.AntiForgeryToken()
+        <div class="form-grid c4">
+            <div class="field">
+                <label>Full Name</label>
+                <input type="text" name="fullName" placeholder="e.g. Usman Bhai" required />
+            </div>
+            <div class="field">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="usman.bhai" required />
+            </div>
+            <div class="field">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required />
+            </div>
+            <div class="field">
+                <label>Role</label>
+                <select name="role" class="lot-select">
+                    <option value="Staff">Staff</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Owner">Owner</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field" style="margin-top:14px;">
+            <label>Module Permissions</label>
+            <div class="table-wrap">
+                <table class="perm-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th style="text-align:center;">View</th>
+                            <th style="text-align:center;">Add</th>
+                            <th style="text-align:center;">Edit</th>
+                            <th style="text-align:center;">Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>New Bill</strong></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Daily Purchase</strong></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Expense Voucher</strong></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customer / Supplier Master</strong></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Reports &amp; Ledger</strong></td>
+                            <td style="text-align:center;"><input type="checkbox" checked /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                            <td style="text-align:center;"><input type="checkbox" /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn ghost" onclick="AarhatApp.toggleForm('userForm')">Cancel</button>
+            <button type="submit" class="btn brass">Save User</button>
+        </div>
+    </form>
+</div>
+
+<!-- Users Table Card -->
+<div class="card" style="border:1px solid var(--border);">
+    <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--brass)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <h3 style="font-size:14.5px;margin:0;color:var(--text);">System Users &amp; Permissions</h3>
+            <span class="badge gray">@Model.Users.Count users</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);">
+            Click <strong style="color:var(--brass-text);">Key</strong> icon to change passwords.
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table id="usersTable" class="dynamic-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:40px;text-align:center;">#</th>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Users.Count; i++)
+                {
+                    var user = Model.Users[i];
+                    <tr>
+                        <td style="text-align:center;color:var(--text-dim);">@(i + 1)</td>
+                        <td>
+                            <div style="font-weight:700;color:var(--text);">@user.FullName</div>
+                            @if (!string.IsNullOrWhiteSpace(user.Email) && user.Email != user.Username)
+                            {
+                                <div style="font-size:11px;color:var(--text-dim);">@user.Email</div>
+                            }
+                        </td>
+                        <td><span class="tcode" style="font-family:monospace;font-weight:600;color:var(--brass-text);">@user.Username</span></td>
+                        <td>
+                            @if (user.Role == "Owner")
+                            {
+                                <span class="badge badge-brass">Owner</span>
+                            }
+                            else if (user.Role == "Manager")
+                            {
+                                <span class="badge badge-gray">Manager</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-green">Staff</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @(user.Status == "Active" ? "badge-green" : "badge-red")">@user.Status</span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex;gap:6px;align-items:center;justify-content:center;">
+                                <button type="button" class="btn ghost icon-only" title="Change Password" style="padding:5px 8px;color:var(--brass-text);border-color:rgba(198,138,62,0.4);" onclick="openChangePasswordModal('@user.Id', '@user.IdentityId', '@user.Username', '@user.FullName', '@user.Role')">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn ghost icon-only" title="Edit Permissions" style="padding:5px 8px;" onclick="AarhatApp.toggleForm('userForm')">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Change Password Modal Backdrop -->
+<div id="changePasswordModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.78);backdrop-filter:blur(5px);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div class="modal-box" style="background:var(--surface,#142521);border:1px solid var(--border,#2C4740);border-radius:12px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,0.6);overflow:hidden;animation:modalIn 0.2s ease;">
+        <div style="padding:16px 20px;background:var(--surface2,#1A2F2A);border-bottom:1px solid var(--border,#2C4740);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:rgba(198,138,62,0.18);color:var(--brass-text,#E3AE66);display:flex;align-items:center;justify-content:center;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin:0;font-size:15px;color:var(--text,#EAF1EE);font-weight:700;">Change Password</h3>
+                    <div style="font-size:11.5px;color:var(--text-dim,#8EABA2);">صارف کا نیا پاس ورڈ مقرر کریں</div>
+                </div>
+            </div>
+            <button type="button" class="btn ghost icon-only" onclick="closeChangePasswordModal()" style="padding:4px;color:var(--text-dim);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <form asp-controller="UserRights" asp-action="ChangePassword" method="post" id="changePasswordForm" style="padding:20px;" onsubmit="return handlePasswordSubmit(event)">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="userId" id="cpUserId" />
+            <input type="hidden" name="username" id="cpUsername" />
+
+            <!-- Target User Info Card -->
+            <div style="background:var(--surface2,#1A2F2A);border:1px solid var(--border,#2C4740);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div style="font-size:10.5px;color:var(--text-dim,#8EABA2);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Selected User</div>
+                    <div style="font-size:14px;font-weight:700;color:var(--text,#EAF1EE);margin-top:2px;" id="cpFullNameDisplay">Zahid Hussain</div>
+                    <div style="font-size:12px;color:var(--brass-text,#E3AE66);font-family:monospace;margin-top:1px;" id="cpUsernameDisplay">zahid.hussain</div>
+                </div>
+                <div id="cpRoleBadgeDisplay">
+                    <span class="badge badge-brass">Owner</span>
+                </div>
+            </div>
+
+            <div class="field" style="margin-bottom:14px;">
+                <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text,#EAF1EE);">New Password / نیا پاس ورڈ</label>
+                <div style="position:relative;">
+                    <input type="password" name="newPassword" id="cpNewPassword" class="lot-input" placeholder="Enter new password" required style="padding-right:38px;" oninput="validatePasswordMatch()" />
+                    <button type="button" onclick="togglePasswordVisibility('cpNewPassword', this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;" title="Show/Hide">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="field" style="margin-bottom:18px;">
+                <label style="display:block;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text,#EAF1EE);">Confirm Password / پاس ورڈ کی تصدیق</label>
+                <div style="position:relative;">
+                    <input type="password" name="confirmPassword" id="cpConfirmPassword" class="lot-input" placeholder="Confirm new password" required style="padding-right:38px;" oninput="validatePasswordMatch()" />
+                    <button type="button" onclick="togglePasswordVisibility('cpConfirmPassword', this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;" title="Show/Hide">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+                <div id="cpMatchHint" style="font-size:11.5px;margin-top:5px;display:none;font-weight:600;"></div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:10px;border-top:1px solid var(--border,#2C4740);">
+                <button type="button" class="btn ghost" onclick="closeChangePasswordModal()">Cancel</button>
+                <button type="submit" class="btn brass" id="cpSubmitBtn">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Update Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openChangePasswordModal(empId, identityId, username, fullName, role) {
+            document.getElementById('cpUserId').value = identityId || empId || '';
+            document.getElementById('cpUsername').value = username || '';
+            document.getElementById('cpFullNameDisplay').textContent = fullName || username || 'User';
+            document.getElementById('cpUsernameDisplay').textContent = username || '';
+            
+            // Set role badge
+            const badgeContainer = document.getElementById('cpRoleBadgeDisplay');
+            if (badgeContainer) {
+                let badgeClass = 'badge-green';
+                if (role === 'Owner') badgeClass = 'badge-brass';
+                else if (role === 'Manager') badgeClass = 'badge-gray';
+                badgeContainer.innerHTML = `<span class="badge ${badgeClass}">${role || 'Staff'}</span>`;
+            }
+
+            document.getElementById('cpNewPassword').value = '';
+            document.getElementById('cpConfirmPassword').value = '';
+            
+            const hint = document.getElementById('cpMatchHint');
+            if (hint) {
+                hint.style.display = 'none';
+                hint.textContent = '';
+            }
+
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('cpNewPassword')?.focus();
+                }, 100);
+            }
+        }
+
+        function closeChangePasswordModal() {
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (btn) btn.style.color = 'var(--brass-text, #E3AE66)';
+            } else {
+                input.type = 'password';
+                if (btn) btn.style.color = 'var(--text-dim, #8EABA2)';
+            }
+        }
+
+        function validatePasswordMatch() {
+            const p1 = document.getElementById('cpNewPassword')?.value || '';
+            const p2 = document.getElementById('cpConfirmPassword')?.value || '';
+            const hint = document.getElementById('cpMatchHint');
+            const submitBtn = document.getElementById('cpSubmitBtn');
+            if (!hint) return;
+
+            if (!p2) {
+                hint.style.display = 'none';
+                return;
+            }
+
+            hint.style.display = 'block';
+            if (p1 === p2) {
+                hint.style.color = 'var(--green-text, #2e7d32)';
+                hint.textContent = '✓ Passwords match';
+                if (submitBtn) submitBtn.disabled = false;
+            } else {
+                hint.style.color = 'var(--red-text, #c62828)';
+                hint.textContent = '✕ Passwords do not match';
+            }
+        }
+
+        function handlePasswordSubmit(e) {
+            const p1 = document.getElementById('cpNewPassword')?.value || '';
+            const p2 = document.getElementById('cpConfirmPassword')?.value || '';
+            if (p1.length < 4) {
+                alert('Password should be at least 4 characters long.');
+                e.preventDefault();
+                return false;
+            }
+            if (p1 !== p2) {
+                alert('New Password and Confirm Password do not match.');
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        }
+
+        // Close on backdrop click
+        document.getElementById('changePasswordModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeChangePasswordModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeChangePasswordModal();
+            }
+        });
+    </script>
+}

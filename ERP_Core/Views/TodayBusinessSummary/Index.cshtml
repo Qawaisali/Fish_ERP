@@ -1,0 +1,1563 @@
+@model ERP_Core.Dtos.TodayBusinessSummaryViewModel
+
+@{
+    ViewData["Title"] = "Today's Business Summary";
+    ViewData["SubTitle"] = "آج کا مکمل کاروباری خلاصہ — Wasooli, Adaigi, Kharche, Commission, aur Baqaya Balances";
+}
+
+@section Styles {
+<style>
+    /* Business Summary Root Theme Styles */
+    :root {
+        --kpi-receives: #10b981;
+        --kpi-pays: #ef4444;
+        --kpi-expense: #f59e0b;
+        --kpi-comm: var(--brass-text, #e2a03f);
+        --kpi-farmer: #f87171;
+        --kpi-buyer: #34d399;
+        --kpi-ice: #38bdf8;
+        --kpi-labour: #a855f7;
+        --kpi-martey: #f59e0b;
+    }
+
+    /* Top Control Bar */
+    .summary-filter-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 16px;
+    }
+    .summary-quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .btn-quick-filter {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 13px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+    .btn-quick-filter:hover {
+        background: var(--surface3);
+        color: var(--text);
+        border-color: var(--teal);
+    }
+    .btn-quick-filter.active {
+        background: rgba(47, 158, 140, 0.2);
+        color: var(--teal-text);
+        border-color: var(--teal);
+        font-weight: 700;
+    }
+    .summary-actions-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .btn-summary-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .btn-summary-print {
+        background: linear-gradient(180deg, #1d3d34 0%, #132722 100%);
+        border: 1px solid var(--teal);
+        color: var(--teal-text);
+    }
+    .btn-summary-print:hover {
+        background: linear-gradient(180deg, #244d42 0%, #18332c 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(47, 158, 140, 0.35);
+    }
+    .btn-summary-back {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+    }
+    .btn-summary-back:hover {
+        background: var(--surface3);
+        border-color: var(--brass);
+    }
+
+    /* 8 Core KPI Summary Cards Grid (4x2 layout) */
+    .summary-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+    @@media (max-width: 1200px) {
+        .summary-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @@media (max-width: 650px) {
+        .summary-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .kpi-summary-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        min-height: 120px;
+    }
+    .kpi-summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+    .kpi-summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+    }
+    .kpi-summary-card.kpi-receives::before { background: var(--kpi-receives); }
+    .kpi-summary-card.kpi-pays::before { background: var(--kpi-pays); }
+    .kpi-summary-card.kpi-expense::before { background: var(--kpi-expense); }
+    .kpi-summary-card.kpi-comm::before { background: var(--kpi-comm); }
+    .kpi-summary-card.kpi-farmer::before { background: var(--kpi-farmer); }
+    .kpi-summary-card.kpi-buyer::before { background: var(--kpi-buyer); }
+    .kpi-summary-card.kpi-ice::before { background: var(--kpi-ice); }
+    .kpi-summary-card.kpi-labour::before { background: var(--kpi-labour); }
+    .kpi-summary-card.kpi-martey::before { background: var(--kpi-martey); }
+
+    .kpi-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .kpi-card-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-dim);
+    }
+    .kpi-icon-pill {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface2);
+        border: 1px solid var(--border-soft);
+    }
+    .kpi-card-val {
+        font-family: var(--font-head);
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        line-height: 1.1;
+    }
+    .kpi-card-sub {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Tab Navigation System */
+    .summary-nav-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+    .summary-tab-btn {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        font-size: 12.5px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .summary-tab-btn:hover {
+        background: var(--surface2);
+        color: var(--text);
+    }
+    .summary-tab-btn.active {
+        background: var(--teal);
+        color: #fff;
+        border-color: var(--teal);
+        box-shadow: 0 2px 8px rgba(47, 158, 140, 0.35);
+    }
+    .summary-tab-btn .tab-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+
+    /* Tab Pane Sections */
+    .summary-tab-pane {
+        display: none;
+    }
+    .summary-tab-pane.active {
+        display: block;
+        animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Account Wise Cards & Table */
+    .account-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    .account-kpi-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: border-color 0.2s;
+    }
+    .account-kpi-card:hover {
+        border-color: var(--teal);
+    }
+    .account-card-name {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .account-card-meta {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    /* Detail Table Container */
+    .summary-table-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .summary-table-head {
+        padding: 14px 18px;
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .summary-table-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0;
+        font-family: var(--font-head);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .table-search-input {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12.5px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        outline: none;
+        min-width: 220px;
+    }
+    .table-search-input:focus {
+        border-color: var(--teal);
+    }
+
+    /* Comprehensive Professional Print Styles */
+    @@media print {
+        @@page {
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
+        }
+
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+        }
+
+        body, html {
+            background: #fff !important;
+            color: #111 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .sidebar, .topbar, .summary-filter-bar, .summary-nav-tabs, .btn-summary-action,
+        .table-search-input, .btn-quick-filter, .tab-badge, form, input, button,
+        .btn-child-toggle, .no-print, .ts-wrapper {
+            display: none !important;
+        }
+
+        .main-wrapper, .content-area, .container-fluid, .content, main {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background: #fff !important;
+        }
+
+        .print-header-mandi {
+            display: block !important;
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #222;
+            padding-bottom: 6px;
+        }
+
+        .print-header-mandi h2 {
+            font-size: 18px !important;
+            font-weight: 800 !important;
+            margin: 0 0 2px 0 !important;
+            color: #111 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .print-header-mandi .sub-title {
+            font-size: 11px !important;
+            color: #444 !important;
+            margin: 2px 0 !important;
+        }
+
+        .print-header-mandi .meta-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px !important;
+            color: #555 !important;
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px dashed #ccc;
+        }
+
+        /* 8 KPI Cards in Compact 4x2 Grid */
+        .summary-kpi-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 6px !important;
+            margin-bottom: 10px !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .kpi-summary-card {
+            border: 1px solid #bbb !important;
+            border-left: 4px solid #333 !important;
+            background: #fafafa !important;
+            border-radius: 4px !important;
+            padding: 5px 8px !important;
+            min-height: auto !important;
+            box-shadow: none !important;
+            transform: none !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .kpi-summary-card::before {
+            display: none !important;
+        }
+
+        .kpi-summary-card.kpi-receives { border-left-color: #059669 !important; }
+        .kpi-summary-card.kpi-pays { border-left-color: #dc2626 !important; }
+        .kpi-summary-card.kpi-expense { border-left-color: #d97706 !important; }
+        .kpi-summary-card.kpi-comm { border-left-color: #b45309 !important; }
+        .kpi-summary-card.kpi-farmer { border-left-color: #e11d48 !important; }
+        .kpi-summary-card.kpi-ice { border-left-color: #0284c7 !important; }
+        .kpi-summary-card.kpi-labour { border-left-color: #7c3aed !important; }
+        .kpi-summary-card.kpi-martey { border-left-color: #d97706 !important; }
+
+        .kpi-card-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 2px !important;
+        }
+
+        .kpi-card-title {
+            font-size: 9.5px !important;
+            font-weight: 700 !important;
+            color: #333 !important;
+            text-transform: uppercase !important;
+        }
+
+        .kpi-icon-pill {
+            display: none !important;
+        }
+
+        .kpi-card-val {
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            color: #000 !important;
+            line-height: 1.2 !important;
+        }
+
+        .kpi-card-sub {
+            font-size: 8.5px !important;
+            color: #666 !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            margin-top: 2px !important;
+        }
+
+        /* Overview Boxes & Tables */
+        .summary-table-card {
+            border: 1px solid #ccc !important;
+            background: #fff !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;
+            margin-bottom: 8px !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .summary-table-card > div[style*="padding:16px"],
+        .summary-table-card > div[style*="padding: 16px"] {
+            padding: 6px 10px !important;
+        }
+
+        .summary-table-card div[style*="padding:10px 0"],
+        .summary-table-card div[style*="padding: 10px 0"] {
+            padding: 3px 0 !important;
+            border-bottom: 1px solid #eee !important;
+        }
+
+        .summary-table-card div[style*="padding:12px 0 0 0"],
+        .summary-table-card div[style*="padding: 12px 0 0 0"] {
+            padding: 4px 0 0 0 !important;
+        }
+
+        .summary-table-head {
+            background: #f0f4f2 !important;
+            border-bottom: 1px solid #ccc !important;
+            padding: 4px 8px !important;
+        }
+
+        .summary-table-title {
+            font-size: 10.5px !important;
+            font-weight: 700 !important;
+            color: #111 !important;
+            margin: 0 !important;
+        }
+
+        .summary-table-head a, .summary-table-head input, .summary-table-head button {
+            display: none !important;
+        }
+
+        #tab-overview > div[style*="display:grid"],
+        #tab-overview > div[style*="display: grid"] {
+            gap: 8px !important;
+            margin-bottom: 8px !important;
+        }
+
+        .table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            color: #111 !important;
+        }
+
+        .table th {
+            background: #f5f5f5 !important;
+            color: #111 !important;
+            font-weight: 700 !important;
+            border: 1px solid #ccc !important;
+            padding: 4px 6px !important;
+            font-size: 9.5px !important;
+        }
+
+        .table td {
+            border: 1px solid #e0e0e0 !important;
+            padding: 4px 6px !important;
+            color: #222 !important;
+        }
+
+        .table tfoot tr {
+            background: #f0f0f0 !important;
+            font-weight: 700 !important;
+        }
+
+        .table tfoot td {
+            border-top: 2px solid #333 !important;
+            font-weight: 800 !important;
+            color: #000 !important;
+        }
+
+        tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        /* Tab Panes in Print */
+        .summary-tab-pane {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            margin-bottom: 12px !important;
+        }
+
+        .summary-tab-pane#tab-overview {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        .summary-tab-pane:not(#tab-overview) {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-top: 10px;
+        }
+
+        .account-cards-grid {
+            display: none !important;
+        }
+
+        .badge {
+            border: 1px solid #888 !important;
+            color: #000 !important;
+            background: transparent !important;
+            padding: 1px 4px !important;
+            font-size: 8.5px !important;
+        }
+    }
+
+    .print-header-mandi {
+        display: none;
+    }
+</style>
+}
+
+<!-- Print Header (Visible only in Print / Export) -->
+<div class="print-header-mandi">
+    <h2>@Model.CompanyName</h2>
+    <div class="sub-title">Fish Commission Agent &amp; Mandi Aarhat Management</div>
+    <div class="meta-info">
+        <span><b>DAILY BUSINESS SUMMARY REPORT</b> — @Model.DateDisplayLabel</span>
+        <span>Printed on: @DateTime.Now.ToString("dd-MMM-yyyy hh:mm tt")</span>
+    </div>
+</div>
+
+<!-- Top Control & Filter Bar -->
+<div class="summary-filter-bar">
+    <div class="summary-quick-filters">
+        <span style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-right:4px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Period:
+        </span>
+        <a href="@Url.Action("Index", "TodayBusinessSummary", new { filter = "today" })" class="btn-quick-filter @(Model.FilterMode == "today" ? "active" : "")">Today</a>
+        <a href="@Url.Action("Index", "TodayBusinessSummary", new { filter = "yesterday" })" class="btn-quick-filter @(Model.FilterMode == "yesterday" ? "active" : "")">Yesterday</a>
+        <a href="@Url.Action("Index", "TodayBusinessSummary", new { filter = "past_3_days" })" class="btn-quick-filter @(Model.FilterMode == "past_3_days" ? "active" : "")">Past 3 Days</a>
+        <a href="@Url.Action("Index", "TodayBusinessSummary", new { filter = "past_week" })" class="btn-quick-filter @(Model.FilterMode == "past_week" ? "active" : "")">Past Week</a>
+        <a href="@Url.Action("Index", "TodayBusinessSummary", new { filter = "month" })" class="btn-quick-filter @(Model.FilterMode == "month" ? "active" : "")">This Month</a>
+    </div>
+
+    <!-- Custom Date Range Form & Actions -->
+    <form method="get" action="@Url.Action("Index", "TodayBusinessSummary")" class="summary-actions-right" style="margin:0;">
+        <input type="hidden" name="filter" value="custom_date" />
+        <div style="display:flex; align-items:center; gap:6px;">
+            <input type="date" name="fromDate" value="@Model.FromDate" class="table-search-input" style="min-width:135px; padding:4px 8px;" />
+            <span style="color:var(--text-dim); font-size:12px;">to</span>
+            <input type="date" name="toDate" value="@Model.ToDate" class="table-search-input" style="min-width:135px; padding:4px 8px;" />
+            <button type="submit" class="btn-quick-filter active" title="Apply Custom Dates">Filter</button>
+        </div>
+
+        <button type="button" class="btn-summary-action btn-summary-print" onclick="window.print()" title="Print Summary Report">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span>Print Report</span>
+        </button>
+
+        <a asp-controller="Home" asp-action="Index" class="btn-summary-action btn-summary-back" title="Back to Dashboard">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Dashboard</span>
+        </a>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 8 CORE KPI SUMMARY CARDS (Top Overview Row)                              -->
+<!-- ========================================================================= -->
+<div class="summary-kpi-grid">
+    
+    <!-- 1. Receives Account Wise -->
+    <div class="kpi-summary-card kpi-receives" onclick="switchSummaryTab('tab-receives')" style="cursor:pointer;" title="Click to view Account-wise Receives">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">1. Wasooli (Receives)</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-receives);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/><path d="M16 8l4 4-4 4"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-receives);">Rs @Model.TotalReceivesAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.ReceivesAccountsCount accounts</span>
+            <span>@Model.TotalReceivesCount receipts</span>
+        </div>
+    </div>
+
+    <!-- 2. Pays Account Wise -->
+    <div class="kpi-summary-card kpi-pays" onclick="switchSummaryTab('tab-pays')" style="cursor:pointer;" title="Click to view Account-wise Pays">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">2. Adaigi (Pays)</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-pays);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 15h4"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-pays);">Rs @Model.TotalPaysAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.PaysAccountsCount accounts</span>
+            <span>@Model.TotalPaysCount payments</span>
+        </div>
+    </div>
+
+    <!-- 3. Expenses from Expense Vouchers -->
+    <div class="kpi-summary-card kpi-expense" onclick="switchSummaryTab('tab-expenses')" style="cursor:pointer;" title="Click to view Expense Vouchers">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">3. Expense Vouchers</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-expense);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-expense);">Rs @Model.TotalExpenseVouchersAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.ExpenseHeadsCount heads</span>
+            <span>@Model.TotalExpenseVouchersCount vouchers</span>
+        </div>
+    </div>
+
+    <!-- 4. Commission Earned -->
+    <div class="kpi-summary-card kpi-comm" onclick="switchSummaryTab('tab-commission')" style="cursor:pointer;" title="Click to view Commission details">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">4. Commission</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-comm);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/><circle cx="19" cy="9" r="2"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-comm);">Rs @Model.TotalCommissionAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.TotalBillsCount catch bills</span>
+            <span>Earned income</span>
+        </div>
+    </div>
+
+    <!-- 5. Total Farmer Payable Amount -->
+    <div class="kpi-summary-card kpi-farmer" onclick="switchSummaryTab('tab-parties')" style="cursor:pointer;" title="Click to view Farmer Payables from Today's Bills">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">5. Farmer Payable (Today's Bills)</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-farmer);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7V8Z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-farmer);">Rs @Model.TotalFarmerPayableAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.ActiveFarmersCount boats / farmers</span>
+            <span>Today's net bills</span>
+        </div>
+    </div>
+
+    <!-- 6. Total Ice Expense -->
+    <div class="kpi-summary-card kpi-ice" onclick="switchSummaryTab('tab-icelabour')" style="cursor:pointer;" title="Click to view Ice Expenses">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">6. Ice (Loading) Expense</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-ice);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m10 15 5 5 3-3-5-5"/><path d="M4 20h7"/><path d="m15 4-4 4 2 2 4-4a2 2 0 0 0-2.83-2.83Z"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-ice);">Rs @Model.TotalIceExpenseAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.IceBillsCount bills with ice</span>
+            <span>Mandi loading</span>
+        </div>
+    </div>
+
+    <!-- 7. Total Labour Expense -->
+    <div class="kpi-summary-card kpi-labour" onclick="switchSummaryTab('tab-icelabour')" style="cursor:pointer;" title="Click to view Labour Expenses">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">7. Labour Expense</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-labour);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-labour);">Rs @Model.TotalLabourExpenseAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.LabourBillsCount bills with labour</span>
+            <span>Handling charges</span>
+        </div>
+    </div>
+
+    <!-- 8. Total Martey (Deposit / Advance) -->
+    <div class="kpi-summary-card kpi-martey" onclick="switchSummaryTab('tab-martey')" style="cursor:pointer;" title="Click to view Martey / Deposit Details">
+        <div class="kpi-card-header">
+            <span class="kpi-card-title">8. Martey (Deposit)</span>
+            <div class="kpi-icon-pill" style="color:var(--kpi-martey);">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+            </div>
+        </div>
+        <div class="kpi-card-val tnum" style="color:var(--kpi-martey);">Rs @Model.TotalMarteyAmount.ToString("N0")</div>
+        <div class="kpi-card-sub">
+            <span>@Model.MarteyCount records</span>
+            <span>Bills &amp; vouchers</span>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- NAVIGATION TABS                                                           -->
+<!-- ========================================================================= -->
+<div class="summary-nav-tabs">
+    <button type="button" class="summary-tab-btn active" id="btn-tab-overview" onclick="switchSummaryTab('tab-overview')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Overview &amp; Audit</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-receives" onclick="switchSummaryTab('tab-receives')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>
+        <span>Receives (Wasooli)</span>
+        <span class="tab-badge">@Model.ReceivesAccountsCount</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-pays" onclick="switchSummaryTab('tab-pays')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>Pays (Adaigi)</span>
+        <span class="tab-badge">@Model.PaysAccountsCount</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-expenses" onclick="switchSummaryTab('tab-expenses')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span>Expense Vouchers</span>
+        <span class="tab-badge">@Model.TotalExpenseVouchersCount</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-commission" onclick="switchSummaryTab('tab-commission')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span>Commission</span>
+        <span class="tab-badge">@Model.TotalBillsCount</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-martey" onclick="switchSummaryTab('tab-martey')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+        <span>Martey (Deposit)</span>
+        <span class="tab-badge">@Model.MarteyCount</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-parties" onclick="switchSummaryTab('tab-parties')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7V8Z"/></svg>
+        <span>Farmer &amp; Supplier Balances</span>
+    </button>
+    <button type="button" class="summary-tab-btn" id="btn-tab-icelabour" onclick="switchSummaryTab('tab-icelabour')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m10 15 5 5 3-3-5-5"/><path d="M4 20h7"/></svg>
+        <span>Ice &amp; Labour Breakdown</span>
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 1: OVERVIEW & AUDIT SUMMARY                                           -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane active" id="tab-overview">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+        
+        <!-- Cash / Bank Liquidity Flux Box -->
+        <div class="summary-table-card" style="margin:0;">
+            <div class="summary-table-head">
+                <h4 class="summary-table-title" style="color:var(--teal-text);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M3 10h18"/><path d="m12 3 9 7H3z"/></svg>
+                    Period Inflow &amp; Outflow Balance
+                </h4>
+            </div>
+            <div style="padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Receives (Cash + Bank Wasooli):</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-receives);">+ Rs @Model.TotalReceivesAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Payments (Party Adaigi):</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-pays);">- Rs @Model.TotalPaysAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Expense Vouchers (Aam Kharche):</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-expense);">- Rs @Model.TotalExpenseVouchersAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0 0 0;">
+                    <span style="font-size:13.5px; font-weight:700; color:var(--text);">Net Cash Flow in Period:</span>
+                    <span class="tnum" style="font-size:16px; font-weight:700; color:@(Model.NetCashFlowToday >= 0 ? "var(--kpi-receives)" : "var(--kpi-pays)");">
+                        @(Model.NetCashFlowToday >= 0 ? "+" : "") Rs @Model.NetCashFlowToday.ToString("N0")
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mandi Catch & Commission Box -->
+        <div class="summary-table-card" style="margin:0;">
+            <div class="summary-table-head">
+                <h4 class="summary-table-title" style="color:var(--brass-text);">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c4-5 11-7 16-4.5C18 7.5 17 12 18 16.5 13 19 6 17 2 12Z"/><path d="M18 7.5 22 5l-1 7 1 7-4-2.5"/></svg>
+                    Catch Bills &amp; Commission Summary
+                </h4>
+            </div>
+            <div style="padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Catch Bills Recorded:</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--text);">@Model.TotalBillsCount bills</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Gross Catch Volume (Sale):</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--text);">Rs @Model.TotalCatchGrossAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Commission Earned (Aarhat Munafa):</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-comm);">Rs @Model.TotalCommissionAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-soft);">
+                    <span style="font-size:13px; color:var(--text-dim);">Total Martey / Deposit Deducted:</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-martey);">Rs @Model.TotalMarteyAmount.ToString("N0")</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0 0 0;">
+                    <span style="font-size:13.5px; font-weight:700; color:var(--text);">Net Farmer Bills Payable (Today):</span>
+                    <span class="tnum" style="font-size:15px; font-weight:700; color:var(--kpi-farmer);">Rs @Model.TodayFarmerBillsPayable.ToString("N0")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side by Side: Top Receives Accounts vs Top Pays Accounts -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        
+        <!-- Top Receives Summary -->
+        <div class="summary-table-card">
+            <div class="summary-table-head">
+                <h4 class="summary-table-title" style="color:var(--kpi-receives);">Top Accounts Wasooli</h4>
+                <a href="javascript:void(0)" onclick="switchSummaryTab('tab-receives')" class="btn-quick-filter" style="padding:3px 8px; font-size:11.5px;">View All &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0" style="font-size:12.5px;">
+                    <thead>
+                        <tr>
+                            <th>Account / Party</th>
+                            <th class="text-center">Count</th>
+                            <th class="text-end">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ReceivesAccountWise.Any())
+                        {
+                            @foreach (var r in Model.ReceivesAccountWise.Take(6))
+                            {
+                                <tr>
+                                    <td style="font-weight:600; color:var(--text);">@r.AccountName</td>
+                                    <td class="text-center tnum" style="color:var(--text-dim);">@r.TransactionCount</td>
+                                    <td class="text-end tnum" style="font-weight:700; color:var(--kpi-receives);">Rs @r.TotalAmount.ToString("N0")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center" style="padding:20px; color:var(--text-faint);">No receives recorded in this period</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Pays Summary -->
+        <div class="summary-table-card">
+            <div class="summary-table-head">
+                <h4 class="summary-table-title" style="color:var(--kpi-pays);">Top Accounts Adaigi</h4>
+                <a href="javascript:void(0)" onclick="switchSummaryTab('tab-pays')" class="btn-quick-filter" style="padding:3px 8px; font-size:11.5px;">View All &rarr;</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table mb-0" style="font-size:12.5px;">
+                    <thead>
+                        <tr>
+                            <th>Account / Party</th>
+                            <th class="text-center">Count</th>
+                            <th class="text-end">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PaysAccountWise.Any())
+                        {
+                            @foreach (var p in Model.PaysAccountWise.Take(6))
+                            {
+                                <tr>
+                                    <td style="font-weight:600; color:var(--text);">@p.AccountName</td>
+                                    <td class="text-center tnum" style="color:var(--text-dim);">@p.TransactionCount</td>
+                                    <td class="text-end tnum" style="font-weight:700; color:var(--kpi-pays);">Rs @p.TotalAmount.ToString("N0")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center" style="padding:20px; color:var(--text-faint);">No payments recorded in this period</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 2: RECEIVES ACCOUNT-WISE (WASOOLI)                                     -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-receives">
+    
+    <!-- Account Summary Mini Grid -->
+    <div class="account-cards-grid">
+        @foreach (var r in Model.ReceivesAccountWise)
+        {
+            <div class="account-kpi-card">
+                <div>
+                    <div class="account-card-name" title="@r.AccountName">@r.AccountName</div>
+                    <div style="font-size:11px; color:var(--text-dim);">@r.AccountCategory</div>
+                </div>
+                <div class="account-card-meta">
+                    <span class="tnum" style="font-weight:600;">@r.TransactionCount receipts</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-receives);">Rs @r.TotalAmount.ToString("N0")</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Detailed Receives Vouchers Table -->
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-receives);">
+                <span>All Receipts Vouchers in Period</span>
+                <span class="tab-badge" style="background:var(--kpi-receives); color:#fff;">@Model.TotalReceivesCount</span>
+            </h4>
+            <input type="text" id="searchReceivesTable" class="table-search-input" placeholder="Search party, voucher, bank..." onkeyup="filterTable('receivesDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="receivesDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Received From (Account)</th>
+                        <th>Received In (Cash / Bank)</th>
+                        <th>Narration / Details</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllReceivesVouchers.Any())
+                    {
+                        @foreach (var v in Model.AllReceivesVouchers)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@v.VoucherNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@v.Date</td>
+                                <td style="font-weight:600; color:var(--text);">@v.AccountName</td>
+                                <td style="color:var(--text-dim);"><span class="badge" style="background:var(--surface2); border:1px solid var(--border-soft); color:var(--text);">@v.CounterpartyOrBank</span></td>
+                                <td style="color:var(--text-faint); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@(!string.IsNullOrEmpty(v.Narration) ? v.Narration : "-")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-receives); font-size:13.5px;">Rs @v.Amount.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="6" class="text-center" style="padding:30px; color:var(--text-faint);">No receipt vouchers found for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.AllReceivesVouchers.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="5" class="text-end">TOTAL WASOOLI (RECEIPTS):</td>
+                            <td class="text-end tnum" style="color:var(--kpi-receives); font-size:15px;">Rs @Model.TotalReceivesAmount.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 3: PAYS ACCOUNT-WISE (ADAIGI)                                         -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-pays">
+    
+    <!-- Account Summary Mini Grid -->
+    <div class="account-cards-grid">
+        @foreach (var p in Model.PaysAccountWise)
+        {
+            <div class="account-kpi-card">
+                <div>
+                    <div class="account-card-name" title="@p.AccountName">@p.AccountName</div>
+                    <div style="font-size:11px; color:var(--text-dim);">@p.AccountCategory</div>
+                </div>
+                <div class="account-card-meta">
+                    <span class="tnum" style="font-weight:600;">@p.TransactionCount payments</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-pays);">Rs @p.TotalAmount.ToString("N0")</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Detailed Pays Vouchers Table -->
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-pays);">
+                <span>All Payment Vouchers in Period</span>
+                <span class="tab-badge" style="background:var(--kpi-pays); color:#fff;">@Model.TotalPaysCount</span>
+            </h4>
+            <input type="text" id="searchPaysTable" class="table-search-input" placeholder="Search supplier, voucher, bank..." onkeyup="filterTable('paysDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="paysDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Paid To (Account / Supplier)</th>
+                        <th>Paid Via (Cash / Bank)</th>
+                        <th>Narration / Details</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllPaysVouchers.Any())
+                    {
+                        @foreach (var v in Model.AllPaysVouchers)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@v.VoucherNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@v.Date</td>
+                                <td style="font-weight:600; color:var(--text);">@v.AccountName</td>
+                                <td style="color:var(--text-dim);"><span class="badge" style="background:var(--surface2); border:1px solid var(--border-soft); color:var(--text);">@v.CounterpartyOrBank</span></td>
+                                <td style="color:var(--text-faint); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@(!string.IsNullOrEmpty(v.Narration) ? v.Narration : "-")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-pays); font-size:13.5px;">Rs @v.Amount.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="6" class="text-center" style="padding:30px; color:var(--text-faint);">No payment vouchers found for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.AllPaysVouchers.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="5" class="text-end">TOTAL ADAIGI (PAYMENTS):</td>
+                            <td class="text-end tnum" style="color:var(--kpi-pays); font-size:15px;">Rs @Model.TotalPaysAmount.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 4: EXPENSES FROM EXPENSE VOUCHERS                                     -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-expenses">
+    
+    <!-- Expense Head Summary Grid -->
+    <div class="account-cards-grid">
+        @foreach (var e in Model.ExpensesFromVouchers)
+        {
+            <div class="account-kpi-card" style="border-left:3px solid var(--kpi-expense);">
+                <div>
+                    <div class="account-card-name" title="@e.ExpenseHead">@e.ExpenseHead</div>
+                    <div style="font-size:11px; color:var(--text-dim);">General Expense Head</div>
+                </div>
+                <div class="account-card-meta">
+                    <span class="tnum" style="font-weight:600;">@e.VoucherCount vouchers</span>
+                    <span class="tnum" style="font-size:14px; font-weight:700; color:var(--kpi-expense);">Rs @e.TotalAmount.ToString("N0")</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Detailed Expense Vouchers Table -->
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-expense);">
+                <span>Daily Expense Vouchers (Aam Kharche)</span>
+                <span class="tab-badge" style="background:var(--kpi-expense); color:#fff;">@Model.TotalExpenseVouchersCount</span>
+            </h4>
+            <input type="text" id="searchExpensesTable" class="table-search-input" placeholder="Search expense head, voucher..." onkeyup="filterTable('expensesDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="expensesDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Expense Head / Category</th>
+                        <th>Paid Via</th>
+                        <th>Narration / Purpose</th>
+                        <th>Recorded By</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllExpenseVouchers.Any())
+                    {
+                        @foreach (var ev in Model.AllExpenseVouchers)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@ev.VoucherNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@ev.Date</td>
+                                <td style="font-weight:600; color:var(--text);">@ev.ExpenseHead</td>
+                                <td><span class="badge" style="background:var(--surface2); border:1px solid var(--border-soft); color:var(--text);">@ev.PaidVia</span></td>
+                                <td style="color:var(--text-faint); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@(!string.IsNullOrEmpty(ev.Narration) ? ev.Narration : "-")</td>
+                                <td style="color:var(--text-dim); font-size:11.5px;">@ev.CreatedBy</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-expense); font-size:13.5px;">Rs @ev.Amount.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="text-center" style="padding:30px; color:var(--text-faint);">No expense vouchers found for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.AllExpenseVouchers.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="6" class="text-end">TOTAL EXPENSES (VOUCHERS):</td>
+                            <td class="text-end tnum" style="color:var(--kpi-expense); font-size:15px;">Rs @Model.TotalExpenseVouchersAmount.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 5: COMMISSION BREAKDOWN                                               -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-commission">
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-comm);">
+                <span>Mandi Catch Bills Commission Breakdown</span>
+                <span class="tab-badge" style="background:var(--kpi-comm); color:#000;">@Model.TotalCommissionBillsCount</span>
+            </h4>
+            <input type="text" id="searchCommTable" class="table-search-input" placeholder="Search bill, boat, buyer..." onkeyup="filterTable('commissionDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="commissionDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Bill #</th>
+                        <th>Date</th>
+                        <th>Boat / Farmer (Supplier)</th>
+                        <th>Buyers / Bidders</th>
+                        <th class="text-center">Lots</th>
+                        <th class="text-end">Gross Sale</th>
+                        <th class="text-center">Comm %</th>
+                        <th class="text-end">Commission Earned</th>
+                        <th class="text-end">Net Payable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CommissionDetails.Any())
+                    {
+                        @foreach (var c in Model.CommissionDetails)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@c.BillNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@c.BillDate</td>
+                                <td style="font-weight:600; color:var(--text);">@c.SupplierName</td>
+                                <td style="color:var(--text-dim); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@c.BuyerNames</td>
+                                <td class="text-center tnum">@c.LotsCount</td>
+                                <td class="text-end tnum" style="font-weight:600;">Rs @c.GrossSaleAmount.ToString("N0")</td>
+                                <td class="text-center tnum" style="color:var(--text-dim);">@c.CommissionPercent%</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-comm); font-size:13.5px;">Rs @c.CommissionAmount.ToString("N0")</td>
+                                <td class="text-end tnum" style="color:var(--kpi-farmer);">Rs @c.NetPayable.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="9" class="text-center" style="padding:30px; color:var(--text-faint);">No bills recorded for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.CommissionDetails.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="5" class="text-end">TOTAL COMMISSION:</td>
+                            <td class="text-end tnum">Rs @Model.TotalCatchGrossAmount.ToString("N0")</td>
+                            <td></td>
+                            <td class="text-end tnum" style="color:var(--kpi-comm); font-size:15px;">Rs @Model.TotalCommissionAmount.ToString("N0")</td>
+                            <td class="text-end tnum" style="color:var(--kpi-farmer); font-size:14px;">Rs @Model.TodayFarmerBillsPayable.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB: MARTEY (DEPOSITS / ADVANCES) BREAKDOWN                               -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-martey">
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-martey);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+                <span>Martey (Deposit / Advance) Breakdown</span>
+                <span class="tab-badge" style="background:var(--kpi-martey); color:#000;">Rs @Model.TotalMarteyAmount.ToString("N0")</span>
+            </h4>
+            <input type="text" id="searchMarteyTable" class="table-search-input" placeholder="Search bill, party, origin..." onkeyup="filterTable('marteyDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="marteyDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Source / Bill #</th>
+                        <th>Date</th>
+                        <th>Party / Farmer / Customer</th>
+                        <th>Type / Origin</th>
+                        <th>Narration / Remarks</th>
+                        <th class="text-end">Martey Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.MarteyDetails.Any())
+                    {
+                        @foreach (var m in Model.MarteyDetails)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@m.SourceNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@m.Date</td>
+                                <td style="font-weight:600; color:var(--text);">@m.PartyName</td>
+                                <td>
+                                    @if (m.MarteyType == "Bill Deposit")
+                                    {
+                                        <span class="badge" style="background:rgba(234, 179, 8, 0.15); color:var(--kpi-martey); border:1px solid rgba(234, 179, 8, 0.3);">
+                                            Bill Deposit
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background:rgba(56, 189, 248, 0.15); color:var(--kpi-ice); border:1px solid rgba(56, 189, 248, 0.3);">
+                                            @m.MarteyType
+                                        </span>
+                                    }
+                                </td>
+                                <td style="color:var(--text-dim);">@(string.IsNullOrEmpty(m.Narration) ? "—" : m.Narration)</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-martey); font-size:13.5px;">
+                                    Rs @m.Amount.ToString("N0")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="6" class="text-center" style="padding:30px; color:var(--text-faint);">No Martey / deposit records found for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.MarteyDetails.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="5" class="text-end">TOTAL MARTEY (DEPOSIT):</td>
+                            <td class="text-end tnum" style="color:var(--kpi-martey); font-size:15px;">Rs @Model.TotalMarteyAmount.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 6: FARMER PAYABLES & SUPPLIER RECEIVABLES (TODAY'S BILLS ONLY)        -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-parties">
+    
+    <!-- 1. Farmer / Boat Payables Table -->
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-farmer);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7V8Z"/></svg>
+                <span>Today's Farmer Catch Bill Payables (Net Payable from Today's Bills)</span>
+                <span class="tab-badge" style="background:var(--kpi-farmer); color:#fff;">Rs @Model.TotalFarmerPayableAmount.ToString("N0")</span>
+            </h4>
+            <input type="text" id="searchFarmersTable" class="table-search-input" placeholder="Search farmer, boat, village..." onkeyup="filterTable('farmerDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="farmerDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Farmer / Boat Name</th>
+                        <th>Village / Jetty</th>
+                        <th>Phone</th>
+                        <th class="text-end">Today Gross Catch</th>
+                        <th class="text-end">Commission &amp; Exp</th>
+                        <th class="text-end">Today Net Payable</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.FarmerPayables.Any())
+                    {
+                        @foreach (var f in Model.FarmerPayables)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--text);">@f.SupplierName</td>
+                                <td style="color:var(--text-dim);">@f.VillageOrJetty</td>
+                                <td class="tnum" style="color:var(--text-dim);">@f.Phone</td>
+                                <td class="text-end tnum" style="color:var(--text); font-weight:600;">Rs @f.PeriodBillsAmount.ToString("N0")</td>
+                                <td class="text-end tnum" style="color:var(--kpi-expense);">Rs @f.PeriodPaidAmount.ToString("N0")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-farmer); font-size:13.5px;">
+                                    Rs @f.CurrentPayableBalance.ToString("N0")
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-danger" style="font-size:11px;">
+                                        Today's Bill
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="7" class="text-center" style="padding:25px; color:var(--text-faint);">No farmer bills recorded for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.FarmerPayables.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="3" class="text-end">TOTAL FARMER NET PAYABLE (TODAY):</td>
+                            <td class="text-end tnum">Rs @Model.FarmerPayables.Sum(f => f.PeriodBillsAmount).ToString("N0")</td>
+                            <td class="text-end tnum" style="color:var(--kpi-expense);">Rs @Model.FarmerPayables.Sum(f => f.PeriodPaidAmount).ToString("N0")</td>
+                            <td class="text-end tnum" style="color:var(--kpi-farmer); font-size:14.5px;">Rs @Model.TotalFarmerPayableAmount.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. Customer / Buyer Receivables Table -->
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-buyer);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                <span>Today's Buyer Catch Bill Receivables (Billed Amount from Today's Bills)</span>
+                <span class="tab-badge" style="background:var(--kpi-buyer); color:#000;">Rs @Model.TotalSupplierReceivableAmount.ToString("N0")</span>
+            </h4>
+            <input type="text" id="searchBuyersTable" class="table-search-input" placeholder="Search buyer, customer..." onkeyup="filterTable('buyerDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="buyerDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Buyer / Customer Name</th>
+                        <th>Type</th>
+                        <th>City / Area</th>
+                        <th>Phone</th>
+                        <th class="text-end">Today Billed Receivable</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.SupplierReceivables.Any())
+                    {
+                        @foreach (var b in Model.SupplierReceivables)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--text);">@b.PartyName</td>
+                                <td style="color:var(--text-dim);"><span class="badge bg-dark">@b.PartyType</span></td>
+                                <td style="color:var(--text-dim);">@b.CityOrVillage</td>
+                                <td class="tnum" style="color:var(--text-dim);">@b.Phone</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-buyer); font-size:13.5px;">
+                                    Rs @b.CurrentReceivableBalance.ToString("N0")
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-success" style="font-size:11px;">
+                                        Today's Bill
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="6" class="text-center" style="padding:25px; color:var(--text-faint);">No buyer bills recorded for this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.SupplierReceivables.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="4" class="text-end">TOTAL BUYER RECEIVABLE (TODAY):</td>
+                            <td class="text-end tnum" style="color:var(--kpi-buyer); font-size:14.5px;">Rs @Model.TotalSupplierReceivableAmount.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 7: ICE & LABOUR BREAKDOWN                                             -->
+<!-- ========================================================================= -->
+<div class="summary-tab-pane" id="tab-icelabour">
+    <div class="summary-table-card">
+        <div class="summary-table-head">
+            <h4 class="summary-table-title" style="color:var(--kpi-ice);">
+                <span>Boat-Wise Ice (Loading) &amp; Labour Expenses Breakdown</span>
+                <span class="tab-badge" style="background:var(--kpi-ice); color:#000;">@Model.IceLabourBreakdown.Count bills</span>
+            </h4>
+            <input type="text" id="searchIceLabourTable" class="table-search-input" placeholder="Search bill, boat..." onkeyup="filterTable('iceLabourDataTable', this.value)" />
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0" id="iceLabourDataTable" style="font-size:12.5px;">
+                <thead>
+                    <tr>
+                        <th>Bill #</th>
+                        <th>Date</th>
+                        <th>Boat / Farmer</th>
+                        <th class="text-center">Lots</th>
+                        <th class="text-end">Catch Gross</th>
+                        <th class="text-end" style="color:var(--kpi-ice);">Ice (Loading)</th>
+                        <th class="text-end" style="color:var(--kpi-labour);">Labour</th>
+                        <th class="text-end">Other Exp</th>
+                        <th class="text-end">Total Exp</th>
+                        <th class="text-end">Net Payable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.IceLabourBreakdown.Any())
+                    {
+                        @foreach (var itm in Model.IceLabourBreakdown)
+                        {
+                            <tr>
+                                <td style="font-weight:700; color:var(--teal-text);">@itm.BillNo</td>
+                                <td class="tnum" style="white-space:nowrap;">@itm.BillDate</td>
+                                <td style="font-weight:600; color:var(--text);">@itm.SupplierName</td>
+                                <td class="text-center tnum">@itm.LotsCount</td>
+                                <td class="text-end tnum" style="color:var(--text);">Rs @itm.GrossCatchAmount.ToString("N0")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-ice);">Rs @itm.IceExpense.ToString("N0")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-labour);">Rs @itm.LabourExpense.ToString("N0")</td>
+                                <td class="text-end tnum" style="color:var(--text-dim);">Rs @itm.OtherExpense.ToString("N0")</td>
+                                <td class="text-end tnum" style="font-weight:600; color:var(--kpi-expense);">Rs @itm.TotalExpense.ToString("N0")</td>
+                                <td class="text-end tnum" style="font-weight:700; color:var(--kpi-farmer);">Rs @itm.NetPayable.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr><td colspan="10" class="text-center" style="padding:30px; color:var(--text-faint);">No catch bills found in this period</td></tr>
+                    }
+                </tbody>
+                @if (Model.IceLabourBreakdown.Any())
+                {
+                    <tfoot>
+                        <tr style="background:var(--surface2); font-weight:700;">
+                            <td colspan="5" class="text-end">TOTALS:</td>
+                            <td class="text-end tnum" style="color:var(--kpi-ice); font-size:14px;">Rs @Model.TotalIceExpenseAmount.ToString("N0")</td>
+                            <td class="text-end tnum" style="color:var(--kpi-labour); font-size:14px;">Rs @Model.TotalLabourExpenseAmount.ToString("N0")</td>
+                            <td></td>
+                            <td class="text-end tnum" style="color:var(--kpi-expense);">Rs @Model.IceLabourBreakdown.Sum(x => x.TotalExpense).ToString("N0")</td>
+                            <td class="text-end tnum" style="color:var(--kpi-farmer); font-size:14px;">Rs @Model.TodayFarmerBillsPayable.ToString("N0")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function switchSummaryTab(tabId) {
+        document.querySelectorAll('.summary-tab-pane').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.summary-tab-btn').forEach(el => el.classList.remove('active'));
+
+        const targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add('active');
+
+        const tabBtn = document.getElementById('btn-' + tabId);
+        if (tabBtn) tabBtn.classList.add('active');
+    }
+
+    function filterTable(tableId, query) {
+        const q = (query || '').toLowerCase().trim();
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(q) ? '' : 'none';
+        });
+    }
+</script>
+}

@@ -1,0 +1,318 @@
+@model ERP_Core.Dtos.BankMasterViewModel
+
+@{
+    ViewData["Title"] = "Bank Master";
+    ViewData["SubTitle"] = "Bank accounts, cash counters aur payment channels manage karein.";
+}
+
+<!-- Top Toolbar: Search & Add Button -->
+<div class="toolbar">
+    <div class="search">
+        <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="bankSearchInput" placeholder="Bank ya cash ledger dhoondein..." onkeyup="filterBankTable()" />
+    </div>
+
+    <button type="button" class="btn brass" onclick="openAddBankModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add Bank / Cash
+    </button>
+</div>
+
+<!-- Alerts -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Add / Edit Bank & Cash Collapsible Form Card -->
+<div class="form-card" id="bankForm" style="display:none;margin-bottom:20px;">
+    <h4 id="bankFormTitle" style="color:var(--brass);margin-bottom:14px;font-size:14px;font-weight:600;">Add Bank / Cash</h4>
+    <form asp-controller="BankMaster" asp-action="Save" method="post" id="mainBankForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" id="bankFormId" value="0" />
+
+        <div class="form-grid">
+            <div class="field">
+                <label>Bank / Channel Name <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="BankName" id="bankName" placeholder="e.g. Commercial Bank of Dubai / Main Cash" required />
+            </div>
+
+            <div class="field">
+                <label>Parent Bank</label>
+                <select name="ParentBankId" id="parentBankId" class="searchable-select">
+                    <option value="">None (Primary Bank)</option>
+                    @foreach (var pb in Model.AvailableParentBanks)
+                    {
+                        <option value="@pb.Id">@pb.BankName</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Account Number</label>
+                <input type="text" name="AccountNo" id="accountNo" placeholder="1234567890123" />
+            </div>
+
+            <div class="field">
+                <label>Account Title</label>
+                <input type="text" name="AccountName" id="accountName" placeholder="Karwan Sports Club / Branch Cash" />
+            </div>
+
+            <div class="field">
+                <label>IBAN No</label>
+                <input type="text" name="IbanNo" id="ibanNo" placeholder="AE760230000012345678901 / PK..." />
+            </div>
+
+            <div class="field">
+                <label>Swift Code</label>
+                <input type="text" name="SwiftCode" id="swiftCode" placeholder="CBDUAEAD" />
+            </div>
+
+            <div class="field">
+                <label>Chart of Accounts Code <span style="color:var(--red-text);">*</span></label>
+                <select name="ChartOfAccountId" id="chartOfAccountId" class="searchable-select" required>
+                    <option value="">Select COA Posting Account</option>
+                    @foreach (var acc in Model.AvailableAccounts)
+                    {
+                        <option value="@acc.Id">@acc.DisplayText</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Account Type</label>
+                <select name="AccountType" id="accountTypeSelect" class="searchable-select" onchange="handleAccountTypeChange()">
+                    <option value="Bank">Bank Account</option>
+                    <option value="Cash">Cash Channel / Counter</option>
+                </select>
+                <!-- Hidden inputs bound to model -->
+                <input type="hidden" name="IsBank" id="isBankInput" value="true" />
+                <input type="hidden" name="IsCash" id="isCashInput" value="false" />
+            </div>
+
+            <div class="field">
+                <label>Status</label>
+                <select name="Active" id="bankStatus" class="searchable-select">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="btn ghost" onclick="cancelBankForm()">Cancel</button>
+            <button type="submit" class="btn brass" id="btnSaveBank">Save Bank</button>
+        </div>
+    </form>
+</div>
+
+<!-- Hidden Delete Form -->
+<form id="deleteBankForm" asp-controller="BankMaster" asp-action="Delete" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<!-- ========================================================================= -->
+<!-- TABLE VIEW CONTAINER                                                      -->
+<!-- ========================================================================= -->
+<div class="card" id="bankTableCard">
+    <div class="table-wrap">
+        <table id="bankTable" class="dynamic-table">
+            <thead>
+                <tr>
+                    <th>Bank Name</th>
+                    <th>Parent Bank</th>
+                    <th>Account Title</th>
+                    <th>Account No.</th>
+                    <th>IBAN / Swift</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                </tr>
+                <tr class="dt-col-filter">
+                    <th><input type="text" placeholder="Filter Bank..." /></th>
+                    <th><input type="text" placeholder="Filter Parent..." /></th>
+                    <th><input type="text" placeholder="Filter Title..." /></th>
+                    <th><input type="text" placeholder="Filter Acc No..." /></th>
+                    <th><input type="text" placeholder="Filter IBAN/Swift..." /></th>
+                    <th>
+                        <select>
+                            <option value="">All</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </th>
+                    <th>
+                        <select>
+                            <option value="">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Banks)
+                {
+                    <tr>
+                        <td>
+                            <strong>@item.BankName</strong>
+                            @if (!string.IsNullOrEmpty(item.AccountCode))
+                            {
+                                <div style="font-size:11px;color:var(--teal-text);margin-top:2px;">COA: @item.AccountCode</div>
+                            }
+                        </td>
+                        <td>@(item.ParentBankName == "None" || item.ParentBankId == 0 ? "-" : item.ParentBankName)</td>
+                        <td>@(string.IsNullOrEmpty(item.AccountName) ? "-" : item.AccountName)</td>
+                        <td class="tnum">@(string.IsNullOrEmpty(item.AccountNo) ? "-" : item.AccountNo)</td>
+                        <td style="font-size:12px;">
+                            @if (!string.IsNullOrEmpty(item.IbanNo))
+                            {
+                                <div>@item.IbanNo</div>
+                            }
+                            @if (!string.IsNullOrEmpty(item.SwiftCode))
+                            {
+                                <div style="color:var(--text-dim);font-size:11px;">Swift: @item.SwiftCode</div>
+                            }
+                            @if (string.IsNullOrEmpty(item.IbanNo) && string.IsNullOrEmpty(item.SwiftCode))
+                            {
+                                <span>-</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.IsCash)
+                            {
+                                <span class="badge badge-brass">Cash</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-teal">Bank</span>
+                            }
+                        </td>
+                        <td>
+                            <span class="badge @(item.Active ? "badge-green" : "badge-red")">
+                                @(item.Active ? "Active" : "Inactive")
+                            </span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div class="row-actions" style="justify-content:center;">
+                                @if (item.ChartOfAccountId.HasValue && item.ChartOfAccountId.Value > 0)
+                                {
+                                    <a asp-controller="AccountLedger" asp-action="Index" asp-route-accountId="@item.ChartOfAccountId" title="View Ledger">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+                                    </a>
+                                }
+                                <button type="button" title="Edit Bank" onclick="editBank(@item.Id, '@item.BankName.Replace("'", "\\'")', @item.ParentBankId, '@item.AccountNo.Replace("'", "\\'")', '@item.AccountName.Replace("'", "\\'")', '@item.IbanNo.Replace("'", "\\'")', '@item.SwiftCode.Replace("'", "\\'")', '@item.ChartOfAccountId', @(item.IsCash ? "true" : "false"), @(item.Active ? "true" : "false"))">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button type="button" title="Delete Bank" style="color:var(--red-text);" onclick="deleteBank(@item.Id, '@item.BankName.Replace("'", "\\'")')">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterBankTable() {
+            const input = document.getElementById('bankSearchInput');
+            const filter = input.value.toLowerCase();
+            const rows = document.querySelectorAll('#bankTable tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+
+        function handleAccountTypeChange() {
+            const val = document.getElementById('accountTypeSelect').value;
+            if (val === 'Cash') {
+                document.getElementById('isBankInput').value = 'false';
+                document.getElementById('isCashInput').value = 'true';
+            } else {
+                document.getElementById('isBankInput').value = 'true';
+                document.getElementById('isCashInput').value = 'false';
+            }
+        }
+
+        function openAddBankModal() {
+            document.getElementById('bankFormId').value = '0';
+            document.getElementById('bankName').value = '';
+            document.getElementById('parentBankId').value = '';
+            document.getElementById('accountNo').value = '';
+            document.getElementById('accountName').value = '';
+            document.getElementById('ibanNo').value = '';
+            document.getElementById('swiftCode').value = '';
+            document.getElementById('chartOfAccountId').value = '';
+            document.getElementById('accountTypeSelect').value = 'Bank';
+            document.getElementById('isBankInput').value = 'true';
+            document.getElementById('isCashInput').value = 'false';
+            document.getElementById('bankStatus').value = 'true';
+
+            document.getElementById('bankFormTitle').innerText = 'Add Bank / Cash';
+            document.getElementById('btnSaveBank').innerText = 'Save Bank';
+
+            const form = document.getElementById('bankForm');
+            form.style.display = 'block';
+            window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+        }
+
+        function editBank(id, name, parentId, accNo, accName, iban, swift, coaId, isCash, active) {
+            document.getElementById('bankFormId').value = id;
+            document.getElementById('bankName').value = name || '';
+            document.getElementById('parentBankId').value = (parentId && parentId > 0) ? parentId : '';
+            document.getElementById('accountNo').value = (accNo === '-' ? '' : accNo);
+            document.getElementById('accountName').value = (accName === '-' ? '' : accName);
+            document.getElementById('ibanNo').value = (iban === '-' ? '' : iban);
+            document.getElementById('swiftCode').value = (swift === '-' ? '' : swift);
+            document.getElementById('chartOfAccountId').value = coaId || '';
+
+            if (isCash) {
+                document.getElementById('accountTypeSelect').value = 'Cash';
+                document.getElementById('isBankInput').value = 'false';
+                document.getElementById('isCashInput').value = 'true';
+            } else {
+                document.getElementById('accountTypeSelect').value = 'Bank';
+                document.getElementById('isBankInput').value = 'true';
+                document.getElementById('isCashInput').value = 'false';
+            }
+
+            document.getElementById('bankStatus').value = active ? 'true' : 'false';
+
+            document.getElementById('bankFormTitle').innerText = 'Edit Bank / Cash';
+            document.getElementById('btnSaveBank').innerText = 'Update Bank';
+
+            const form = document.getElementById('bankForm');
+            form.style.display = 'block';
+            window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+        }
+
+        function cancelBankForm() {
+            document.getElementById('bankForm').style.display = 'none';
+        }
+
+        function deleteBank(id, name) {
+            if (confirm(`Are you sure you want to delete bank / cash '${name}'?`)) {
+                const form = document.getElementById('deleteBankForm');
+                form.action = '@Url.Action("Delete", "BankMaster")/' + id;
+                form.submit();
+            }
+        }
+    </script>
+}

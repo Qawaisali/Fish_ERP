@@ -1,0 +1,350 @@
+@model ERP_Core.Dtos.NatureofAccountViewModel
+
+@{
+    ViewData["Title"] = "Nature of Account Master";
+    ViewData["SubTitle"] = "Debtors (D) aur Creditors (C) ki classification aur account nature manage karein.";
+}
+
+<!-- Summary Statistics KPI Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL ACCOUNTS NATURE</div>
+        <div class="val tnum">@Model.TotalCount</div>
+        <div class="sub">Registered classifications</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">DEBTORS (D)</div>
+        <div class="val tnum" style="color:var(--green-text);">@Model.DebtorsCount</div>
+        <div class="sub">Receivable nature accounts</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">CREDITORS (C)</div>
+        <div class="val tnum" style="color:var(--red-text);">@Model.CreditorsCount</div>
+        <div class="sub">Payable nature accounts</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">UNSPECIFIED / OTHER</div>
+        <div class="val tnum" style="color:var(--brass-text);">@Model.UnspecifiedCount</div>
+        <div class="sub">General ledger nature</div>
+    </div>
+</div>
+
+<!-- Toolbar: Search, Filters & Action Button -->
+<div class="toolbar" style="margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;flex:1;max-width:650px;flex-wrap:wrap;">
+        <div class="search" style="flex:1;min-width:220px;">
+            <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="natureSearchInput" placeholder="Search by account name or type (D / C)..." onkeyup="filterNatureTable()" />
+        </div>
+        <select id="typeFilter" class="form-select" onchange="filterNatureTable()" style="width:180px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Classifications</option>
+            <option value="D">Debtors (D)</option>
+            <option value="C">Creditors (C)</option>
+            <option value="OTHER">Unspecified / Other</option>
+        </select>
+    </div>
+    <button type="button" class="btn brass" id="btnToggleForm" onclick="toggleNatureForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="btnAddBtnText">Add Nature of Account</span>
+    </button>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Add / Edit Collapsible Form Card -->
+<div class="form-card" id="natureFormCard" style="display:none;margin-bottom:24px;border:1px solid var(--brass);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div>
+            <h3 id="formTitle" style="font-size:16px;font-weight:600;margin:0;color:var(--brass-text);">Add Nature of Account</h3>
+            <p id="formSubTitle" style="font-size:12px;color:var(--text-dim);margin:2px 0 0 0;">Debtor (D) ya Creditor (C) classification define karein.</p>
+        </div>
+        <button type="button" class="btn ghost" onclick="resetNatureForm()" style="padding:6px 12px;font-size:12.5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Cancel / Close
+        </button>
+    </div>
+
+    <form id="natureForm" asp-controller="NatureofAccount" asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" id="formId" value="0" />
+
+        <div class="form-grid c2">
+            <div class="field">
+                <label>Account Name <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="AccountName" id="formAccountName" placeholder="e.g. Sundry Debtors, Trade Creditors, Cash" maxlength="100" required />
+            </div>
+
+            <div class="field">
+                <label>Debtor Or Creditor (D / C)</label>
+                <div style="display:flex;gap:12px;align-items:center;margin-top:6px;">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:normal;color:var(--text);">
+                        <input type="radio" name="DebtorOrCreditor" id="radioDebtor" value="D" style="accent-color:var(--green-text);" />
+                        <span class="badge" style="background:var(--green-dim);color:var(--green-text);font-weight:600;padding:3px 8px;border-radius:6px;">D — Debtor (Receivable)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:normal;color:var(--text);">
+                        <input type="radio" name="DebtorOrCreditor" id="radioCreditor" value="C" style="accent-color:var(--red-text);" />
+                        <span class="badge" style="background:var(--red-dim);color:var(--red-text);font-weight:600;padding:3px 8px;border-radius:6px;">C — Creditor (Payable)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:normal;color:var(--text);">
+                        <input type="radio" name="DebtorOrCreditor" id="radioNone" value="" checked style="accent-color:var(--brass-text);" />
+                        <span class="badge" style="background:var(--surface3);color:var(--text-dim);font-weight:500;padding:3px 8px;border-radius:6px;">None / Other</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn ghost" onclick="resetNatureForm()">Cancel</button>
+            <button type="submit" class="btn brass" id="btnSubmitForm">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="btnSubmitText">Save Account Nature</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Data Table Card -->
+<div class="table-card">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h3 style="margin:0;font-size:15px;font-weight:600;">Nature of Accounts Directory</h3>
+            <span style="font-size:12px;color:var(--text-dim);">Table: <code style="color:var(--brass-text);">dbo.NatureofAccount</code></span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);">
+            Showing <strong id="visibleCount">@Model.Accounts.Count</strong> of <strong>@Model.TotalCount</strong> entries
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table" id="natureDataTable">
+            <thead>
+                <tr>
+                    <th style="width:70px;"># ID</th>
+                    <th>ACCOUNT NAME</th>
+                    <th style="width:200px;">CLASSIFICATION</th>
+                    <th style="width:120px;text-align:right;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Accounts != null && Model.Accounts.Any())
+                {
+                    @foreach (var item in Model.Accounts)
+                    {
+                        var typeVal = item.DebtorOrCreditor?.Trim().ToUpper() ?? "";
+                        var rowCategory = typeVal == "D" ? "D" : (typeVal == "C" ? "C" : "OTHER");
+
+                        <tr data-id="@item.Id" data-name="@item.AccountName" data-type="@rowCategory">
+                            <td class="tnum" style="color:var(--text-dim);font-weight:600;">
+                                #@item.Id
+                            </td>
+                            <td>
+                                <strong style="color:var(--text);font-size:13.5px;">@item.AccountName</strong>
+                            </td>
+                            <td>
+                                @if (typeVal == "D")
+                                {
+                                    <span class="badge" style="background:var(--green-dim);color:var(--green-text);font-weight:600;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;">
+                                        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green-text);"></span>
+                                        Debtor (D)
+                                    </span>
+                                }
+                                else if (typeVal == "C")
+                                {
+                                    <span class="badge" style="background:var(--red-dim);color:var(--red-text);font-weight:600;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;">
+                                        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red-text);"></span>
+                                        Creditor (C)
+                                    </span>
+                                }
+                                else if (!string.IsNullOrEmpty(typeVal))
+                                {
+                                    <span class="badge" style="background:var(--surface3);color:var(--brass-text);font-weight:600;padding:4px 10px;border-radius:6px;">
+                                        @typeVal
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;">—</span>
+                                }
+                            </td>
+                            <td style="text-align:right;white-space:nowrap;">
+                                <div style="display:inline-flex;gap:6px;">
+                                    <button type="button" class="btn ghost icon-only" title="Edit" onclick="editNatureAccount(@item.Id)" style="padding:5px 8px;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </button>
+                                    <button type="button" class="btn ghost icon-only" title="Delete" onclick="confirmDelete(@item.Id, '@Html.Raw(item.AccountName?.Replace("'", "\\'"))')" style="padding:5px 8px;color:var(--red-text);">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="noDataRow">
+                        <td colspan="4" style="text-align:center;padding:36px 20px;color:var(--text-dim);">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px;opacity:0.6;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <p style="margin:0;font-size:14px;">No Nature of Account records found.</p>
+                            <button type="button" class="btn brass" onclick="toggleNatureForm()" style="margin-top:12px;display:inline-flex;">Create First Record</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;max-width:440px;width:90%;padding:24px;box-shadow:0 12px 36px rgba(0,0,0,0.4);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--red-dim);display:flex;align-items:center;justify-content:center;color:var(--red-text);flex-shrink:0;">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+            <div>
+                <h4 style="margin:0;font-size:16px;font-weight:600;color:var(--text);">Delete Account Nature?</h4>
+                <p style="margin:2px 0 0 0;font-size:12px;color:var(--text-dim);">This action cannot be undone.</p>
+            </div>
+        </div>
+
+        <p style="font-size:13.5px;color:var(--text);margin-bottom:20px;">
+            Are you sure you want to delete <strong id="deleteAccountName" style="color:var(--brass-text);"></strong>?
+        </p>
+
+        <form id="deleteForm" asp-controller="NatureofAccount" asp-action="Delete" method="post" style="display:flex;gap:10px;justify-content:flex-end;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="deleteId" value="0" />
+            <button type="button" class="btn ghost" onclick="closeDeleteModal()">Cancel</button>
+            <button type="submit" class="btn" style="background:var(--red-text);color:#fff;border:none;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Yes, Delete
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function toggleNatureForm() {
+        var card = document.getElementById('natureFormCard');
+        if (card.style.display === 'none' || card.style.display === '') {
+            card.style.display = 'block';
+            document.getElementById('formAccountName').focus();
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            resetNatureForm();
+        }
+    }
+
+    function resetNatureForm() {
+        document.getElementById('natureForm').reset();
+        document.getElementById('formId').value = '0';
+        document.getElementById('formTitle').innerText = 'Add Nature of Account';
+        document.getElementById('formSubTitle').innerText = 'Debtor (D) ya Creditor (C) classification define karein.';
+        document.getElementById('btnSubmitText').innerText = 'Save Account Nature';
+        document.getElementById('btnAddBtnText').innerText = 'Add Nature of Account';
+        document.getElementById('radioNone').checked = true;
+        document.getElementById('natureFormCard').style.display = 'none';
+    }
+
+    function editNatureAccount(id) {
+        fetch('@Url.Action("GetById", "NatureofAccount")/' + id)
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.data) {
+                    var card = document.getElementById('natureFormCard');
+                    card.style.display = 'block';
+
+                    document.getElementById('formId').value = res.data.id;
+                    document.getElementById('formAccountName').value = res.data.accountName;
+
+                    var type = (res.data.debtorOrCreditor || '').toUpperCase();
+                    if (type === 'D') {
+                        document.getElementById('radioDebtor').checked = true;
+                    } else if (type === 'C') {
+                        document.getElementById('radioCreditor').checked = true;
+                    } else {
+                        document.getElementById('radioNone').checked = true;
+                    }
+
+                    document.getElementById('formTitle').innerText = 'Edit Nature of Account (#' + res.data.id + ')';
+                    document.getElementById('formSubTitle').innerText = 'Update classification or name for this account nature.';
+                    document.getElementById('btnSubmitText').innerText = 'Update Changes';
+                    document.getElementById('btnAddBtnText').innerText = 'Editing #' + res.data.id;
+
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.getElementById('formAccountName').focus();
+                } else {
+                    alert(res.message || 'Error loading account nature details.');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Failed to connect to server.');
+            });
+    }
+
+    function confirmDelete(id, name) {
+        document.getElementById('deleteId').value = id;
+        document.getElementById('deleteAccountName').innerText = name || ('#' + id);
+        var modal = document.getElementById('deleteModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        var modal = document.getElementById('deleteModal');
+        modal.style.display = 'none';
+    }
+
+    function filterNatureTable() {
+        var searchVal = (document.getElementById('natureSearchInput').value || '').toLowerCase().trim();
+        var typeVal = (document.getElementById('typeFilter').value || '').toUpperCase().trim();
+
+        var rows = document.querySelectorAll('#natureDataTable tbody tr[data-id]');
+        var visibleCount = 0;
+
+        rows.forEach(function(row) {
+            var name = (row.getAttribute('data-name') || '').toLowerCase();
+            var type = (row.getAttribute('data-type') || '').toUpperCase();
+
+            var matchesSearch = !searchVal || name.includes(searchVal) || type.includes(searchVal);
+            var matchesType = !typeVal || (type === typeVal);
+
+            if (matchesSearch && matchesType) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        var countElem = document.getElementById('visibleCount');
+        if (countElem) {
+            countElem.innerText = visibleCount;
+        }
+    }
+
+    // Close modal if clicked outside
+    window.onclick = function(event) {
+        var modal = document.getElementById('deleteModal');
+        if (event.target === modal) {
+            closeDeleteModal();
+        }
+    };
+</script>
+}

@@ -1,0 +1,615 @@
+@model ERP_Core.Dtos.FishMasterViewModel
+
+@{
+    ViewData["Title"] = "Fish Master";
+    ViewData["SubTitle"] = "Machli ki varieties, codes, types aur product categories manage karein.";
+}
+
+@section Styles {
+    <style>
+        /* High-Visibility Status Toggle Button in Table */
+        .status-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px 5px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .status-toggle-btn.active {
+            background: rgba(79, 174, 122, 0.16);
+            border-color: rgba(79, 174, 122, 0.45);
+            color: #6FE0A0;
+        }
+
+        .status-toggle-btn.active:hover {
+            background: rgba(79, 174, 122, 0.28);
+            border-color: #6FE0A0;
+            box-shadow: 0 0 10px rgba(111, 224, 160, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .status-toggle-btn.inactive {
+            background: rgba(217, 88, 75, 0.16);
+            border-color: rgba(217, 88, 75, 0.45);
+            color: #FF8A7A;
+        }
+
+        .status-toggle-btn.inactive:hover {
+            background: rgba(217, 88, 75, 0.28);
+            border-color: #FF8A7A;
+            box-shadow: 0 0 10px rgba(255, 138, 122, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .switch-track {
+            width: 32px;
+            height: 18px;
+            border-radius: 12px;
+            position: relative;
+            display: inline-block;
+            transition: background-color 0.25s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .status-toggle-btn.active .switch-track {
+            background: #2EA063;
+        }
+
+        .status-toggle-btn.inactive .switch-track {
+            background: #4A2825;
+        }
+
+        .switch-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-toggle-btn.active .switch-thumb {
+            transform: translateX(14px);
+        }
+
+        .status-toggle-btn.inactive .switch-thumb {
+            transform: translateX(0);
+        }
+
+        /* Form Switch Container */
+        .form-switch-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+
+        .form-switch-box:hover {
+            border-color: var(--border-soft);
+        }
+
+        .form-switch-ui {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .form-switch-ui input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .form-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #364943;
+            transition: 0.3s;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        .form-switch-ui input:checked + .form-slider {
+            background-color: var(--green);
+        }
+
+        .form-switch-ui input:checked + .form-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+}
+
+<!-- Summary Statistics KPI Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL VARIETIES</div>
+        <div class="val tnum">@Model.TotalFish</div>
+        <div class="sub">Registered fish &amp; seafood items</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">ACTIVE VARIETIES</div>
+        <div class="val tnum" style="color:var(--green-text);">@Model.ActiveFish</div>
+        <div class="sub">Available in daily billing &amp; lots</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">PRODUCT CATEGORIES</div>
+        <div class="val tnum" style="color:var(--brass-text);">@Model.AvailableCategories.Count</div>
+        <div class="sub">Linked accounting categories</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">PRIMARY UNIT</div>
+        <div class="val tnum" style="color:var(--teal-text);font-size:20px;">Kg / Maund</div>
+        <div class="sub">Standard auction measurement</div>
+    </div>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Toolbar: Search, Filters & Action Button -->
+<div class="toolbar" style="margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;flex:1;max-width:850px;flex-wrap:wrap;">
+        <div class="search" style="flex:1;min-width:200px;">
+            <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="fishSearchInput" placeholder="Search by code, fish name, category, or type..." onkeyup="filterFishTable()" />
+        </div>
+
+        <select id="categoryFilter" class="form-select" onchange="filterFishTable()" style="width:180px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Categories</option>
+            @foreach (var c in Model.AvailableCategories)
+            {
+                <option value="@c.Id">@c.DisplayName</option>
+            }
+        </select>
+
+        <select id="typeFilter" class="form-select" onchange="filterFishTable()" style="width:150px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Fish Types</option>
+            @foreach (var t in Model.AvailableTypes)
+            {
+                <option value="@t">@t</option>
+            }
+        </select>
+
+        <select id="statusFilter" class="form-select" onchange="filterFishTable()" style="width:130px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+        </select>
+    </div>
+
+    <button type="button" class="btn brass" id="btnToggleFishForm" onclick="toggleFishForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="btnAddBtnText">Add Fish Variety</span>
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- ADD / EDIT FISH FORM CARD                                                 -->
+<!-- ========================================================================= -->
+<div class="form-card" id="fishFormCard" style="display:none;margin-bottom:24px;border:1px solid var(--brass);background:var(--surface);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,163,89,0.15);display:flex;align-items:center;justify-content:center;color:var(--brass);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c4-5 11-7 16-4.5C18 7.5 17 12 18 16.5 13 19 6 17 2 12Z"/><path d="M18 7.5 22 5l-1 7 1 7-4-2.5"/><circle cx="7" cy="11.5" r=".6" fill="currentColor"/></svg>
+            </div>
+            <div>
+                <h3 id="formTitle" style="font-size:16px;font-weight:600;margin:0;color:var(--brass-text);">Add New Fish Variety</h3>
+                <p id="formSubTitle" style="font-size:12px;color:var(--text-dim);margin:2px 0 0 0;">Register seafood and fish species and link with accounting product categories.</p>
+            </div>
+        </div>
+        <button type="button" class="btn ghost" onclick="resetFishForm()" style="padding:6px 12px;font-size:12.5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Cancel / Close
+        </button>
+    </div>
+
+    <form id="fishForm" asp-controller="FishMaster" asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" id="formId" value="0" />
+
+        <div class="form-grid c2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <!-- Fish Code -->
+            <div class="field">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Fish Code</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" name="Code" id="formCode" placeholder="e.g. PRO-0001 (Auto-generated)" style="flex:1;" />
+                    <button type="button" class="btn ghost" title="Generate Next Code" onclick="generateNextCode()" style="padding:8px 12px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fish Name -->
+            <div class="field">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Fish Name <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="Name" id="formName" placeholder="e.g. Rohu, White Pomfret, Surmai, Jumbo Prawn" required />
+            </div>
+
+            <!-- Product Category -->
+            <div class="field">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Product Category</label>
+                <select name="CategoryId" id="formCategoryId" class="form-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+                    <option value="">-- None / Select Product Category --</option>
+                    @foreach (var cat in Model.AvailableCategories)
+                    {
+                        <option value="@cat.Id">@cat.DisplayName</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Fish Type -->
+            <div class="field">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Fish Type / Variety <span style="color:var(--red-text);">*</span></label>
+                <select name="Type" id="formType" required>
+                    <option value="Sea Fish">Sea Fish (Samundari)</option>
+                    <option value="River Fish">River Fish (Daryai / Meetha Pani)</option>
+                    <option value="Freshwater">Freshwater Fish (Farm)</option>
+                    <option value="Shrimp / Prawn">Shrimp / Prawn (Jheenga)</option>
+                    <option value="Crab / Lobster">Crab / Lobster (Kekra / Lobster)</option>
+                    <option value="Shellfish">Shellfish / Squid</option>
+                    <option value="Other">Other Seafood</option>
+                </select>
+            </div>
+
+            <!-- Unit of Measure -->
+            <div class="field">
+                <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Unit of Measure <span style="color:var(--red-text);">*</span></label>
+                <select name="Unit" id="formUnit" required>
+                    <option value="Kg">Kilogram (Kg)</option>
+                    <option value="Maund">Maund (Mann - 40 Kg)</option>
+                    <option value="Crate">Crate (Peti / Box)</option>
+                    <option value="Piece">Piece (Per Dana)</option>
+                    <option value="Box">Carton / Box</option>
+                </select>
+            </div>
+
+            <!-- Active Status Switch -->
+            <div class="field" style="display:flex;align-items:flex-end;">
+                <div class="form-switch-box" style="width:100%;">
+                    <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text);">Active Status</div>
+                        <div style="font-size:11.5px;color:var(--text-dim);">Available for selection in lots</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span id="formActiveStatusText" style="font-size:12.5px;font-weight:600;color:var(--green-text);">Active</span>
+                        <label class="form-switch-ui">
+                            <input type="hidden" name="Active" value="false" />
+                            <input type="checkbox" name="Active" id="formActive" value="true" checked onchange="handleFishStatusToggle(this)" />
+                            <span class="form-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border);padding-top:14px;">
+            <button type="button" class="btn ghost" onclick="resetFishForm()">Reset</button>
+            <button type="submit" class="btn brass" id="btnSubmitFish">
+                <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="btnSubmitText">Save Fish Variety</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- FISH VARIETIES DATA TABLE CARD                                           -->
+<!-- ========================================================================= -->
+<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);">
+    <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--brass)" stroke-width="2"><path d="M2 12c4-5 11-7 16-4.5C18 7.5 17 12 18 16.5 13 19 6 17 2 12Z"/><path d="M18 7.5 22 5l-1 7 1 7-4-2.5"/><circle cx="7" cy="11.5" r=".6" fill="currentColor"/></svg>
+            <span style="font-weight:600;font-size:13.5px;color:var(--text);">Registered Fish Varieties</span>
+            <span class="badge gray" style="margin-left:6px;" id="fishRecordBadge">@Model.Fishes.Count records</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);">
+            Click <strong>Status Switch</strong> to toggle, or <strong>Edit</strong> to modify category.
+        </div>
+    </div>
+
+    <div class="table-wrap" style="overflow-x:auto;">
+        <table class="data-table" id="fishTable" style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:100px;">CODE</th>
+                    <th style="min-width:180px;">FISH VARIETY NAME</th>
+                    <th style="min-width:160px;">PRODUCT CATEGORY</th>
+                    <th style="min-width:140px;">TYPE</th>
+                    <th style="width:90px;">UNIT</th>
+                    <th style="width:140px;text-align:center;">STATUS</th>
+                    <th style="width:110px;text-align:right;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Fishes != null && Model.Fishes.Any())
+                {
+                    @foreach (var fish in Model.Fishes)
+                    {
+                        var isActive = fish.Active == true || fish.Active == null;
+
+                        <tr id="row-fish-@fish.Id"
+                            data-id="@fish.Id"
+                            data-code="@(fish.Code?.ToLower() ?? "")"
+                            data-name="@(fish.Name.ToLower())"
+                            data-category-id="@(fish.CategoryId?.ToString() ?? "")"
+                            data-category="@(fish.CategoryName?.ToLower() ?? "")"
+                            data-type="@(fish.Type.ToLower())"
+                            data-unit="@fish.Unit"
+                            data-active="@(isActive ? "active" : "inactive")">
+
+                            <td>
+                                <span class="badge brass" style="font-family:monospace;font-weight:600;">@fish.Code</span>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;color:var(--text);font-size:13.5px;">
+                                    @fish.Name
+                                </div>
+                                @if (fish.CreatedOn.HasValue)
+                                {
+                                    <div style="font-size:11px;color:var(--text-faint);">Registered: @fish.CreatedOn.Value.ToString("dd MMM yyyy")</div>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(fish.CategoryName))
+                                {
+                                    <div style="font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:6px;">
+                                        @if (!string.IsNullOrEmpty(fish.CategoryCode))
+                                        {
+                                            <span class="badge gray" style="font-family:monospace;font-size:11px;">@fish.CategoryCode</span>
+                                        }
+                                        <span>@fish.CategoryName</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;font-style:italic;">None</span>
+                                }
+                            </td>
+                            <td>
+                                @if (fish.Type.Contains("Sea", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-brass" style="font-size:11.5px;">@fish.Type</span>
+                                }
+                                else if (fish.Type.Contains("River", StringComparison.OrdinalIgnoreCase) || fish.Type.Contains("Fresh", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-green" style="font-size:11.5px;">@fish.Type</span>
+                                }
+                                else if (fish.Type.Contains("Shrimp", StringComparison.OrdinalIgnoreCase) || fish.Type.Contains("Prawn", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-teal" style="font-size:11.5px;">@fish.Type</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-gray" style="font-size:11.5px;">@fish.Type</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge badge-gray" style="font-size:11.5px;font-family:monospace;">@fish.Unit</span>
+                            </td>
+                            <!-- Status Toggle (High-Visibility Switch Button) -->
+                            <td style="text-align:center;">
+                                <form asp-controller="FishMaster" asp-action="ToggleStatus" asp-route-id="@fish.Id" method="post" style="display:inline-block;margin:0;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="status-toggle-btn @(isActive ? "active" : "inactive")" title="Click to @(isActive ? "Deactivate" : "Activate") fish">
+                                        <span class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </span>
+                                        <span class="status-label">@(isActive ? "Active" : "Inactive")</span>
+                                    </button>
+                                </form>
+                            </td>
+                            <td style="text-align:right;">
+                                <div style="display:flex;justify-content:flex-end;gap:6px;">
+                                    <!-- Edit Action -->
+                                    <button type="button" title="Edit Fish Variety" class="btn ghost icon-only" style="padding:5px 8px;" onclick="loadFishForEdit(@fish.Id)">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    </button>
+
+                                    <!-- Delete Action -->
+                                    <form asp-controller="FishMaster" asp-action="Delete" asp-route-id="@fish.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete \'@fish.Name\'?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost icon-only" style="padding:5px 8px;color:var(--red-text);" title="Delete Fish">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyTableRow">
+                        <td colspan="7" style="text-align:center;padding:36px 16px;color:var(--text-dim);">
+                            <div style="font-size:15px;font-weight:500;margin-bottom:6px;">No fish varieties found</div>
+                            <div style="font-size:12.5px;color:var(--text-faint);">Click "Add Fish Variety" above to configure your species directory.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function handleFishStatusToggle(chk) {
+        var txt = document.getElementById('formActiveStatusText');
+        if (chk.checked) {
+            txt.textContent = 'Active';
+            txt.style.color = 'var(--green-text)';
+        } else {
+            txt.textContent = 'Inactive';
+            txt.style.color = 'var(--red-text)';
+        }
+    }
+
+    // Live Search and Filtering
+    function filterFishTable() {
+        const searchVal = (document.getElementById('fishSearchInput').value || '').toLowerCase().trim();
+        const categoryVal = (document.getElementById('categoryFilter').value || '').trim();
+        const typeVal = (document.getElementById('typeFilter').value || '').toLowerCase().trim();
+        const statusVal = (document.getElementById('statusFilter').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#fishTable tbody tr[id^="row-fish-"]');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowCode = (row.getAttribute('data-code') || '');
+            const rowName = (row.getAttribute('data-name') || '');
+            const rowCatId = (row.getAttribute('data-category-id') || '');
+            const rowCategory = (row.getAttribute('data-category') || '');
+            const rowType = (row.getAttribute('data-type') || '');
+            const rowStatus = (row.getAttribute('data-active') || '');
+
+            const matchesSearch = !searchVal || 
+                rowCode.includes(searchVal) || 
+                rowName.includes(searchVal) || 
+                rowCategory.includes(searchVal) || 
+                rowType.includes(searchVal);
+
+            const matchesCategory = !categoryVal || rowCatId === categoryVal;
+            const matchesType = !typeVal || rowType === typeVal;
+            const matchesStatus = !statusVal || rowStatus === statusVal;
+
+            if (matchesSearch && matchesCategory && matchesType && matchesStatus) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const badge = document.getElementById('fishRecordBadge');
+        if (badge) {
+            badge.textContent = visibleCount + " records";
+        }
+    }
+
+    // Toggle Form visibility
+    function toggleFishForm() {
+        const formCard = document.getElementById('fishFormCard');
+        if (formCard.style.display === 'none' || formCard.style.display === '') {
+            formCard.style.display = 'block';
+            formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('formName').focus();
+            if (!document.getElementById('formCode').value) {
+                generateNextCode();
+            }
+        } else {
+            resetFishForm();
+        }
+    }
+
+    // Generate Next Code via AJAX
+    function generateNextCode() {
+        fetch('/FishMaster/GetNextCode')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.nextCode) {
+                    document.getElementById('formCode').value = data.nextCode;
+                }
+            })
+            .catch(err => console.error('Error fetching fish code:', err));
+    }
+
+    // Load Fish for Editing
+    function loadFishForEdit(id) {
+        fetch('/FishMaster/GetById/' + id)
+            .then(res => res.json())
+            .then(res => {
+                if (!res.success) {
+                    alert(res.message || 'Fish not found');
+                    return;
+                }
+                const data = res.data;
+                document.getElementById('formId').value = data.id;
+                document.getElementById('formCode').value = data.code || '';
+                document.getElementById('formName').value = data.name || '';
+                document.getElementById('formCategoryId').value = data.categoryId || '';
+                document.getElementById('formType').value = data.type || 'Sea Fish';
+                document.getElementById('formUnit').value = data.unit || 'Kg';
+
+                var chk = document.getElementById('formActive');
+                chk.checked = (data.active === true || data.active === 'true' || data.active === 1);
+                handleFishStatusToggle(chk);
+
+                document.getElementById('formTitle').innerText = 'Edit Fish Variety: ' + data.name;
+                document.getElementById('formSubTitle').innerText = 'Updating configuration for Fish #' + data.id;
+                document.getElementById('btnSubmitText').innerText = 'Update Fish Variety';
+                document.getElementById('btnAddBtnText').innerText = 'Close Form';
+
+                const formCard = document.getElementById('fishFormCard');
+                formCard.style.display = 'block';
+                formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.getElementById('formName').focus();
+            })
+            .catch(err => alert('Failed to load fish details: ' + err));
+    }
+
+    // Reset Form
+    function resetFishForm() {
+        document.getElementById('formId').value = '0';
+        document.getElementById('formCode').value = '';
+        document.getElementById('formName').value = '';
+        document.getElementById('formCategoryId').value = '';
+        document.getElementById('formType').value = 'Sea Fish';
+        document.getElementById('formUnit').value = 'Kg';
+        
+        var chk = document.getElementById('formActive');
+        chk.checked = true;
+        handleFishStatusToggle(chk);
+
+        document.getElementById('formTitle').innerText = 'Add New Fish Variety';
+        document.getElementById('formSubTitle').innerText = 'Register seafood and fish species for mandi lot purchases and sales.';
+        document.getElementById('btnSubmitText').innerText = 'Save Fish Variety';
+        document.getElementById('btnAddBtnText').innerText = 'Add Fish Variety';
+
+        document.getElementById('fishFormCard').style.display = 'none';
+    }
+</script>
+}

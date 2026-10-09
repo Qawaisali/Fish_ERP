@@ -1,0 +1,76 @@
+<!-- ========================================================================== -->
+<!-- UNIVERSAL PRINT PREVIEW MODAL COMPONENT (A4 / Thermal / A5)                -->
+<!-- ========================================================================== -->
+<div class="print-modal" id="printModal">
+    <div>
+        <div class="print-modal-bar no-print">
+            <span class="tag" id="printModalTag">Print Preview</span>
+            <div class="actions">
+                <button type="button" class="btn ghost" onclick="AarhatApp.closePrint()">Close</button>
+                <button type="button" class="btn brass" onclick="AarhatApp.doPrint()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12" />
+                    </svg>
+                    Print
+                </button>
+            </div>
+        </div>
+        <div class="print-paper" id="printModalBody">
+            <!-- Dynamic Document Content Injected Here -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Universal Report & Print Modal Row Hover: Prevent any dark/black hover on paper sheets */
+    #printModal .print-paper table tbody tr:hover,
+    #printModal .print-paper table tbody tr:hover>td,
+    #printModal .pp-table tbody tr:hover,
+    #printModal .pp-table tbody tr:hover>td,
+    #printModal table tbody tr:hover,
+    #printModal table tbody tr:hover>td {
+        background-color: #f7f6f0 !important;
+        color: inherit !important;
+    }
+
+    #printModal .print-paper table tbody tr,
+    #printModal .pp-table tbody tr {
+        transition: background-color 0.12s ease;
+    }
+
+    /* Universal print paper table cell text wrapping protection (overrides global tbody td nowrap) */
+    #printModal .print-paper table tbody td {
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    #printModal .print-paper table tbody td.num-cell,
+    #printModal .print-paper table tfoot td.num-cell {
+        white-space: nowrap !important;
+        text-align: right !important;
+    }
+
+    /* Multi-page reports: Footer totals appear ONLY ONCE at the very end of the table, never repeating on every page */
+    #printModal .print-paper table tfoot,
+    #printModal .print-paper .pp-table tfoot,
+    #printModal table tfoot {
+        display: table-row-group !important;
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    @@media print {
+
+        #printModal .print-paper table tfoot,
+        #printModal .print-paper .pp-table tfoot,
+        #printModal table tfoot,
+        table tfoot,
+        tfoot {
+            display: table-row-group !important;
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+        }
+    }
+</style>
+

@@ -1,0 +1,165 @@
+@model ERP_Core.Dtos.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Sign In — Zahid Hussain & Sons";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zahid Hussain &amp; Sons — Sukkur Fish Harbour</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/aarhat-theme.css" asp-append-version="true" />
+</head>
+<body>
+
+<div class="login-screen-wrap" id="loginScreen">
+    
+    <!-- Left Brand & Hero Art Pane -->
+    <div class="login-brand">
+        <svg class="net-pattern" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#C68A3E" stroke-width="1" fill="none">
+                <circle cx="520" cy="120" r="170" opacity=".14"/>
+                <circle cx="520" cy="120" r="110" opacity=".14"/>
+                <circle cx="60" cy="700" r="150" stroke="#2F9E8C" opacity=".16"/>
+                <circle cx="60" cy="700" r="95" stroke="#2F9E8C" opacity=".16"/>
+            </g>
+        </svg>
+
+        <div>
+            <div class="brand-mark">
+                <span class="fish-mark">
+                    <svg viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 16C10 6 24 4 34 9C34 9 30 16 34 23C24 28 10 26 2 16Z" fill="currentColor" opacity=".9"/>
+                        <path d="M34 9L46 3L42 16L46 29L34 23" fill="currentColor" opacity=".6"/>
+                        <circle cx="12" cy="14" r="1.6" fill="#0A1614"/>
+                    </svg>
+                </span>
+                <div>
+                    <div class="brand-name">ZAHID HUSSAIN <span>&amp; SONS</span></div>
+                    <div class="brand-tag">FISH COMMISSION AGENTS · Sukkur FISH Market</div>
+                </div>
+            </div>
+
+            <div class="login-hero" style="margin-top:80px;">
+                <div class="eyebrow">Aarhat &amp; Mandi Accounts System</div>
+                <h1>Har lot ka hisaab, <br>har bill ka faisla.</h1>
+                <p>Bill, commission, expense aur ledger — sab ek jagah. Customer receivable, supplier payable aur mandi ka rozana kaam ab poori tarah digital.</p>
+            </div>
+
+            <div class="hero-stats">
+                <div><b>1,240+</b><span>Bills processed</span></div>
+                <div><b>86</b><span>Active suppliers</span></div>
+                <div><b>Rs 4.2Cr</b><span>Trade volume / year</span></div>
+            </div>
+        </div>
+
+        <div class="login-foot">© 2026 Zahid Hussain &amp; Sons · Since 30 Years · Sukkur, Fish Market</div>
+    </div>
+
+    <!-- Right Sign-In Panel -->
+    <div class="login-panel">
+        <div class="login-card">
+            
+            <!-- Tab Switcher -->
+            <div class="login-tabs">
+                <button type="button" id="tabOwnerBtn" class="active" onclick="switchLoginTab('owner')">Owner login</button>
+                <button type="button" id="tabStaffBtn" onclick="switchLoginTab('staff')">Staff login</button>
+            </div>
+
+            <!-- Error Notification -->
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div style="background:var(--red-dim);color:var(--red-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <!-- Owner Form -->
+            <form asp-controller="Login" asp-action="QuickLogin" method="post" id="ownerLoginForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="role" value="Owner" />
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                <h2>Owner panel</h2>
+                <div class="sub">Poora business ek nazar mein dekhein.</div>
+                
+                <div class="field">
+                    <label>Username / Email</label>
+                    <input type="text" name="username" placeholder="Username or email" autocomplete="off" required>
+                </div>
+                
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+                
+                <div class="row-between">
+                    <label><input type="checkbox" style="accent-color:var(--brass);"> Yaad rakhein</label>
+                    <button type="button" class="link-btn">Password bhool gaye?</button>
+                </div>
+                
+                <button type="submit" class="btn-primary">Sign in as Owner</button>
+            </form>
+
+            <!-- Staff Form -->
+            <form asp-controller="Login" asp-action="QuickLogin" method="post" id="staffLoginForm" style="display:none;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="role" value="Staff" />
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                <h2>Staff panel</h2>
+                <div class="sub">Bill banayein, lot darj karein.</div>
+                
+                <div class="field">
+                    <label>Username / Employee</label>
+                    <input type="text" name="username" placeholder="Username or employee code" autocomplete="off" required>
+                </div>
+                
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+                
+                <div class="row-between">
+                    <label><input type="checkbox" style="accent-color:var(--brass);"> Yaad rakhein</label>
+                    <button type="button" class="link-btn">Password bhool gaye?</button>
+                </div>
+                
+                <button type="submit" class="btn-primary">Sign in as Staff</button>
+            </form>
+
+                <div class="login-demo"><b>Software Design & Develop</b> — <b>ICT Systems PVT LTD.</b></div>
+                <div class="login-demo"><b>Mobile</b> — <b>0331-3223528</b></div>
+                <div class="login-demo"><b>E-Mail</b> — <b>sales@ictsystems.com.pk</b></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchLoginTab(tab) {
+    const ownerBtn = document.getElementById('tabOwnerBtn');
+    const staffBtn = document.getElementById('tabStaffBtn');
+    const ownerForm = document.getElementById('ownerLoginForm');
+    const staffForm = document.getElementById('staffLoginForm');
+
+    if (tab === 'owner') {
+        ownerBtn.classList.add('active');
+        staffBtn.classList.remove('active');
+        ownerForm.style.display = 'block';
+        staffForm.style.display = 'none';
+    } else {
+        staffBtn.classList.add('active');
+        ownerBtn.classList.remove('active');
+        staffForm.style.display = 'block';
+        ownerForm.style.display = 'none';
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,513 @@
+@model ERP_Core.Dtos.AccountTransactionViewModel
+@{
+    ViewData["Title"] = "Account Summary";
+    Layout = "_Layout";
+    var typeVal = Model.SelectedType ?? "All";
+    var typeTitle = typeVal.Equals("All", StringComparison.OrdinalIgnoreCase) ? "Accounts" : typeVal;
+
+    string debitHeader = "Total Debit (Dr)";
+    string creditHeader = "Total Credit (Cr)";
+    string netHeader = "Net Balance";
+
+    if (typeVal.Equals("Loan", StringComparison.OrdinalIgnoreCase))
+    {
+        debitHeader = "Loan Given (Dr)";
+        creditHeader = "Repaid (Cr)";
+        netHeader = "Net Loan";
+    }
+    else if (typeVal.Equals("Advance", StringComparison.OrdinalIgnoreCase))
+    {
+        debitHeader = "Advance Given (Dr)";
+        creditHeader = "Adjusted (Cr)";
+        netHeader = "Net Advance";
+    }
+    else if (typeVal.Equals("Martey", StringComparison.OrdinalIgnoreCase))
+    {
+        debitHeader = "Debit (Dr)";
+        creditHeader = "Deposit / Cr (Cr)";
+        netHeader = "Martey Balance";
+    }
+    else if (typeVal.Equals("Expense", StringComparison.OrdinalIgnoreCase))
+    {
+        debitHeader = "Expense Amount (Dr)";
+        creditHeader = "Credit (Cr)";
+        netHeader = "Total Expense";
+    }
+    else if (typeVal.Equals("Commission", StringComparison.OrdinalIgnoreCase))
+    {
+        debitHeader = "Paid (Dr)";
+        creditHeader = "Commission (Cr)";
+        netHeader = "Net Commission";
+    }
+}
+
+@section Styles {
+<style>
+    .filter-bar-modern {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .filter-grid-unified {
+        display: grid;
+        grid-template-columns: 180px 140px 140px 180px 220px auto;
+        gap: 12px;
+        align-items: flex-end;
+    }
+    @@media (max-width: 1300px) {
+        .filter-grid-unified {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @@media (max-width: 768px) {
+        .filter-grid-unified {
+            grid-template-columns: 1fr;
+        }
+    }
+    .report-stat-row {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    @@media (max-width: 1100px) {
+        .report-stat-row {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @@media (max-width: 600px) {
+        .report-stat-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    .report-stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        position: relative;
+        overflow: hidden;
+    }
+    .report-stat .lbl {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .report-stat .val {
+        font-size: 21px;
+        font-weight: 800;
+        font-family: var(--font-head);
+        color: var(--text);
+    }
+</style>
+}
+
+<div class="page-head">
+    <div class="page-title">
+        <h2>All @typeTitle Summary</h2>
+        <div class="sub">Advances, Martey, Loans, Commissions, Expenses aur Other dues ka mukammal party-wise record.</div>
+    </div>
+</div>
+
+<!-- 1. Modern Filter Bar -->
+<div class="filter-bar-modern no-print">
+    <form method="get" asp-controller="AccountTransaction" asp-action="Index" id="txFilterForm">
+        <div class="filter-grid-unified">
+            <!-- Field 1: Transaction Type Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Transaction Type</label>
+                <select name="type" id="filterType" class="form-control" style="height:38px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;">
+                    @foreach (var opt in Model.AvailableTypes)
+                    {
+                        <option value="@opt.Value" selected="@(opt.Selected)">@opt.Text</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Field 2: From Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                <input type="date" name="fromDate" id="filterFromDate" value="@Model.FromDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 3: To Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                <input type="date" name="toDate" id="filterToDate" value="@Model.ToDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 4: Search Query -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Search Keyword</label>
+                <input type="text" name="search" id="filterSearch" value="@Model.SearchQuery" placeholder="Party / Code / City"
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 5: Specific Account Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Account / Party</label>
+                <select name="accountId" id="filterAccountId" class="searchable-select">
+                    <option value="">-- All Accounts --</option>
+                    @foreach (var acc in Model.AvailableAccounts)
+                    {
+                        <option value="@acc.Value" selected="@(acc.Selected)">@acc.Text</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn brass" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    Filter
+                </button>
+                <button type="button" class="btn ghost" onclick="resetTxFilters()" style="height:38px;padding:0 12px;font-size:13px;display:inline-flex;align-items:center;gap:5px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 2. KPI Summary Cards (Clean, Relevant, No Opening Balance Clutter) -->
+<div class="report-stat-row">
+    <div class="report-stat">
+        <div class="lbl">TOTAL ACCOUNTS</div>
+        <div class="val tnum" id="statTotalCount">@Model.TotalAccounts</div>
+    </div>
+    <div class="report-stat">
+        <div class="lbl">TOTAL VOUCHERS</div>
+        <div class="val tnum" id="statTotalVouchers" style="color:var(--text-dim);">@Model.TotalVouchers</div>
+    </div>
+    <div class="report-stat">
+        <div class="lbl">@debitHeader.ToUpper()</div>
+        <div class="val tnum" id="statTotalDebit" style="color:var(--red-text,#ef4444);">Rs @Model.TotalDebit.ToString("N0")</div>
+    </div>
+    <div class="report-stat">
+        <div class="lbl">@creditHeader.ToUpper()</div>
+        <div class="val tnum" id="statTotalCredit" style="color:var(--green-text,#10b981);">Rs @Model.TotalCredit.ToString("N0")</div>
+    </div>
+    <div class="report-stat">
+        <div class="lbl">@netHeader.ToUpper()</div>
+        <div class="val tnum" id="statTotalNet" style="color:var(--brass-text,#d97706);">Rs @Model.NetAmount.ToString("N0")</div>
+    </div>
+</div>
+
+<!-- 3. One Row Per Chart of Account Summary Table (Clean & Focused) -->
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <div>
+            <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);">All @typeTitle Summary</h3>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">
+                Period: @(DateTime.TryParse(Model.FromDate, out var fd) ? fd.ToString("dd-MMM") : Model.FromDate) &mdash; @(DateTime.TryParse(Model.ToDate, out var td) ? td.ToString("dd-MMM-yyyy") : Model.ToDate)
+            </div>
+        </div>
+        <button type="button" class="btn brass btn-sm" onclick="printAccountSummaryReportModal()" style="height:32px;padding:0 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+            Print Summary Report
+        </button>
+    </div>
+
+    <div class="table-wrap">
+        <table class="dynamic-table" id="allAccountsTable">
+            <thead>
+                <tr>
+                    <th style="width:45px;text-align:center;">#</th>
+                    <th>Account / Party Name</th>
+                    <th>City / Area</th>
+                    <th>Phone</th>
+                    <th style="text-align:right;">@debitHeader</th>
+                    <th style="text-align:right;">@creditHeader</th>
+                    <th style="text-align:right;">@netHeader</th>
+                    <th style="width:80px;text-align:center;">Vouchers</th>
+                    <th style="width:110px;text-align:center;">Last Tx Date</th>
+                    <th class="no-sort" style="width:110px;text-align:center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.AccountsSummary != null && Model.AccountsSummary.Any())
+                {
+                    int idx = 1;
+                    foreach (var c in Model.AccountsSummary)
+                    {
+                        <tr data-id="@c.ChartOfAccountId"
+                            data-name="@c.AccountName"
+                            data-code="@c.AccountCode"
+                            data-city="@c.City"
+                            data-phone="@c.Phone"
+                            data-debit="@c.TotalDebit"
+                            data-credit="@c.TotalCredit"
+                            data-net="@c.NetBalance"
+                            data-vouchers="@c.VoucherCount"
+                            data-lastdate="@c.LastTxFormatted">
+                            <td style="text-align:center;color:var(--text-dim);font-weight:600;">@idx</td>
+                            <td>
+                                <strong>@c.AccountName</strong>
+                                @if (!string.IsNullOrEmpty(c.AccountCode))
+                                {
+                                    <div style="font-size:11px;color:var(--brass-text);">@c.AccountCode</div>
+                                }
+                            </td>
+                            <td>@c.City</td>
+                            <td>@c.Phone</td>
+                            <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text,#ef4444);">Rs @c.TotalDebit.ToString("N0")</td>
+                            <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text,#10b981);">Rs @c.TotalCredit.ToString("N0")</td>
+                            <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text,#d97706);">
+                                Rs @c.NetBalance.ToString("N0")
+                            </td>
+                            <td style="text-align:center;color:var(--text-dim);font-weight:600;">@c.VoucherCount</td>
+                            <td style="text-align:center;font-size:12px;color:var(--text-dim);">@c.LastTxFormatted</td>
+                            <td style="text-align:center;">
+                                <a href="/AccountLedger?accountId=@c.ChartOfAccountId&fromDate=@Model.FromDate&toDate=@Model.ToDate"
+                                   class="btn ghost btn-sm" style="padding:4px 10px;font-size:11.5px;" title="View Account Ledger">
+                                    View Ledger
+                                </a>
+                            </td>
+                        </tr>
+                        idx++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" style="text-align:center;padding:30px;color:var(--text-dim);">
+                            No account records found for the selected type and period filter.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                    <th style="padding:12px 14px !important;text-align:center;"></th>
+                    <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;">Total Summary</th>
+                    <th style="padding:12px 14px !important;"></th>
+                    <th style="padding:12px 14px !important;"></th>
+                    <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text,#ef4444);padding:12px 14px !important;">Rs @Model.TotalDebit.ToString("N0")</th>
+                    <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text,#10b981);padding:12px 14px !important;">Rs @Model.TotalCredit.ToString("N0")</th>
+                    <th class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text,#d97706);padding:12px 14px !important;">Rs @Model.NetAmount.ToString("N0")</th>
+                    <th style="text-align:center;padding:12px 14px !important;">@Model.TotalVouchers</th>
+                    <th style="padding:12px 14px !important;"></th>
+                    <th style="padding:12px 14px !important;"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function resetTxFilters() {
+        var d = new Date();
+        var yyyy = d.getFullYear();
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+
+        document.getElementById('filterType').value = 'All';
+        document.getElementById('filterFromDate').value = yyyy + '-' + mm + '-01';
+        document.getElementById('filterToDate').value = yyyy + '-' + mm + '-' + dd;
+        document.getElementById('filterSearch').value = '';
+
+        var accSelect = document.getElementById('filterAccountId');
+        if (accSelect) {
+            accSelect.value = '';
+            if (accSelect.tomselect) {
+                accSelect.tomselect.clear();
+            }
+        }
+
+        document.getElementById('txFilterForm').submit();
+    }
+
+    function printAccountSummaryReportModal() {
+        var typeVal = document.getElementById('filterType').value || 'All';
+        var fromVal = document.getElementById('filterFromDate').value || '';
+        var toVal = document.getElementById('filterToDate').value || '';
+
+        var typeTitle = typeVal === 'All' ? 'All Accounts' : (typeVal + ' Accounts');
+        var periodTitle = (fromVal && toVal) ? (fromVal + ' to ' + toVal) : 'All Dates';
+
+        var debitHeader = '@debitHeader';
+        var creditHeader = '@creditHeader';
+        var netHeader = '@netHeader';
+
+        var rowsHtml = '';
+        var totalDebit = 0;
+        var totalCredit = 0;
+        var totalNet = 0;
+        var totalVouchers = 0;
+
+        var trs = document.querySelectorAll('#allAccountsTable tbody tr');
+        var count = 0;
+
+        trs.forEach(function (r) {
+            if (r.children.length > 2) {
+                count++;
+                var name = r.getAttribute('data-name') || '-';
+                var code = r.getAttribute('data-code') || '';
+                var city = r.getAttribute('data-city') || '-';
+                var phone = r.getAttribute('data-phone') || '-';
+                var dr = parseFloat(r.getAttribute('data-debit')) || 0;
+                var cr = parseFloat(r.getAttribute('data-credit')) || 0;
+                var net = parseFloat(r.getAttribute('data-net')) || 0;
+                var vouchers = parseInt(r.getAttribute('data-vouchers')) || 0;
+                var lastDate = r.getAttribute('data-lastdate') || '-';
+
+                totalDebit += dr;
+                totalCredit += cr;
+                totalNet += net;
+                totalVouchers += vouchers;
+
+                rowsHtml += `
+                    <tr>
+                        <td style="text-align:center;font-size:10.5px;color:#555;">${count}</td>
+                        <td style="font-weight:700;font-size:11px;color:#111;">
+                            ${name}
+                            ${code ? `<div style="font-size:9.5px;color:#8a5a1e;">${code}</div>` : ''}
+                        </td>
+                        <td style="font-size:10.5px;color:#444;">${city}</td>
+                        <td style="font-size:10.5px;color:#444;">${phone}</td>
+                        <td style="text-align:right;font-size:10.5px;color:#b91c1c;font-weight:600;white-space:nowrap;">Rs ${Math.round(dr).toLocaleString('en-PK')}</td>
+                        <td style="text-align:right;font-size:10.5px;color:#15803d;font-weight:600;white-space:nowrap;">Rs ${Math.round(cr).toLocaleString('en-PK')}</td>
+                        <td style="text-align:right;font-size:11.5px;font-weight:700;color:#111;white-space:nowrap;">Rs ${Math.round(net).toLocaleString('en-PK')}</td>
+                        <td style="text-align:center;font-size:10.5px;color:#555;">${vouchers}</td>
+                        <td style="text-align:center;font-size:10px;color:#555;">${lastDate}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        if (count === 0) {
+            rowsHtml = '<tr><td colspan="9" style="text-align:center;padding:16px;color:#777;">No account records found for the selected filter</td></tr>';
+        }
+
+        var content = `
+            <style>
+                #printModal .print-paper {
+                    width: 297mm !important;
+                    max-width: 96vw !important;
+                    padding: 8mm 12mm !important;
+                    box-sizing: border-box !important;
+                }
+                #printModal .print-modal-bar {
+                    width: 297mm !important;
+                    max-width: 96vw !important;
+                }
+                #printModal .pp-table th,
+                #printModal .pp-table td {
+                    padding: 5px 6px !important;
+                }
+                @@media print {
+                    @@page {
+                        size: A4 landscape;
+                        margin: 8mm;
+                    }
+                    body.printing .print-paper {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        padding: 0 !important;
+                        box-shadow: none !important;
+                    }
+                }
+            </style>
+
+            <div class="pp-head">
+                <div class="pp-brand">
+                    <div style="font-size:24px;font-weight:900;letter-spacing:0.5px;line-height:1.15;color:#111;">
+                        @Model.CompanyName.Split('&')[0] <span style="color:#8a5a1e;">&amp; SONS</span>
+                    </div>
+                    <div class="sub" style="font-size:11.5px;color:#444;font-weight:600;margin-top:2px;">@Model.CompanyAddress</div>
+                    <div class="sub" style="font-size:11px;color:#555;font-weight:600;margin-top:2px;">@Model.CompanyPhone</div>
+                </div>
+                <div class="pp-doc-title">
+                    <h2 style="font-size:18px;">ALL ${typeTitle.toUpperCase()} SUMMARY</h2>
+                    <div class="sub">Generated on: <strong>${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</strong></div>
+                </div>
+            </div>
+
+            <div class="pp-meta" style="display:flex;justify-content:space-between;background:#fdfcf9;border:1px solid #eedec5;padding:8px 12px;border-radius:6px;margin-bottom:14px;font-size:11.5px;">
+                <div><b>Period:</b> <strong>${periodTitle}</strong></div>
+                <div><b>Type:</b> <strong>${typeTitle}</strong></div>
+                <div><b>Total Accounts:</b> <strong>${count}</strong></div>
+                <div><b>Total Vouchers:</b> <strong>${totalVouchers}</strong></div>
+            </div>
+
+            <table class="pp-table" style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:16px;">
+                <thead>
+                    <tr>
+                        <th style="width:4%;text-align:center;">#</th>
+                        <th style="width:28%;">Account / Party Name</th>
+                        <th style="width:13%;">City / Area</th>
+                        <th style="width:13%;">Phone</th>
+                        <th style="width:12%;text-align:right;">${debitHeader}</th>
+                        <th style="width:12%;text-align:right;">${creditHeader}</th>
+                        <th style="width:12%;text-align:right;">${netHeader}</th>
+                        <th style="width:8%;text-align:center;">Vouchers</th>
+                        <th style="width:10%;text-align:center;">Last Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr style="background:#faf7f2;border-top:2px solid #111;font-weight:700;">
+                        <td colspan="4" style="text-align:right;padding-right:10px;">Total Summary:</td>
+                        <td style="text-align:right;font-size:11px;color:#b91c1c;white-space:nowrap;">Rs ${Math.round(totalDebit).toLocaleString('en-PK')}</td>
+                        <td style="text-align:right;font-size:11px;color:#15803d;white-space:nowrap;">Rs ${Math.round(totalCredit).toLocaleString('en-PK')}</td>
+                        <td style="text-align:right;font-size:12.5px;color:#111;font-weight:800;white-space:nowrap;">Rs ${Math.round(totalNet).toLocaleString('en-PK')}</td>
+                        <td style="text-align:center;font-size:11px;color:#555;">${totalVouchers}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="pp-totals" style="margin-top:10px;">
+                <div><span>Total Accounts:</span> <strong>${count}</strong></div>
+                <div><span>Total Vouchers:</span> <strong>${totalVouchers}</strong></div>
+                <div><span>Total Debit:</span> <strong>Rs ${Math.round(totalDebit).toLocaleString('en-PK')}</strong></div>
+                <div><span>Total Credit:</span> <strong>Rs ${Math.round(totalCredit).toLocaleString('en-PK')}</strong></div>
+                <div class="final" style="font-size:15px;"><span>Net Outstanding:</span> <strong>Rs ${Math.round(totalNet).toLocaleString('en-PK')}</strong></div>
+            </div>
+
+            <div class="pp-sign" style="margin-top:40px;">
+                <div>Prepared By</div>
+                <div>Cashier / Accountant</div>
+                <div>Authorized Signature</div>
+            </div>
+
+            <div class="pp-foot" style="margin-top:20px;text-align:center;font-size:9.5px;color:#888;">
+                Official Account Summary Register · Zahid Hussain &amp; Sons · Sukkur Fish Harbour · Generated from WebDesk Aarhat ERP
+            </div>
+        `;
+
+        if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.openPrintModal === 'function') {
+            AarhatApp.openPrintModal(typeTitle + ' Summary Report — ' + periodTitle, content);
+        } else {
+            window.print();
+        }
+    }
+
+    $(document).ready(function () {
+        if (window.jQuery && jQuery.fn.DataTable && !jQuery.fn.DataTable.isDataTable('#allAccountsTable')) {
+            jQuery('#allAccountsTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                ordering: true,
+                order: [[6, 'desc']],
+                language: {
+                    search: "Search across all columns:",
+                    searchPlaceholder: "Search party, code, city..."
+                }
+            });
+        }
+    });
+</script>
+}

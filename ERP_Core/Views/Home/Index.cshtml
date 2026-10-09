@@ -1,0 +1,3078 @@
+@model ERP_Core.Dtos.AarhatDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["SubTitle"] = "Overview of today's mandi business";
+}
+
+@section Styles {
+<style>
+    /* 4-Box Top KPI Stat Grid */
+    .stat-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+    @@media (max-width: 1000px) {
+        .stat-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+    @@media (max-width: 600px) {
+        .stat-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* Duration Selection Toolbar */
+    .dash-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+    .dash-duration-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 6px 12px;
+    }
+    .dash-filter-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-dim);
+        font-weight: 600;
+        margin: 0;
+    }
+    .dash-duration-select {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12.5px;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 6px;
+        outline: none;
+        cursor: pointer;
+    }
+    .dash-duration-select:focus {
+        border-color: var(--brass);
+    }
+    .dash-date-boxes {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .dash-date-box-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 6px 12px;
+    }
+    .dash-box-lbl {
+        font-size: 11px;
+        color: var(--text-dim);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .dash-date-input {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12.5px;
+        font-family: inherit;
+        padding: 5px 10px;
+        border-radius: 6px;
+        min-width: 175px;
+        outline: none;
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .dash-date-input:focus {
+        border-color: var(--brass);
+    }
+    input[type="date"].dash-date-input {
+        color-scheme: dark;
+        cursor: pointer;
+    }
+    .dash-date-input[readonly] {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text);
+        font-weight: 500;
+        cursor: default;
+        min-width: 155px;
+    }
+
+    /* Full width Commission Trend Card */
+    .dash-trend-card {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .dash-trend-card .bars {
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        gap: 16px;
+        height: 185px;
+        padding-top: 15px;
+        justify-content: space-around;
+    }
+    .dash-trend-card .bars .bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        height: 100%;
+        justify-content: flex-end;
+    }
+    .dash-trend-card .bars .bar-col .bar {
+        width: 100%;
+        max-width: 44px;
+        border-radius: 5px 5px 0 0;
+        background: linear-gradient(180deg, var(--teal), var(--teal-dim));
+        transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    }
+    .dash-trend-card .bars .bar-col .bar-day {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        font-weight: 600;
+    }
+    .dash-trend-card .bars .bar-col .bar-val {
+        font-family: var(--font-head);
+        font-size: 11.5px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Financial Summaries Grid (8 cards organized in 4 columns) */
+    .dash-financial-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    @@media (max-width: 1300px) {
+        .dash-financial-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    }
+    @@media (max-width: 650px) {
+        .dash-financial-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    .dash-mini-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 16px 18px;
+        min-height: 275px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        transition: border-color 0.2s, box-shadow 0.2s;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    .dash-mini-card:hover {
+        border-color: rgba(198, 138, 62, 0.35);
+    }
+    .dash-mini-card .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        min-width: 0;
+        width: 100%;
+    }
+    .dash-mini-card .card-head h3 {
+        font-size: 14px;
+        font-family: var(--font-head);
+        font-weight: 600;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    .dash-mini-card .card-head .link-btn {
+        color: var(--teal-text);
+        font-size: 11.5px;
+        white-space: nowrap;
+        text-decoration: none;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .dash-mini-card .mini-list {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        width: 100%;
+        overflow: hidden;
+    }
+    .dash-mini-card .mini-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        gap: 12px;
+        border-bottom: 1px solid var(--border-soft);
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .dash-mini-card .mini-row:last-child {
+        border-bottom: none;
+    }
+    .dash-mini-card .info-col {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+    .dash-mini-card .mini-row .who {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        max-width: 100%;
+    }
+    .dash-mini-card .mini-row .meta {
+        font-size: 11px;
+        color: var(--text-faint);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        max-width: 100%;
+        margin-top: 2px;
+    }
+    .dash-mini-card .mini-row .amt {
+        font-family: var(--font-head);
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-align: right;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+    .dash-mini-card .mini-row .amt.red { color: var(--red-text); }
+    .dash-mini-card .mini-row .amt.green { color: var(--green-text); }
+    .dash-mini-card .mini-row .amt.teal { color: var(--teal-text); }
+    .dash-mini-card .mini-row .amt.amber { color: #f59e0b; }
+    .dash-mini-card .mini-row .amt.brass { color: var(--brass-text); }
+    .dash-mini-card .mini-row .amt.indigo { color: #818cf8; }
+    .dash-mini-card .mini-row .amt.purple { color: #c084fc; }
+
+    /* Footer text values: Count and Total */
+    .mini-list-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 10px;
+        margin-top: 10px;
+        border-top: 1px solid var(--border-soft);
+        font-size: 12px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .mini-list-foot .foot-metric {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+    .mini-list-foot .foot-metric .lbl {
+        color: var(--text-dim);
+        font-weight: 600;
+        font-size: 11px;
+    }
+    .mini-list-foot .foot-metric .val {
+        font-weight: 700;
+        font-size: 12.5px;
+        white-space: nowrap;
+    }
+    .mini-list-foot .foot-metric .val.red { color: var(--red-text); }
+    .mini-list-foot .foot-metric .val.green { color: var(--green-text); }
+    .mini-list-foot .foot-metric .val.teal { color: var(--teal-text); }
+    .mini-list-foot .foot-metric .val.amber { color: #f59e0b; }
+    .mini-list-foot .foot-metric .val.brass { color: var(--brass-text); }
+    .mini-list-foot .foot-metric .val.indigo { color: #818cf8; }
+    .mini-list-foot .foot-metric .val.purple { color: #c084fc; }
+
+    /* Summary Toolbar for Top vs Most Recent */
+    .dash-summary-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding: 8px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    /* Expandable Toggle Button (Matching NewBill Pattern) */
+    .btn-expand-toggle {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        width: 26px;
+        height: 26px;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+    .btn-expand-toggle:hover {
+        background: var(--surface3);
+        color: var(--brass-text);
+        border-color: var(--brass);
+    }
+    .btn-expand-toggle svg {
+        transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-expand-toggle.expanded svg {
+        transform: rotate(90deg);
+    }
+    .btn-expand-toggle.expanded {
+        background: rgba(198, 138, 62, 0.18);
+        border-color: var(--brass);
+        color: var(--brass-text);
+    }
+
+    /* Expandable Detail Card */
+    .staff-expand-card {
+        background: #0d1e1a;
+        border: 1px solid var(--border);
+        border-top: none;
+        padding: 16px 20px;
+        box-shadow: inset 0 3px 6px rgba(0,0,0,0.25);
+    }
+    .staff-expand-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    /* Responsive Breakpoints */
+    @@media (max-width: 1100px) {
+        .dash-financial-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    /* Bank & Cash Accounts Liquidity Grid */
+    .dash-bank-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+    .bank-asset-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 255px;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .bank-asset-card:hover {
+        border-color: rgba(198, 138, 62, 0.45);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .bank-asset-card.is-cash {
+        border-left: 3px solid var(--brass);
+    }
+    .bank-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        gap: 8px;
+    }
+    .bank-identity {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .bank-icon-wrap {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--brass-text);
+        flex-shrink: 0;
+    }
+    .bank-title {
+        font-family: var(--font-head);
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .bank-branch {
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+    .bank-meta-row {
+        background: var(--surface);
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        border: 1px solid var(--border-soft);
+    }
+    .bank-meta-row .meta-lbl {
+        color: var(--text-faint);
+        font-size: 10.5px;
+        margin-right: 4px;
+    }
+    .bank-meta-row .meta-val {
+        color: var(--text);
+        font-weight: 600;
+    }
+    .bank-balance-box {
+        margin-bottom: 12px;
+    }
+    .bank-balance-box .bal-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .bank-balance-box .bal-amount {
+        font-family: var(--font-head);
+        font-size: 21px;
+        font-weight: 700;
+        color: var(--green-text);
+    }
+    .bank-flux-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 0;
+        border-top: 1px solid var(--border-soft);
+        border-bottom: 1px solid var(--border-soft);
+        font-size: 11px;
+        margin-bottom: 10px;
+    }
+    .bank-flux-row .flux-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .bank-flux-row .flux-item .flux-lbl {
+        color: var(--text-faint);
+        font-size: 10px;
+    }
+    .bank-flux-row .flux-item .flux-val {
+        font-weight: 600;
+        font-size: 11.5px;
+    }
+    .bank-flux-row .flux-item.in .flux-val { color: var(--green-text); }
+    .bank-flux-row .flux-item.out .flux-val { color: var(--red-text); }
+    .bank-flux-row .flux-divider {
+        width: 1px;
+        height: 24px;
+        background: var(--border-soft);
+    }
+    .bank-card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+    }
+    .bank-card-foot .iban-text {
+        color: var(--text-faint);
+        font-family: monospace;
+        font-size: 10.5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 155px;
+    }
+
+    @@media (max-width: 1300px) {
+        .dash-bank-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @@media (max-width: 650px) {
+        .dash-bank-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .btn-dash-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(180deg, #1d3d34 0%, #132722 100%);
+        color: var(--teal-text, #5FCFBD);
+        font-weight: 600;
+        font-size: 12.5px;
+        padding: 5px 14px;
+        border-radius: var(--radius);
+        border: 1px solid var(--teal, #2F9E8C);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        transition: all 0.2s ease;
+        height: 33px;
+        line-height: 1;
+        white-space: nowrap;
+    }
+    .btn-dash-filter:hover {
+        background: linear-gradient(180deg, #244d42 0%, #18332c 100%);
+        border-color: var(--teal-text, #5FCFBD);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(47, 158, 140, 0.35);
+        transform: translateY(-1px);
+    }
+    .btn-dash-filter:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .btn-dash-filter.loading {
+        opacity: 0.75;
+        cursor: wait;
+        pointer-events: none;
+    }
+    .btn-dash-filter svg {
+        color: var(--teal-text, #5FCFBD);
+        transition: color 0.2s ease;
+    }
+    .btn-dash-filter:hover svg {
+        color: #ffffff;
+    }
+
+    .staff-expand-row:hover,
+    .staff-expand-row:hover > td {
+        background: transparent !important;
+    }
+
+    /* Today's Business Summary Highlight Button */
+    .btn-dash-summary-highlight {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: linear-gradient(180deg, #2a554a 0%, #173830 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 12.5px;
+        padding: 5px 15px;
+        border-radius: var(--radius);
+        border: 1px solid var(--brass);
+        box-shadow: 0 2px 8px rgba(198, 138, 62, 0.25);
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        height: 33px;
+        line-height: 1;
+        white-space: nowrap;
+        margin-left: auto;
+    }
+    .btn-dash-summary-highlight:hover {
+        background: linear-gradient(180deg, #376d5f 0%, #1e473d 100%);
+        border-color: #ffd166;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(198, 138, 62, 0.4);
+        transform: translateY(-1px);
+    }
+    .btn-dash-summary-highlight svg {
+        color: var(--brass-text);
+        transition: transform 0.2s;
+    }
+    .btn-dash-summary-highlight:hover svg {
+        transform: scale(1.1);
+    }
+
+    /* Bill Linked Vouchers Accordion Toggle */
+    .btn-bill-expand {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-bill-expand:hover {
+        background: var(--surface3);
+        border-color: var(--teal);
+        color: var(--teal-text);
+    }
+    .btn-bill-expand.expanded svg {
+        transform: rotate(90deg);
+    }
+    .btn-bill-expand.expanded {
+        background: rgba(47, 158, 140, 0.18);
+        border-color: var(--teal);
+        color: var(--teal-text);
+    }
+    .bill-vouchers-row:hover,
+    .bill-vouchers-row:hover > td {
+        background: rgba(15, 28, 24, 0.75) !important;
+    }
+</style>
+}
+
+<!-- Duration Selection Toolbar (Top Left over Today's Bill) -->
+<form id="dashFilterForm" method="get" action="@Url.Action("Index", "Home")" class="dash-filter-bar" onsubmit="handleFilterSubmit(event)">
+    <div class="dash-duration-wrap">
+        <label for="dashDurationSelect" class="dash-filter-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Duration:</span>
+        </label>
+        <select id="dashDurationSelect" name="duration" class="dash-duration-select">
+            <option value="today" selected="@(Model.Duration == "today" ? "selected" : null)">Today</option>
+            <option value="past_three_days" selected="@(Model.Duration == "past_three_days" ? "selected" : null)">Past three days</option>
+            <option value="past_week" selected="@(Model.Duration == "past_week" ? "selected" : null)">Past week</option>
+            <option value="14_days" selected="@(Model.Duration == "14_days" ? "selected" : null)">14 days</option>
+            <option value="month" selected="@(Model.Duration == "month" ? "selected" : null)">Month</option>
+            <option value="custom_date" selected="@(Model.Duration == "custom_date" ? "selected" : null)">Custom date</option>
+        </select>
+    </div>
+
+    @{
+        var rawFrom = Model.SelectedFromDate;
+        var rawTo = Model.SelectedToDate;
+        var isCustom = (Model.Duration == "custom_date");
+        var initFromVal = "";
+        var initToVal = "";
+        if (DateTime.TryParse(rawFrom, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var pFrom))
+        {
+            initFromVal = isCustom ? pFrom.ToString("yyyy-MM-dd") : ((Model.Duration == "today") ? pFrom.ToString("dd-MMM-yyyy 00:00") : pFrom.ToString("dd-MMM-yyyy"));
+        }
+        else if (!string.IsNullOrWhiteSpace(rawFrom))
+        {
+            initFromVal = rawFrom;
+        }
+
+        if (DateTime.TryParse(rawTo, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var pTo))
+        {
+            initToVal = isCustom ? pTo.ToString("yyyy-MM-dd") : ((Model.Duration == "today") ? DateTime.Now.ToString("dd-MMM-yyyy HH:mm") : pTo.ToString("dd-MMM-yyyy"));
+        }
+        else if (!string.IsNullOrWhiteSpace(rawTo))
+        {
+            initToVal = rawTo;
+        }
+    }
+
+    <div class="dash-date-boxes" id="dashDateBoxes">
+        <div class="dash-date-box-group">
+            <span class="dash-box-lbl">From</span>
+            <input type="@(isCustom ? "date" : "text")" id="dashFromDate" name="fromDate" class="dash-date-input" value="@initFromVal" data-iso-date="@rawFrom" @(isCustom ? "" : "readonly") />
+        </div>
+        <div class="dash-date-box-group">
+            <span class="dash-box-lbl">To</span>
+            <input type="@(isCustom ? "date" : "text")" id="dashToDate" name="toDate" class="dash-date-input" value="@initToVal" data-iso-date="@rawTo" @(isCustom ? "" : "readonly") />
+        </div>
+        <button type="submit" id="btnFilterDashboard" class="btn-dash-filter" title="Apply Filter">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span id="btnFilterText">Filter</span>
+        </button>
+    </div>
+
+    <!-- Today's Business Summary Quick Action Button -->
+    <a asp-controller="TodayBusinessSummary" asp-action="Index" class="btn-dash-summary-highlight" title="View Today's Complete Business Summary">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>Today's Business Summary</span>
+    </a>
+</form>
+
+<!-- Stat Grid KPI Cards (4 Top Boxes: Bills, Commission, Receivable, Payable) -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="lbl" id="kpiBillsLabel">@(Model.Duration == "today" ? "TODAY'S BILLS" : "BILLS COUNT")</div>
+        <div class="val tnum" id="kpiBillsCount">@Model.TodayBillsCount</div>
+        <div class="sub" id="kpiBillsSub">@Model.TodayBillsCount bills recorded</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">COMMISSION EARNED</div>
+        <div class="val tnum" style="color:var(--brass-text);" id="kpiCommissionEarned">Rs @Model.CommissionEarned.ToString("N0")</div>
+        <div class="sub" id="kpiCommissionSub">@(Model.Duration == "today" ? "Income from bills" : "Period income from bills")</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">TOTAL RECEIVABLE</div>
+        <div class="val tnum" style="color:var(--green-text);" id="kpiTotalReceivable">@(Model.TotalReceivable == 0 ? "Rs 0" : (Model.TotalReceivable >= 100000m ? "Rs " + (Model.TotalReceivable / 100000.0m).ToString("0.0") + "L" : "Rs " + Model.TotalReceivable.ToString("N0")))</div>
+        <div class="sub" id="kpiActiveCustomers">@Model.ActiveCustomersCount customers</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">TOTAL PAYABLE</div>
+        <div class="val tnum" style="color:var(--red-text);" id="kpiTotalPayable">@(Model.TotalPayable == 0 ? "Rs 0" : (Model.TotalPayable >= 100000m ? "Rs " + (Model.TotalPayable / 100000.0m).ToString("0.0") + "L" : "Rs " + Model.TotalPayable.ToString("N0")))</div>
+        <div class="sub" id="kpiActiveSuppliers">@Model.ActiveSuppliersCount suppliers</div>
+    </div>
+</div>
+
+<!-- Full-Width Commission Trend Graph (Weekly or Monthly Dynamic) -->
+<div class="card dash-trend-card">
+    <div class="card-head">
+        <h3 id="trendCardTitle">Weekly commission trend</h3>
+        <a asp-controller="ProfitLoss" asp-action="Index" class="link-btn">Full report →</a>
+    </div>
+
+    <!-- Weekly Trend Bars (Default) -->
+    <div class="bars" id="weeklyBars">
+        @if (Model.WeeklyTrends != null && Model.WeeklyTrends.Any())
+        {
+            @foreach (var bar in Model.WeeklyTrends)
+            {
+                <div class="bar-col">
+                    <div class="bar" style="height:@(bar.Percent)%; @(bar.IsToday ? "background:linear-gradient(180deg,var(--brass),var(--brass-dim));" : "")"></div>
+                    <span class="bar-day">@bar.Day</span>
+                    <span class="bar-val tnum" style="@(bar.IsToday ? "color:var(--brass-text);font-weight:700;" : "color:var(--text);")">Rs @bar.Amount.ToString("N0")</span>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding:25px 0;text-align:center;color:var(--text-faint);width:100%;font-size:12px;">No commission trends recorded for this period</div>
+        }
+    </div>
+
+    <!-- Monthly Trend Bars (Shown when 'Month' duration is selected) -->
+    <div class="bars" id="monthlyBars" style="display:none;">
+        @if (Model.MonthlyTrends != null && Model.MonthlyTrends.Any())
+        {
+            @foreach (var bar in Model.MonthlyTrends)
+            {
+                <div class="bar-col">
+                    <div class="bar" style="height:@(bar.Percent)%; @(bar.IsToday ? "background:linear-gradient(180deg,var(--brass),var(--brass-dim));" : "")"></div>
+                    <span class="bar-day">@bar.Day</span>
+                    <span class="bar-val tnum" style="@(bar.IsToday ? "color:var(--brass-text);font-weight:700;" : "color:var(--text);")">Rs @bar.Amount.ToString("N0")</span>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding:25px 0;text-align:center;color:var(--text-faint);width:100%;font-size:12px;">No monthly trends recorded</div>
+        }
+    </div>
+</div>
+
+<!-- Financial Dues & Summaries Section Header -->
+<div class="dash-summary-toolbar">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--brass)" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+        <h3 style="margin:0;font-size:14px;font-family:var(--font-head);font-weight:600;color:var(--text);">Financial Dues &amp; Summaries</h3>
+    </div>
+</div>
+
+<!-- Financial Summaries Grid (Organized in TWO Lines: 3 cards on Top Line, 3 cards on Bottom Line) -->
+<div class="dash-financial-grid">
+    <!-- Line 1, Card 1: Payables Due -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top payables due" data-title-recent="Most recent payables">Top payables due</h3>
+            <a asp-controller="SupplierPayable" asp-action="Index" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="payablesTopList">
+            @if (Model.TopPayables != null && Model.TopPayables.Any())
+            {
+                @foreach (var payable in Model.TopPayables)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@payable.SupplierName">@payable.SupplierName</div>
+                            <div class="meta">@payable.Location</div>
+                        </div>
+                        <div class="amt red tnum">Rs @payable.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No payables due</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="payablesRecentList" style="display:none;">
+            @if (Model.RecentPayables != null && Model.RecentPayables.Any())
+            {
+                @foreach (var payable in Model.RecentPayables)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@payable.SupplierName">@payable.SupplierName</div>
+                            <div class="meta">@payable.Location</div>
+                        </div>
+                        <div class="amt red tnum">Rs @payable.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent payables</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="payablesCount">@Model.TopPayablesCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val red tnum" id="payablesTotal">Rs @Model.TopPayablesTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 1, Card 2: Receivables Due -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top receivables" data-title-recent="Most recent receivables">Top receivables</h3>
+            <a asp-controller="CustomerReceivable" asp-action="Index" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="receivablesTopList">
+            @if (Model.TopReceivables != null && Model.TopReceivables.Any())
+            {
+                @foreach (var item in Model.TopReceivables)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt green tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No receivables due</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="receivablesRecentList" style="display:none;">
+            @if (Model.RecentReceivables != null && Model.RecentReceivables.Any())
+            {
+                @foreach (var item in Model.RecentReceivables)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt green tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent receivables</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="receivablesCount">@Model.TopReceivablesCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val green tnum" id="receivablesTotal">Rs @Model.TopReceivablesTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 1, Card 3: Advances (Peshi) -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top advances" data-title-recent="Most recent advances">Top advances</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Advance" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="advancesTopList">
+            @if (Model.TopAdvances != null && Model.TopAdvances.Any())
+            {
+                @foreach (var item in Model.TopAdvances)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt teal tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No advances found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="advancesRecentList" style="display:none;">
+            @if (Model.RecentAdvances != null && Model.RecentAdvances.Any())
+            {
+                @foreach (var item in Model.RecentAdvances)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt teal tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent advances</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="advancesCount">@Model.TopAdvancesCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val teal tnum" id="advancesTotal">Rs @Model.TopAdvancesTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 2, Card 4: Martey Dues -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top martey" data-title-recent="Most recent martey">Top martey</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Martey" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="marteyTopList">
+            @if (Model.TopMartey != null && Model.TopMartey.Any())
+            {
+                @foreach (var item in Model.TopMartey)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt amber tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No martey records found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="marteyRecentList" style="display:none;">
+            @if (Model.RecentMartey != null && Model.RecentMartey.Any())
+            {
+                @foreach (var item in Model.RecentMartey)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt amber tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent martey records</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="marteyCount">@Model.TopMarteyCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val amber tnum" id="marteyTotal">Rs @Model.TopMarteyTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 2, Card 5: Top Loans -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top loans" data-title-recent="Most recent loans">Top loans</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Loan" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="loansTopList">
+            @if (Model.TopLoans != null && Model.TopLoans.Any())
+            {
+                @foreach (var item in Model.TopLoans)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt indigo tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No loan records found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="loansRecentList" style="display:none;">
+            @if (Model.RecentLoans != null && Model.RecentLoans.Any())
+            {
+                @foreach (var item in Model.RecentLoans)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt indigo tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent loan records</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="loansCount">@Model.TopLoansCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val indigo tnum" id="loansTotal">Rs @Model.TopLoansTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 2, Card 6: Top Others -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top others" data-title-recent="Most recent others">Top others</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Other" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="othersTopList">
+            @if (Model.TopOthers != null && Model.TopOthers.Any())
+            {
+                @foreach (var item in Model.TopOthers)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt purple tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No other records found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="othersRecentList" style="display:none;">
+            @if (Model.RecentOthers != null && Model.RecentOthers.Any())
+            {
+                @foreach (var item in Model.RecentOthers)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt purple tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent other records</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="othersCount">@Model.TopOthersCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val purple tnum" id="othersTotal">Rs @Model.TopOthersTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 2, Card 6: Commission -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top commission" data-title-recent="Most recent commission">Top commission</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Commission" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="commissionsTopList">
+            @if (Model.TopCommissions != null && Model.TopCommissions.Any())
+            {
+                @foreach (var item in Model.TopCommissions)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta" title="@item.Subtitle">@item.Subtitle</div>
+                        </div>
+                        <div class="amt brass tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No commission entries found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="commissionsRecentList" style="display:none;">
+            @if (Model.RecentCommissions != null && Model.RecentCommissions.Any())
+            {
+                @foreach (var item in Model.RecentCommissions)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta" title="@item.Subtitle">@item.Subtitle</div>
+                        </div>
+                        <div class="amt brass tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent commissions</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="commissionsCount">@Model.TopCommissionsCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val brass tnum" id="commissionsTotal">Rs @Model.TopCommissionsTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line 2, Card 6: Expenses -->
+    <div class="card dash-mini-card">
+        <div class="card-head">
+            <h3 class="summary-card-title" data-title-top="Top expenses" data-title-recent="Most recent expenses">Top expenses</h3>
+            <a asp-controller="AccountTransaction" asp-action="Index" asp-route-type="Expense" class="link-btn">See all →</a>
+        </div>
+        <!-- Top 5 List -->
+        <div class="mini-list summary-list-top" id="expensesTopList">
+            @if (Model.TopExpenses != null && Model.TopExpenses.Any())
+            {
+                @foreach (var item in Model.TopExpenses)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt red tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No expense records found</div>
+            }
+        </div>
+        <!-- Most Recent 5 List -->
+        <div class="mini-list summary-list-recent" id="expensesRecentList" style="display:none;">
+            @if (Model.RecentExpenses != null && Model.RecentExpenses.Any())
+            {
+                @foreach (var item in Model.RecentExpenses)
+                {
+                    <div class="mini-row">
+                        <div class="info-col">
+                            <div class="who" title="@item.Title">@item.Title</div>
+                            <div class="meta">@item.Subtitle</div>
+                        </div>
+                        <div class="amt red tnum">Rs @item.Amount.ToString("N0")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent expenses</div>
+            }
+        </div>
+        <div class="mini-list-foot">
+            <div class="foot-metric">
+                <span class="lbl">Count:</span>
+                <span class="val tnum" id="expensesCount">@Model.TopExpensesCount</span>
+            </div>
+            <div class="foot-metric">
+                <span class="lbl">Total:</span>
+                <span class="val red tnum" id="expensesTotal">Rs @Model.TopExpensesTotal.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bank & Cash Accounts Liquidity Section -->
+<div class="card" style="margin-bottom:24px;padding:20px;">
+    <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(198,138,62,0.18);border:1px solid var(--brass);display:flex;align-items:center;justify-content:center;color:var(--brass-text);">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 3l9 7H3z"/></svg>
+            </div>
+            <div>
+                <h3 style="margin:0;font-size:15px;font-family:var(--font-head);font-weight:600;">Bank &amp; Cash Accounts Liquidity</h3>
+                <div style="font-size:11.5px;color:var(--text-dim);">Live available balance in each bank account, inflow deposits &amp; payments outflow</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="role-pill" style="background:rgba(46,125,50,0.18);color:var(--green-text);border:1px solid rgba(46,125,50,0.3);font-size:12px;padding:4px 10px;">
+                    Total Liquid Funds: <strong id="totalLiquidFundsPill">Rs @Model.TotalLiquidFunds.ToString("N0")</strong>
+                </span>
+                <span class="role-pill" style="background:var(--surface2);color:var(--teal-text);font-size:12px;padding:4px 10px;">
+                    Banks: <strong id="totalBankFundsPill">Rs @Model.TotalBankFunds.ToString("N0")</strong>
+                </span>
+                <span class="role-pill" style="background:var(--surface2);color:var(--brass-text);font-size:12px;padding:4px 10px;">
+                    Cash (Rokad): <strong id="totalCashInHandPill">Rs @Model.TotalCashInHand.ToString("N0")</strong>
+                </span>
+            </div>
+            <a asp-controller="BankMaster" asp-action="Index" class="link-btn" style="font-size:12.5px;">Manage banks →</a>
+        </div>
+    </div>
+
+    <!-- Grid of Bank Account Cards -->
+    <div class="dash-bank-grid" id="dashBankGrid">
+        @if (Model.BankBalances != null && Model.BankBalances.Any())
+        {
+            @foreach (var bank in Model.BankBalances)
+            {
+                <div class="bank-asset-card @(bank.IsCash ? "is-cash" : "")">
+                    <div class="bank-card-top">
+                        <div class="bank-identity">
+                            <div class="bank-icon-wrap">
+                                @if (bank.IsCash)
+                                {
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 3l9 7H3z"/></svg>
+                                }
+                            </div>
+                            <div>
+                                <div class="bank-title">@bank.BankName</div>
+                                <div class="bank-branch">@bank.BranchOrLocation</div>
+                            </div>
+                        </div>
+                        <span class="badge @(bank.IsCash ? "brass" : "teal")" style="font-size:10px;padding:2px 7px;">
+                            @(bank.IsCash ? "Cash in Hand" : "Commercial Bank")
+                        </span>
+                    </div>
+
+                    <div class="bank-meta-row">
+                        <div>
+                            <span class="meta-lbl">A/C Title:</span>
+                            <strong class="meta-val">@bank.AccountName</strong>
+                        </div>
+                        <div>
+                            <span class="meta-lbl">A/C No:</span>
+                            <span class="meta-val font-mono" style="color:var(--teal-text);">@bank.AccountNo</span>
+                        </div>
+                    </div>
+
+                    <div class="bank-balance-box">
+                        <div class="bal-lbl">AVAILABLE BALANCE IN ACCOUNT</div>
+                        <div class="bal-amount tnum font-weight-bold" style="color:@(bank.IsCash ? "var(--brass-text)" : "var(--green-text)");">
+                            Rs @bank.CurrentBalance.ToString("N0")
+                        </div>
+                    </div>
+
+                    <div class="bank-flux-row">
+                        <div class="flux-item in">
+                            <span class="flux-lbl">Inflow (Wasooli / Dep)</span>
+                            <span class="flux-val tnum">+ Rs @bank.InflowAmount.ToString("N0")</span>
+                        </div>
+                        <div class="flux-divider"></div>
+                        <div class="flux-item out">
+                            <span class="flux-lbl">Outflow (Payments / With)</span>
+                            <span class="flux-val tnum">- Rs @bank.OutflowAmount.ToString("N0")</span>
+                        </div>
+                    </div>
+
+                    <div class="bank-card-foot">
+                        <span class="iban-text" title="@bank.IbanNo">IBAN: @(string.IsNullOrEmpty(bank.IbanNo) || bank.IbanNo == "-" ? "N/A" : bank.IbanNo)</span>
+                        @if (bank.ChartOfAccountId.HasValue && bank.ChartOfAccountId.Value > 0)
+                        {
+                            <a asp-controller="AccountLedger" asp-action="Index" asp-route-accountId="@bank.ChartOfAccountId" asp-route-fromDate="@Model.SelectedFromDate" asp-route-toDate="@Model.SelectedToDate" class="link-btn" style="font-size:11.5px;">View ledger →</a>
+                        }
+                        else
+                        {
+                            <a asp-controller="AccountLedger" asp-action="Index" asp-route-account="@(bank.AccountName ?? bank.BankName)" asp-route-fromDate="@Model.SelectedFromDate" asp-route-toDate="@Model.SelectedToDate" class="link-btn" style="font-size:11.5px;">View ledger →</a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="grid-column:1 / -1;padding:25px;text-align:center;color:var(--text-faint);">No bank or cash accounts configured yet in Bank Master.</div>
+        }
+    </div>
+</div>
+
+<!-- Recent Bills Table -->
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-head">
+        <h3>Recent bills</h3>
+        <a asp-controller="NewBill" asp-action="Index" class="link-btn">+ New bill →</a>
+    </div>
+    <div class="table-wrap">
+        <table class="dynamic-table" id="recentBillsTable">
+            <thead>
+                <tr>
+                    <th>Bill #</th>
+                    <th>Date</th>
+                    <th>Supplier (Boat)</th>
+                    <th>Lots</th>
+                    <th>Total sale</th>
+                    <th>Commission</th>
+                    <th>Net payable</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="recentBillsTbody">
+                @if (Model.RecentBills != null && Model.RecentBills.Any())
+                {
+                    @foreach (var bill in Model.RecentBills)
+                    {
+                        <tr>
+                            <td><span class="tcode">@bill.BillNo</span></td>
+                            <td>@bill.Date</td>
+                            <td><strong>@bill.SupplierName</strong></td>
+                            <td><span class="badge badge-gray">@bill.LotsCount lots</span></td>
+                            <td class="tnum font-weight-bold">Rs @bill.TotalSale.ToString("N0")</td>
+                            <td class="tnum" style="color:var(--brass-text);">Rs @bill.Commission.ToString("N0")</td>
+                            <td class="tnum font-weight-bold" style="color:var(--green-text);">Rs @bill.NetPayable.ToString("N0")</td>
+                            <td>
+                                @if (bill.Status == "Paid")
+                                {
+                                    <span class="stamp paid"><span class="ring"></span><span>PAID</span></span>
+                                }
+                                else if (bill.Status == "Due")
+                                {
+                                    <span class="stamp due"><span class="ring"></span><span>DUE</span></span>
+                                }
+                                else
+                                {
+                                    <span class="stamp partial"><span class="ring"></span><span>PARTIAL</span></span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:25px;color:var(--text-faint);">
+                            No bills recorded yet
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Staff Activity & Audit Records (Bills Worked On and Standalone Vouchers) -->
+<div class="card" style="margin-top:20px;padding:0;overflow:hidden;border:1px solid var(--border);">
+    <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--brass)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <h3 style="font-size:14.5px;margin:0;color:var(--text);font-weight:600;font-family:var(--font-head);">Staff Activity &amp; Audit Records</h3>
+            <span class="badge gray" id="staffMembersCountBadge" style="background:var(--surface3);color:var(--text-dim);font-size:11px;padding:3px 8px;border-radius:10px;">@(Model.StaffMembers?.Count ?? 0) staff members</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);">
+            Click <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;"><polyline points="9 18 15 12 9 6"/></svg> to <strong>Expand Bills &amp; Vouchers Handled</strong> (CreatedBy &amp; ModifiedBy audit).
+        </div>
+    </div>
+
+    <div class="table-wrap" style="overflow-x:auto;">
+        <table id="staffActivityTable" class="staff-activity-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:36px;text-align:center;" title="Expand Details"></th>
+                    <th style="min-width:180px;">STAFF MEMBER</th>
+                    <th style="min-width:170px;">ROLE / DESIGNATION</th>
+                    <th style="width:120px;text-align:center;">CREATED</th>
+                    <th style="width:120px;text-align:center;">MODIFIED</th>
+                    <th style="width:120px;text-align:center;">TOTAL HANDLED</th>
+                    <th style="width:140px;text-align:right;">TOTAL SALES / VOL</th>
+                    <th style="width:130px;min-width:120px;text-align:right;padding-right:16px;">COMMISSION</th>
+                    <th style="width:160px;min-width:140px;text-align:center;padding:0 12px;">LAST ACTIVITY</th>
+                    <th style="width:80px;text-align:center;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.StaffMembers != null && Model.StaffMembers.Any())
+                {
+                    @foreach (var s in Model.StaffMembers)
+                    {
+                        <tr id="staffRow_@s.StaffId">
+                            <td style="text-align:center;padding:6px;">
+                                <button type="button" class="btn-expand-toggle" id="staffExpandBtn_@s.StaffId" onclick="toggleStaffDetails(@s.StaffId, this)" title="Expand / Collapse Bills and Vouchers Handled">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                                </button>
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleStaffDetails(@s.StaffId, document.getElementById('staffExpandBtn_@s.StaffId'))">
+                                    <div style="width:30px;height:30px;border-radius:50%;background:rgba(198,138,62,0.18);border:1px solid var(--brass);display:flex;align-items:center;justify-content:center;color:var(--brass-text);font-weight:700;font-size:12px;">
+                                        @(string.IsNullOrEmpty(s.StaffName) ? "S" : s.StaffName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <strong style="color:var(--text);font-size:13px;">@s.StaffName</strong>
+                                        <div style="font-size:11px;color:var(--text-faint);">@@@s.Username</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="font-size:12px;color:var(--text-dim);">@s.Role</span></td>
+                            <td style="text-align:center;">
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                    <span class="badge" style="background:rgba(198,138,62,0.15);color:var(--brass-text);border:1px solid rgba(198,138,62,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;">@s.BillsCreatedCount bills</span>
+                                    @if (s.VouchersCreatedCount > 0)
+                                    {
+                                        <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;" title="Standalone manual vouchers created without bill">@s.VouchersCreatedCount vouchers</span>
+                                    }
+                                </div>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                    <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;">@s.BillsModifiedCount bills</span>
+                                    @if (s.VouchersModifiedCount > 0)
+                                    {
+                                        <span class="badge" style="background:rgba(198,138,62,0.15);color:var(--brass-text);border:1px solid rgba(198,138,62,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;" title="Standalone manual vouchers modified">@s.VouchersModifiedCount vouchers</span>
+                                    }
+                                </div>
+                            </td>
+                            <td style="text-align:center;">
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                    <strong><span class="badge gray" style="font-size:11.5px;padding:3px 8px;">@s.TotalHandled total</span></strong>
+                                    @if (s.TotalVouchersHandled > 0 && s.TotalBillsHandled > 0)
+                                    {
+                                        <span style="font-size:10px;color:var(--text-faint);">(@s.TotalBillsHandled b · @s.TotalVouchersHandled vc)</span>
+                                    }
+                                </div>
+                            </td>
+                            <td style="text-align:right;">
+                                <div class="tnum font-weight-bold" style="color:var(--text);">Rs @s.TotalSalesVolume.ToString("N0")</div>
+                                @if (s.TotalVouchersVolume > 0)
+                                {
+                                    <div class="tnum" style="font-size:10.5px;color:var(--teal-text);" title="Total volume of standalone manual vouchers">
+                                        Vc: Rs @s.TotalVouchersVolume.ToString("N0")
+                                    </div>
+                                }
+                            </td>
+                            <td class="tnum" style="text-align:right;color:var(--brass-text);font-weight:600;padding-right:16px;white-space:nowrap;">Rs @s.TotalCommission.ToString("N0")</td>
+                            <td style="font-size:11.5px;color:var(--text-dim);text-align:center;white-space:nowrap;padding:0 12px;">@s.LastActivity</td>
+                            <td style="text-align:center;">
+                                <button type="button" class="btn ghost icon-only" title="Expand / View Bills &amp; Vouchers" onclick="toggleStaffDetails(@s.StaffId, document.getElementById('staffExpandBtn_@s.StaffId'))" style="padding:4px 8px;color:var(--teal-text);">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Expandable Sub-table Row for Bills and Vouchers Worked On by this Staff Member -->
+                        <tr class="staff-expand-row" id="staffDetails_@s.StaffId" style="display:none;">
+                            <td colspan="10" style="padding:0;background:var(--bg);">
+                                <div class="staff-expand-card">
+                                    <!-- Expand Card Header -->
+                                    <div class="staff-expand-header">
+                                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                            <span class="badge brass" style="font-family:monospace;font-size:12.5px;font-weight:700;">@s.StaffName</span>
+                                            <span class="badge gray" style="font-size:11.5px;">@s.Role</span>
+                                            <span style="font-size:12px;color:var(--text-dim);">
+                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                Audit: @s.BillsWorkedOn.Count Bills · @s.ManualVouchers.Count Manual Vouchers
+                                            </span>
+                                        </div>
+                                        <div style="font-size:12px;color:var(--text-dim);">
+                                            Audit Tracking: <code style="color:var(--brass-text);">CreatedBy</code> &amp; <code style="color:var(--teal-text);">ModifiedBy</code>
+                                        </div>
+                                    </div>
+
+                                    <!-- 1. Sub-table of Bills Worked On -->
+                                    <div style="font-size:12.5px;font-weight:600;color:var(--text-dim);margin:12px 0 6px 0;display:flex;align-items:center;gap:6px;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        Bills Worked On (@s.BillsWorkedOn.Count records)
+                                    </div>
+
+                                    @if (s.BillsWorkedOn != null && s.BillsWorkedOn.Any())
+                                    {
+                                        <div style="overflow-x:auto;">
+                                            <table style="width:100%;font-size:12px;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+                                                <thead>
+                                                    <tr style="border-bottom:1px solid var(--border);background:var(--surface2);">
+                                                        <th style="padding:8px 10px;text-align:center;width:35px;">#</th>
+                                                        <th style="padding:8px 10px;width:100px;">BILL #</th>
+                                                        <th style="padding:8px 10px;width:100px;">DATE</th>
+                                                        <th style="padding:8px 10px;">SUPPLIER (BOAT / FARMER)</th>
+                                                        <th style="padding:8px 10px;text-align:center;width:70px;">LOTS</th>
+                                                        <th style="padding:8px 10px;text-align:right;width:110px;">TOTAL SALE</th>
+                                                        <th style="padding:8px 10px;text-align:right;width:100px;">COMMISSION</th>
+                                                        <th style="padding:8px 10px;text-align:right;width:110px;">NET PAYABLE</th>
+                                                        <th style="padding:8px 10px;text-align:center;width:130px;">ACTIVITY</th>
+                                                        <th style="padding:8px 10px;width:150px;">TIMESTAMP</th>
+                                                        <th style="padding:8px 10px;text-align:center;width:80px;">STATUS</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{ int itemIdx = 1; }
+                                                    @foreach (var bill in s.BillsWorkedOn)
+                                                    {
+                                                        var billKey = $"{s.StaffId}_{bill.BillNo}";
+                                                        var hasVouchers = bill.LinkedVouchers != null && bill.LinkedVouchers.Any();
+                                                        <tr style="border-bottom:1px solid var(--border-soft);">
+                                                            <td style="padding:8px 10px;text-align:center;color:var(--text-faint);">@itemIdx</td>
+                                                            <td style="padding:8px 10px;">
+                                                                <div style="display:flex;align-items:center;gap:6px;">
+                                                                    @if (hasVouchers)
+                                                                    {
+                                                                        <button type="button" class="btn-bill-expand" id="billExpandBtn_@billKey" onclick="toggleBillVouchers('@billKey', this)" title="Expand / Collapse @bill.LinkedVouchers.Count Linked Vouchers">
+                                                                            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                                                                        </button>
+                                                                        <span class="badge brass" style="font-family:monospace;font-weight:700;cursor:pointer;" onclick="toggleBillVouchers('@billKey', document.getElementById('billExpandBtn_@billKey'))">
+                                                                            @bill.BillNo
+                                                                        </span>
+                                                                        <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid rgba(47,158,140,0.3);" onclick="toggleBillVouchers('@billKey', document.getElementById('billExpandBtn_@billKey'))" title="Click to view @bill.LinkedVouchers.Count linked vouchers">
+                                                                            @bill.LinkedVouchers.Count vc ▾
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge brass" style="font-family:monospace;font-weight:700;">
+                                                                            @bill.BillNo
+                                                                        </span>
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                            <td style="padding:8px 10px;color:var(--text-dim);">@bill.Date</td>
+                                                            <td style="padding:8px 10px;"><strong>@bill.SupplierName</strong></td>
+                                                            <td style="padding:8px 10px;text-align:center;">
+                                                                <span class="badge gray">@bill.LotsCount lots</span>
+                                                            </td>
+                                                            <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;">Rs @bill.TotalSale.ToString("N0")</td>
+                                                            <td class="tnum" style="padding:8px 10px;text-align:right;color:var(--brass-text);">Rs @bill.Commission.ToString("N0")</td>
+                                                            <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;color:var(--green-text);">Rs @bill.NetPayable.ToString("N0")</td>
+                                                            <td style="padding:8px 10px;text-align:center;">
+                                                                @if (bill.ActivityType == "Created")
+                                                                {
+                                                                    <span class="badge" style="background:rgba(198,138,62,0.18);color:var(--brass-text);border:1px solid var(--brass);font-size:10.5px;padding:2px 7px;">
+                                                                        Created (اصل اندراج)
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge" style="background:rgba(47,158,140,0.18);color:var(--teal-text);border:1px solid var(--teal);font-size:10.5px;padding:2px 7px;">
+                                                                        Modified (ترمیم)
+                                                                    </span>
+                                                                }
+                                                            </td>
+                                                            <td style="padding:8px 10px;font-size:11px;color:var(--text-dim);">@bill.Timestamp</td>
+                                                            <td style="padding:8px 10px;text-align:center;">
+                                                                @if (bill.Status == "Paid")
+                                                                {
+                                                                    <span class="badge green" style="font-size:10px;">Paid</span>
+                                                                }
+                                                                else if (bill.Status == "Due")
+                                                                {
+                                                                    <span class="badge red" style="font-size:10px;">Due</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge gray" style="font-size:10px;">@bill.Status</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+
+                                                        <!-- Linked Vouchers Directly Below This Bill (Collapsible Accordion) -->
+                                                        @if (hasVouchers)
+                                                        {
+                                                            <tr id="billVouchers_@billKey" class="bill-vouchers-row" style="display:none;background:rgba(15, 28, 24, 0.75);border-bottom:1px solid rgba(255,255,255,0.06);">
+                                                                <td style="padding:6px 10px;text-align:center;color:var(--teal-text);">
+                                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                                                                </td>
+                                                                <td colspan="10" style="padding:8px 12px;">
+                                                                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                                                                        <div style="display:flex;align-items:center;gap:6px;">
+                                                                            <span style="font-size:11px;font-weight:700;color:var(--teal-text);text-transform:uppercase;letter-spacing:0.5px;">
+                                                                                ↳ Linked Vouchers for Bill #@bill.BillNo
+                                                                            </span>
+                                                                            <span class="badge gray" style="font-size:10px;padding:1px 6px;">@bill.LinkedVouchers.Count vouchers</span>
+                                                                        </div>
+                                                                        <div style="font-size:11px;color:var(--text-faint);">
+                                                                            Total Voucher Amount: <strong class="tnum" style="color:var(--brass-text);">Rs @bill.LinkedVouchers.Sum(v => v.Amount).ToString("N0")</strong>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- Mini Vouchers Table for this Bill -->
+                                                                    <div style="overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:4px;background:rgba(0,0,0,0.3);">
+                                                                        <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                                                                            <thead>
+                                                                                <tr style="border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--text-faint);">
+                                                                                    <th style="padding:5px 8px;text-align:left;width:120px;">VOUCHER #</th>
+                                                                                    <th style="padding:5px 8px;text-align:left;width:140px;">TYPE</th>
+                                                                                    <th style="padding:5px 8px;text-align:left;width:95px;">DATE</th>
+                                                                                    <th style="padding:5px 8px;text-align:left;">PARTY / ACCOUNT</th>
+                                                                                    <th style="padding:5px 8px;text-align:right;width:110px;">AMOUNT</th>
+                                                                                    <th style="padding:5px 8px;text-align:left;">NARRATION</th>
+                                                                                    <th style="padding:5px 8px;text-align:center;width:90px;">ACTIVITY</th>
+                                                                                    <th style="padding:5px 8px;text-align:center;width:75px;">STATUS</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                @foreach (var lv in bill.LinkedVouchers)
+                                                                                {
+                                                                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                                                                                        <td style="padding:5px 8px;">
+                                                                                            <span class="badge brass" style="font-family:monospace;font-size:10.5px;font-weight:700;">@lv.VoucherNo</span>
+                                                                                        </td>
+                                                                                        <td style="padding:5px 8px;color:var(--teal-text);font-weight:600;">@lv.VoucherType</td>
+                                                                                        <td style="padding:5px 8px;color:var(--text-dim);">@lv.Date</td>
+                                                                                        <td style="padding:5px 8px;color:var(--text);"><strong>@lv.PartyOrAccount</strong></td>
+                                                                                        <td class="tnum font-weight-bold" style="padding:5px 8px;text-align:right;color:var(--brass-text);">Rs @lv.Amount.ToString("N0")</td>
+                                                                                        <td style="padding:5px 8px;color:var(--text-dim);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@lv.Narration">
+                                                                                            @(string.IsNullOrWhiteSpace(lv.Narration) ? "-" : lv.Narration)
+                                                                                        </td>
+                                                                                        <td style="padding:5px 8px;text-align:center;">
+                                                                                            <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);font-size:10px;padding:1px 5px;">@lv.ActivityType</span>
+                                                                                        </td>
+                                                                                        <td style="padding:5px 8px;text-align:center;">
+                                                                                            <span class="badge green" style="font-size:9.5px;padding:1px 5px;">@lv.Status</span>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                }
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                        itemIdx++;
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <!-- Summary Footer for Expanded Bill Details -->
+                                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:12px;margin-top:10px;border-top:1px solid var(--border-soft);font-size:12px;">
+                                            <div>
+                                                <span style="color:var(--text-dim);">Total Bills Handled: </span>
+                                                <strong>@s.BillsWorkedOn.Count Bills</strong>
+                                            </div>
+                                            <div style="display:flex;gap:18px;">
+                                                <div>
+                                                    <span style="color:var(--text-dim);">Total Sales Volume: </span>
+                                                    <strong class="tnum" style="color:var(--text);">Rs @s.TotalSalesVolume.ToString("N0")</strong>
+                                                </div>
+                                                <div>
+                                                    <span style="color:var(--text-dim);">Commission: </span>
+                                                    <strong class="tnum" style="color:var(--brass-text);">Rs @s.TotalCommission.ToString("N0")</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-faint);font-size:12px;text-align:center;">
+                                            No bills handled by this staff member in the selected period.
+                                        </div>
+                                    }
+
+                                    <!-- 2. Standalone Manual Vouchers Section (Created without any Bill) -->
+                                    <div style="margin-top:18px;border-top:1px dashed var(--border);padding-top:16px;">
+                                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:rgba(47,158,140,0.18);color:var(--teal-text);">
+                                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                </span>
+                                                <strong style="color:var(--text);font-size:13px;letter-spacing:0.3px;">
+                                                    Manual Vouchers Created Without Any Bill
+                                                </strong>
+                                                <span class="badge gray" style="font-size:11px;">@s.ManualVouchers.Count records</span>
+                                            </div>
+                                            <div style="font-size:12px;color:var(--text-dim);">
+                                                Total Manual Voucher Volume: <strong class="tnum" style="color:var(--teal-text);">Rs @s.TotalVouchersVolume.ToString("N0")</strong>
+                                            </div>
+                                        </div>
+
+                                        @if (s.ManualVouchers != null && s.ManualVouchers.Any())
+                                        {
+                                            <div style="overflow-x:auto;">
+                                                <table style="width:100%;font-size:12px;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+                                                    <thead>
+                                                        <tr style="border-bottom:1px solid var(--border);background:var(--surface2);">
+                                                            <th style="padding:8px 10px;text-align:center;width:35px;">#</th>
+                                                            <th style="padding:8px 10px;width:130px;">VOUCHER #</th>
+                                                            <th style="padding:8px 10px;width:140px;">TYPE</th>
+                                                            <th style="padding:8px 10px;width:100px;">DATE</th>
+                                                            <th style="padding:8px 10px;">PARTY / ACCOUNT</th>
+                                                            <th style="padding:8px 10px;text-align:right;width:120px;">AMOUNT</th>
+                                                            <th style="padding:8px 10px;">NARRATION</th>
+                                                            <th style="padding:8px 10px;text-align:center;width:110px;">ACTIVITY</th>
+                                                            <th style="padding:8px 10px;width:150px;">TIMESTAMP</th>
+                                                            <th style="padding:8px 10px;text-align:center;width:80px;">STATUS</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @{ int vIdx = 1; }
+                                                        @foreach (var mv in s.ManualVouchers)
+                                                        {
+                                                            <tr style="border-bottom:1px solid var(--border-soft);">
+                                                                <td style="padding:8px 10px;text-align:center;color:var(--text-faint);">@vIdx</td>
+                                                                <td style="padding:8px 10px;">
+                                                                    <span class="badge brass" style="font-family:monospace;font-weight:700;">@mv.VoucherNo</span>
+                                                                </td>
+                                                                <td style="padding:8px 10px;">
+                                                                    <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;font-weight:600;">@mv.VoucherType</span>
+                                                                </td>
+                                                                <td style="padding:8px 10px;color:var(--text-dim);">@mv.Date</td>
+                                                                <td style="padding:8px 10px;">
+                                                                    <strong style="color:var(--text);">@mv.PartyOrAccount</strong>
+                                                                </td>
+                                                                <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;color:var(--teal-text);">
+                                                                    Rs @mv.Amount.ToString("N0")
+                                                                </td>
+                                                                <td style="padding:8px 10px;color:var(--text-dim);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="@mv.Narration">
+                                                                    @(string.IsNullOrWhiteSpace(mv.Narration) ? "-" : mv.Narration)
+                                                                </td>
+                                                                <td style="padding:8px 10px;text-align:center;">
+                                                                    @if (mv.ActivityType == "Created")
+                                                                    {
+                                                                        <span class="badge" style="background:rgba(198,138,62,0.18);color:var(--brass-text);border:1px solid var(--brass);font-size:10.5px;padding:2px 7px;">
+                                                                            Created (اصل اندراج)
+                                                                        </span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge" style="background:rgba(47,158,140,0.18);color:var(--teal-text);border:1px solid var(--teal);font-size:10.5px;padding:2px 7px;">
+                                                                            Modified (ترمیم)
+                                                                        </span>
+                                                                    }
+                                                                </td>
+                                                                <td style="padding:8px 10px;font-size:11px;color:var(--text-dim);">@mv.Timestamp</td>
+                                                                <td style="padding:8px 10px;text-align:center;">
+                                                                    <span class="badge green" style="font-size:10px;">@mv.Status</span>
+                                                                </td>
+                                                            </tr>
+                                                            vIdx++;
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Summary Footer for Manual Vouchers -->
+                                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:10px;margin-top:8px;font-size:12px;">
+                                                <div>
+                                                    <span style="color:var(--text-dim);">Total Standalone Vouchers: </span>
+                                                    <strong>@s.ManualVouchers.Count Vouchers</strong>
+                                                </div>
+                                                <div>
+                                                    <span style="color:var(--text-dim);">Total Amount: </span>
+                                                    <strong class="tnum" style="color:var(--teal-text);">Rs @s.TotalVouchersVolume.ToString("N0")</strong>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-faint);font-size:12px;text-align:center;">
+                                                No standalone manual vouchers created by this staff member in the selected period.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" style="text-align:center;padding:30px;color:var(--text-faint);font-size:13px;">
+                            No staff activity recorded yet
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Global Accordion Helpers (Immediately available)
+    window.toggleStaffDetails = function (staffId, btn) {
+        const detailRow = document.getElementById('staffDetails_' + staffId);
+        if (!detailRow) return;
+        const expandBtn = btn || document.getElementById('staffExpandBtn_' + staffId);
+        const isHidden = window.getComputedStyle(detailRow).display === 'none' || detailRow.style.display === 'none';
+        if (isHidden) {
+            detailRow.style.display = 'table-row';
+            if (expandBtn) expandBtn.classList.add('expanded');
+        } else {
+            detailRow.style.display = 'none';
+            if (expandBtn) expandBtn.classList.remove('expanded');
+        }
+    };
+
+    window.toggleBillVouchers = function (key, btn) {
+        const row = document.getElementById('billVouchers_' + key);
+        if (!row) return;
+        const expandBtn = btn || document.getElementById('billExpandBtn_' + key);
+        const isHidden = window.getComputedStyle(row).display === 'none' || row.style.display === 'none';
+        if (isHidden) {
+            row.style.display = 'table-row';
+            if (expandBtn) expandBtn.classList.add('expanded');
+        } else {
+            row.style.display = 'none';
+            if (expandBtn) expandBtn.classList.remove('expanded');
+        }
+    };
+
+    window.handleFilterSubmit = function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (typeof window.applyDashboardFilter === 'function') {
+            window.applyDashboardFilter();
+        } else {
+            const form = document.getElementById('dashFilterForm');
+            if (form) form.submit();
+        }
+        return false;
+    };
+
+    (function () {
+        const sel = document.getElementById('dashDurationSelect');
+        const fromInput = document.getElementById('dashFromDate');
+        const toInput = document.getElementById('dashToDate');
+        const trendTitle = document.getElementById('trendCardTitle');
+        const weeklyBars = document.getElementById('weeklyBars');
+        const monthlyBars = document.getElementById('monthlyBars');
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        function pad2(n) {
+            return n < 10 ? '0' + n : n;
+        }
+
+        function formatDateOnly(d) {
+            const day = pad2(d.getDate());
+            const mon = monthNames[d.getMonth()];
+            const year = d.getFullYear();
+            return `${day}-${mon}-${year}`;
+        }
+
+        function formatDateTime(d) {
+            const dateStr = formatDateOnly(d);
+            const hours = pad2(d.getHours());
+            const mins = pad2(d.getMinutes());
+            return `${dateStr} ${hours}:${mins}`;
+        }
+
+        function formatIsoDate(d) {
+            return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        }
+
+        function formatIsoDateFromDisplay(str) {
+            if (!str) return '';
+            if (str.indexOf('-') > 0 && str.length === 10 && str.split('-')[0].length === 4) {
+                return str;
+            }
+            const parts = str.trim().split(/[- /]/);
+            if (parts.length >= 3) {
+                const day = parts[0];
+                const monStr = parts[1].toLowerCase();
+                const year = parts[2];
+                const mIdx = monthNames.findIndex(m => m.toLowerCase() === monStr);
+                if (mIdx !== -1) {
+                    return `${year}-${pad2(mIdx + 1)}-${pad2(parseInt(day, 10))}`;
+                }
+            }
+            return str;
+        }
+
+        function updateDurationInputs() {
+            if (!sel || !fromInput || !toInput) return;
+
+            const val = sel.value;
+            const now = new Date();
+
+            // Toggle Weekly vs Monthly Graph dynamically
+            if (val === 'month') {
+                if (trendTitle) trendTitle.textContent = 'Monthly commission trend';
+                if (weeklyBars) weeklyBars.style.display = 'none';
+                if (monthlyBars) monthlyBars.style.display = 'flex';
+            } else {
+                if (trendTitle) trendTitle.textContent = 'Weekly commission trend';
+                if (weeklyBars) weeklyBars.style.display = 'flex';
+                if (monthlyBars) monthlyBars.style.display = 'none';
+            }
+
+            if (val === 'custom_date') {
+                // Selectable calendar mode
+                let currentFrom = (fromInput.dataset && fromInput.dataset.isoDate) 
+                    ? fromInput.dataset.isoDate 
+                    : formatIsoDateFromDisplay(fromInput.value);
+                let currentTo = (toInput.dataset && toInput.dataset.isoDate) 
+                    ? toInput.dataset.isoDate 
+                    : formatIsoDateFromDisplay(toInput.value);
+
+                fromInput.type = 'date';
+                toInput.type = 'date';
+                fromInput.removeAttribute('readonly');
+                toInput.removeAttribute('readonly');
+
+                if (currentFrom && currentFrom.length === 10 && currentFrom.indexOf('-') === 4) {
+                    fromInput.value = currentFrom;
+                } else {
+                    const defaultFrom = new Date();
+                    defaultFrom.setDate(now.getDate() - 7);
+                    fromInput.value = formatIsoDate(defaultFrom);
+                }
+
+                if (currentTo && currentTo.length === 10 && currentTo.indexOf('-') === 4) {
+                    toInput.value = currentTo;
+                } else {
+                    toInput.value = formatIsoDate(now);
+                }
+
+                fromInput.dataset.isoDate = fromInput.value;
+                toInput.dataset.isoDate = toInput.value;
+            } else {
+                // Predefined range modes (readonly text display)
+                fromInput.type = 'text';
+                toInput.type = 'text';
+                fromInput.setAttribute('readonly', 'readonly');
+                toInput.setAttribute('readonly', 'readonly');
+
+                let fromDate = new Date();
+                let toDate = new Date();
+
+                if (val === 'today') {
+                    // Display time along with date for today
+                    fromDate.setHours(0, 0, 0, 0);
+                    fromInput.value = formatDateTime(fromDate);
+                    toInput.value = formatDateTime(toDate);
+                    fromInput.dataset.isoDate = formatIsoDate(fromDate);
+                    toInput.dataset.isoDate = formatIsoDate(toDate);
+                    return;
+                } else if (val === 'past_three_days') {
+                    fromDate.setDate(now.getDate() - 3);
+                } else if (val === 'past_week') {
+                    fromDate.setDate(now.getDate() - 7);
+                } else if (val === '14_days') {
+                    fromDate.setDate(now.getDate() - 14);
+                } else if (val === 'month') {
+                    fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                }
+
+                // Display date only for other predefined ranges
+                fromInput.value = formatDateOnly(fromDate);
+                toInput.value = formatDateOnly(toDate);
+                fromInput.dataset.isoDate = formatIsoDate(fromDate);
+                toInput.dataset.isoDate = formatIsoDate(toDate);
+            }
+        }
+
+        let fetchAbortCtrl = null;
+        function fetchDashboardSummaries() {
+            const val = sel ? sel.value : 'today';
+            let fromVal = '';
+            let toVal = '';
+
+            if (val === 'custom_date') {
+                fromVal = (fromInput && fromInput.value) ? fromInput.value.trim() : (fromInput ? (fromInput.dataset.isoDate || '') : '');
+                toVal = (toInput && toInput.value) ? toInput.value.trim() : (toInput ? (toInput.dataset.isoDate || '') : '');
+                if (fromInput && fromVal) fromInput.dataset.isoDate = fromVal;
+                if (toInput && toVal) toInput.dataset.isoDate = toVal;
+            } else {
+                fromVal = (fromInput && fromInput.dataset && fromInput.dataset.isoDate) 
+                    ? fromInput.dataset.isoDate 
+                    : formatIsoDateFromDisplay(fromInput ? fromInput.value : '');
+                toVal = (toInput && toInput.dataset && toInput.dataset.isoDate) 
+                    ? toInput.dataset.isoDate 
+                    : formatIsoDateFromDisplay(toInput ? toInput.value : '');
+            }
+
+            // If custom range and both dates provided, ensure fromVal <= toVal
+            if (val === 'custom_date' && fromVal && toVal && fromVal > toVal) {
+                const temp = fromVal;
+                fromVal = toVal;
+                toVal = temp;
+                if (fromInput) {
+                    fromInput.value = fromVal;
+                    fromInput.dataset.isoDate = fromVal;
+                }
+                if (toInput) {
+                    toInput.value = toVal;
+                    toInput.dataset.isoDate = toVal;
+                }
+            }
+
+            const filterBtn = document.getElementById('btnFilterDashboard');
+            const filterText = document.getElementById('btnFilterText');
+            if (filterBtn) filterBtn.classList.add('loading');
+            if (filterText) filterText.textContent = 'Filtering...';
+
+            if (fetchAbortCtrl) {
+                fetchAbortCtrl.abort();
+            }
+            fetchAbortCtrl = new AbortController();
+
+            const baseUrl = '@Url.Action("GetDashboardSummaryData", "Home")';
+            const url = `${baseUrl}?duration=${encodeURIComponent(val)}&fromDate=${encodeURIComponent(fromVal)}&toDate=${encodeURIComponent(toVal)}`;
+
+            fetch(url, { signal: fetchAbortCtrl.signal })
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
+                .then(data => {
+                    if (filterBtn) filterBtn.classList.remove('loading');
+                    if (filterText) filterText.textContent = 'Filter';
+                    if (!data || !data.success) {
+                        console.warn('Dashboard summary data returned unsuccessful:', data);
+                        return;
+                    }
+
+                    // Update browser address bar without reload
+                    if (window.history && window.history.replaceState) {
+                        const newUrl = `${window.location.pathname}?duration=${encodeURIComponent(val)}&fromDate=${encodeURIComponent(fromVal)}&toDate=${encodeURIComponent(toVal)}`;
+                        window.history.replaceState(null, '', newUrl);
+                    }
+
+                    // 1. Update KPI cards
+                    const kpiBills = document.getElementById('kpiBillsCount');
+                    const kpiBillsSub = document.getElementById('kpiBillsSub');
+                    const kpiBillsLabel = document.getElementById('kpiBillsLabel');
+                    if (kpiBills) kpiBills.textContent = data.todayBillsCount ?? 0;
+                    if (kpiBillsSub) kpiBillsSub.textContent = (data.todayBillsCount ?? 0) + ' bills recorded';
+                    if (kpiBillsLabel) kpiBillsLabel.textContent = (val === 'today') ? "TODAY'S BILLS" : "BILLS COUNT";
+
+                    const kpiComm = document.getElementById('kpiCommissionEarned');
+                    const kpiCommSub = document.getElementById('kpiCommissionSub');
+                    if (kpiComm) kpiComm.textContent = 'Rs ' + Number(data.commissionEarned || 0).toLocaleString('en-US');
+                    if (kpiCommSub) kpiCommSub.textContent = (val === 'today') ? "Income from bills" : "Period income from bills";
+
+                    const kpiRec = document.getElementById('kpiTotalReceivable');
+                    const kpiCust = document.getElementById('kpiActiveCustomers');
+                    const kpiPay = document.getElementById('kpiTotalPayable');
+                    const kpiSupp = document.getElementById('kpiActiveSuppliers');
+
+                    if (kpiRec) kpiRec.textContent = (data.totalReceivable == 0) ? 'Rs 0' : (data.totalReceivable >= 100000 ? 'Rs ' + (data.totalReceivable / 100000).toFixed(1) + 'L' : 'Rs ' + Number(data.totalReceivable).toLocaleString('en-US'));
+                    if (kpiCust) kpiCust.textContent = `${data.activeCustomersCount} customers`;
+                    if (kpiPay) kpiPay.textContent = (data.totalPayable == 0) ? 'Rs 0' : (data.totalPayable >= 100000 ? 'Rs ' + (data.totalPayable / 100000).toFixed(1) + 'L' : 'Rs ' + Number(data.totalPayable).toLocaleString('en-US'));
+                    if (kpiSupp) kpiSupp.textContent = `${data.activeSuppliersCount} suppliers`;
+
+                    // 2. Update Payables Card
+                    const payTopList = document.getElementById('payablesTopList');
+                    const payRecentList = document.getElementById('payablesRecentList');
+                    const payCount = document.getElementById('payablesCount');
+                    const payTotal = document.getElementById('payablesTotal');
+
+                    if (payCount) payCount.textContent = data.topPayablesCount;
+                    if (payTotal) payTotal.textContent = 'Rs ' + Number(data.topPayablesTotal).toLocaleString('en-US');
+
+                    if (payTopList) {
+                        if (data.topPayables && data.topPayables.length > 0) {
+                            payTopList.innerHTML = data.topPayables.map(p => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(p.supplierName)}">${escapeHtml(p.supplierName)}</div>
+                                        <div class="meta">${escapeHtml(p.location || '-')}</div>
+                                    </div>
+                                    <div class="amt red tnum">Rs ${Number(p.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            payTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No payables due</div>';
+                        }
+                    }
+
+                    if (payRecentList) {
+                        if (data.recentPayables && data.recentPayables.length > 0) {
+                            payRecentList.innerHTML = data.recentPayables.map(p => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(p.supplierName)}">${escapeHtml(p.supplierName)}</div>
+                                        <div class="meta">${escapeHtml(p.location || '-')}</div>
+                                    </div>
+                                    <div class="amt red tnum">Rs ${Number(p.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            payRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent payables</div>';
+                        }
+                    }
+
+                    // 3. Update Receivables Card
+                    const recTopList = document.getElementById('receivablesTopList');
+                    const recRecentList = document.getElementById('receivablesRecentList');
+                    const recCount = document.getElementById('receivablesCount');
+                    const recTotal = document.getElementById('receivablesTotal');
+
+                    if (recCount) recCount.textContent = data.topReceivablesCount;
+                    if (recTotal) recTotal.textContent = 'Rs ' + Number(data.topReceivablesTotal).toLocaleString('en-US');
+
+                    if (recTopList) {
+                        if (data.topReceivables && data.topReceivables.length > 0) {
+                            recTopList.innerHTML = data.topReceivables.map(r => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</div>
+                                        <div class="meta">${escapeHtml(r.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt green tnum">Rs ${Number(r.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            recTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No receivables due</div>';
+                        }
+                    }
+
+                    if (recRecentList) {
+                        if (data.recentReceivables && data.recentReceivables.length > 0) {
+                            recRecentList.innerHTML = data.recentReceivables.map(r => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</div>
+                                        <div class="meta">${escapeHtml(r.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt green tnum">Rs ${Number(r.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            recRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent receivables</div>';
+                        }
+                    }
+
+                    // 4. Update Advances Card
+                    const advTopList = document.getElementById('advancesTopList');
+                    const advRecentList = document.getElementById('advancesRecentList');
+                    const advCount = document.getElementById('advancesCount');
+                    const advTotal = document.getElementById('advancesTotal');
+
+                    if (advCount) advCount.textContent = data.topAdvancesCount ?? 0;
+                    if (advTotal) advTotal.textContent = 'Rs ' + Number(data.topAdvancesTotal ?? 0).toLocaleString('en-US');
+
+                    if (advTopList) {
+                        if (data.topAdvances && data.topAdvances.length > 0) {
+                            advTopList.innerHTML = data.topAdvances.map(a => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(a.title)}">${escapeHtml(a.title)}</div>
+                                        <div class="meta">${escapeHtml(a.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt teal tnum">Rs ${Number(a.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            advTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No advances found</div>';
+                        }
+                    }
+
+                    if (advRecentList) {
+                        if (data.recentAdvances && data.recentAdvances.length > 0) {
+                            advRecentList.innerHTML = data.recentAdvances.map(a => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(a.title)}">${escapeHtml(a.title)}</div>
+                                        <div class="meta">${escapeHtml(a.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt teal tnum">Rs ${Number(a.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            advRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent advances</div>';
+                        }
+                    }
+
+                    // 5. Update Commission KPI Card
+                    if (kpiComm) {
+                        kpiComm.textContent = 'Rs ' + Number(data.commissionEarned ?? data.topCommissionsTotal ?? 0).toLocaleString('en-US');
+                    }
+
+                    // 6. Update Commission Card
+                    const comTopList = document.getElementById('commissionsTopList');
+                    const comRecentList = document.getElementById('commissionsRecentList');
+                    const comCount = document.getElementById('commissionsCount');
+                    const comTotal = document.getElementById('commissionsTotal');
+
+                    if (comCount) comCount.textContent = data.topCommissionsCount ?? 0;
+                    if (comTotal) comTotal.textContent = 'Rs ' + Number(data.topCommissionsTotal ?? 0).toLocaleString('en-US');
+
+                    if (comTopList) {
+                        if (data.topCommissions && data.topCommissions.length > 0) {
+                            comTopList.innerHTML = data.topCommissions.map(c => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</div>
+                                        <div class="meta" title="${escapeHtml(c.subtitle || '-')}">${escapeHtml(c.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt brass tnum">Rs ${Number(c.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            comTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No commission entries found</div>';
+                        }
+                    }
+
+                    if (comRecentList) {
+                        if (data.recentCommissions && data.recentCommissions.length > 0) {
+                            comRecentList.innerHTML = data.recentCommissions.map(c => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</div>
+                                        <div class="meta" title="${escapeHtml(c.subtitle || '-')}">${escapeHtml(c.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt brass tnum">Rs ${Number(c.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            comRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent commissions</div>';
+                        }
+                    }
+
+                    // 6b. Update Martey Card
+                    const marteyTopList = document.getElementById('marteyTopList');
+                    const marteyRecentList = document.getElementById('marteyRecentList');
+                    const marteyCount = document.getElementById('marteyCount');
+                    const marteyTotal = document.getElementById('marteyTotal');
+
+                    if (marteyCount) marteyCount.textContent = data.topMarteyCount ?? 0;
+                    if (marteyTotal) marteyTotal.textContent = 'Rs ' + Number(data.topMarteyTotal ?? 0).toLocaleString('en-US');
+
+                    if (marteyTopList) {
+                        if (data.topMartey && data.topMartey.length > 0) {
+                            marteyTopList.innerHTML = data.topMartey.map(m => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(m.title)}">${escapeHtml(m.title)}</div>
+                                        <div class="meta">${escapeHtml(m.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt amber tnum">Rs ${Number(m.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            marteyTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No martey records found</div>';
+                        }
+                    }
+
+                    if (marteyRecentList) {
+                        if (data.recentMartey && data.recentMartey.length > 0) {
+                            marteyRecentList.innerHTML = data.recentMartey.map(m => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(m.title)}">${escapeHtml(m.title)}</div>
+                                        <div class="meta">${escapeHtml(m.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt amber tnum">Rs ${Number(m.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            marteyRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent martey records</div>';
+                        }
+                    }
+
+                    // 6c. Update Loans Card
+                    const loansTopList = document.getElementById('loansTopList');
+                    const loansRecentList = document.getElementById('loansRecentList');
+                    const loansCount = document.getElementById('loansCount');
+                    const loansTotal = document.getElementById('loansTotal');
+
+                    if (loansCount) loansCount.textContent = data.topLoansCount ?? 0;
+                    if (loansTotal) loansTotal.textContent = 'Rs ' + Number(data.topLoansTotal ?? 0).toLocaleString('en-US');
+
+                    if (loansTopList) {
+                        if (data.topLoans && data.topLoans.length > 0) {
+                            loansTopList.innerHTML = data.topLoans.map(l => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(l.title)}">${escapeHtml(l.title)}</div>
+                                        <div class="meta">${escapeHtml(l.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt indigo tnum">Rs ${Number(l.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            loansTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No loan records found</div>';
+                        }
+                    }
+
+                    if (loansRecentList) {
+                        if (data.recentLoans && data.recentLoans.length > 0) {
+                            loansRecentList.innerHTML = data.recentLoans.map(l => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(l.title)}">${escapeHtml(l.title)}</div>
+                                        <div class="meta">${escapeHtml(l.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt indigo tnum">Rs ${Number(l.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            loansRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent loan records</div>';
+                        }
+                    }
+
+                    // 6d. Update Others Card
+                    const othersTopList = document.getElementById('othersTopList');
+                    const othersRecentList = document.getElementById('othersRecentList');
+                    const othersCount = document.getElementById('othersCount');
+                    const othersTotal = document.getElementById('othersTotal');
+
+                    if (othersCount) othersCount.textContent = data.topOthersCount ?? 0;
+                    if (othersTotal) othersTotal.textContent = 'Rs ' + Number(data.topOthersTotal ?? 0).toLocaleString('en-US');
+
+                    if (othersTopList) {
+                        if (data.topOthers && data.topOthers.length > 0) {
+                            othersTopList.innerHTML = data.topOthers.map(o => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(o.title)}">${escapeHtml(o.title)}</div>
+                                        <div class="meta">${escapeHtml(o.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt purple tnum">Rs ${Number(o.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            othersTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No other records found</div>';
+                        }
+                    }
+
+                    if (othersRecentList) {
+                        if (data.recentOthers && data.recentOthers.length > 0) {
+                            othersRecentList.innerHTML = data.recentOthers.map(o => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(o.title)}">${escapeHtml(o.title)}</div>
+                                        <div class="meta">${escapeHtml(o.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt purple tnum">Rs ${Number(o.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            othersRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent other records</div>';
+                        }
+                    }
+
+                    // 6e. Update Expenses Card
+                    const expTopList = document.getElementById('expensesTopList');
+                    const expRecentList = document.getElementById('expensesRecentList');
+                    const expCount = document.getElementById('expensesCount');
+                    const expTotal = document.getElementById('expensesTotal');
+
+                    if (expCount) expCount.textContent = data.topExpensesCount ?? 0;
+                    if (expTotal) expTotal.textContent = 'Rs ' + Number(data.topExpensesTotal ?? 0).toLocaleString('en-US');
+
+                    if (expTopList) {
+                        if (data.topExpenses && data.topExpenses.length > 0) {
+                            expTopList.innerHTML = data.topExpenses.map(e => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(e.title)}">${escapeHtml(e.title)}</div>
+                                        <div class="meta">${escapeHtml(e.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt red tnum">Rs ${Number(e.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            expTopList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No expense records found</div>';
+                        }
+                    }
+
+                    if (expRecentList) {
+                        if (data.recentExpenses && data.recentExpenses.length > 0) {
+                            expRecentList.innerHTML = data.recentExpenses.map(e => `
+                                <div class="mini-row">
+                                    <div class="info-col">
+                                        <div class="who" title="${escapeHtml(e.title)}">${escapeHtml(e.title)}</div>
+                                        <div class="meta">${escapeHtml(e.subtitle || '-')}</div>
+                                    </div>
+                                    <div class="amt red tnum">Rs ${Number(e.amount).toLocaleString('en-US')}</div>
+                                </div>
+                            `).join('');
+                        } else {
+                            expRecentList.innerHTML = '<div style="padding:15px 0;text-align:center;color:var(--text-faint);font-size:12px;">No recent expenses</div>';
+                        }
+                    }
+
+                    // 7. Update Weekly Trend Bar Chart
+                    const weeklyBars = document.getElementById('weeklyBars');
+                    if (weeklyBars) {
+                        if (data.weeklyTrends && data.weeklyTrends.length > 0) {
+                            weeklyBars.innerHTML = data.weeklyTrends.map(b => `
+                                <div class="bar-col">
+                                    <div class="bar" style="height:${b.percent}%; ${b.isToday ? 'background:linear-gradient(180deg,var(--brass),var(--brass-dim));' : ''}"></div>
+                                    <span class="bar-day">${escapeHtml(b.day)}</span>
+                                    <span class="bar-val tnum" style="${b.isToday ? 'color:var(--brass-text);font-weight:700;' : 'color:var(--text);'}">Rs ${Number(b.amount).toLocaleString('en-US')}</span>
+                                </div>
+                            `).join('');
+                        } else {
+                            weeklyBars.innerHTML = '<div style="padding:25px 0;text-align:center;color:var(--text-faint);width:100%;font-size:12px;">No commission trends recorded for this period</div>';
+                        }
+                    }
+
+                    // 8. Update Monthly Trend Bar Chart
+                    const monthlyBars = document.getElementById('monthlyBars');
+                    if (monthlyBars) {
+                        if (data.monthlyTrends && data.monthlyTrends.length > 0) {
+                            monthlyBars.innerHTML = data.monthlyTrends.map(b => `
+                                <div class="bar-col">
+                                    <div class="bar" style="height:${b.percent}%; ${b.isToday ? 'background:linear-gradient(180deg,var(--brass),var(--brass-dim));' : ''}"></div>
+                                    <span class="bar-day">${escapeHtml(b.day)}</span>
+                                    <span class="bar-val tnum" style="${b.isToday ? 'color:var(--brass-text);font-weight:700;' : 'color:var(--text);'}">Rs ${Number(b.amount).toLocaleString('en-US')}</span>
+                                </div>
+                            `).join('');
+                        } else {
+                            monthlyBars.innerHTML = '<div style="padding:25px 0;text-align:center;color:var(--text-faint);width:100%;font-size:12px;">No monthly trends recorded</div>';
+                        }
+                    }
+
+                    // 9. Update Recent Bills Table
+                    const recentBillsTbody = document.getElementById('recentBillsTbody');
+                    if (recentBillsTbody) {
+                        const tableEl = document.getElementById('recentBillsTable') || recentBillsTbody.closest('table');
+                        if (window.jQuery && $.fn && $.fn.DataTable && tableEl && $.fn.DataTable.isDataTable(tableEl)) {
+                            $(tableEl).DataTable().destroy();
+                        }
+
+                        if (data.recentBills && data.recentBills.length > 0) {
+                            recentBillsTbody.innerHTML = data.recentBills.map(b => {
+                                const status = b.status || 'Due';
+                                const statusClass = (status === 'Paid') ? 'paid' : (status === 'Due' ? 'due' : 'partial');
+                                return `
+                                    <tr>
+                                        <td><span class="tcode">${escapeHtml(b.billNo)}</span></td>
+                                        <td>${escapeHtml(b.date)}</td>
+                                        <td><strong>${escapeHtml(b.supplierName || 'Walk-in Supplier')}</strong></td>
+                                        <td><span class="badge badge-gray">${b.lotsCount || 0} lots</span></td>
+                                        <td class="tnum font-weight-bold">Rs ${Number(b.totalSale || 0).toLocaleString('en-US')}</td>
+                                        <td class="tnum" style="color:var(--brass-text);">Rs ${Number(b.commission || 0).toLocaleString('en-US')}</td>
+                                        <td class="tnum font-weight-bold" style="color:var(--green-text);">Rs ${Number(b.netPayable || 0).toLocaleString('en-US')}</td>
+                                        <td><span class="stamp ${statusClass}"><span class="ring"></span><span>${escapeHtml(status.toUpperCase())}</span></span></td>
+                                    </tr>
+                                `;
+                            }).join('');
+                        } else {
+                            recentBillsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:25px;color:var(--text-faint);">No bills recorded yet</td></tr>';
+                        }
+
+                        if (window.ERPDataTables && tableEl) {
+                            window.ERPDataTables.init(tableEl);
+                        }
+                    }
+
+                    // 10. Update Bank & Cash Accounts Liquidity
+                    const liquidPill = document.getElementById('totalLiquidFundsPill');
+                    const bankPill = document.getElementById('totalBankFundsPill');
+                    const cashPill = document.getElementById('totalCashInHandPill');
+                    if (liquidPill) liquidPill.textContent = 'Rs ' + Number(data.totalLiquidFunds || 0).toLocaleString('en-US');
+                    if (bankPill) bankPill.textContent = 'Rs ' + Number(data.totalBankFunds || 0).toLocaleString('en-US');
+                    if (cashPill) cashPill.textContent = 'Rs ' + Number(data.totalCashInHand || 0).toLocaleString('en-US');
+
+                    const dashBankGrid = document.getElementById('dashBankGrid');
+                    if (dashBankGrid) {
+                        if (data.bankBalances && data.bankBalances.length > 0) {
+                            dashBankGrid.innerHTML = data.bankBalances.map(b => {
+                                const isCash = !!b.isCash;
+                                const cardClass = isCash ? 'bank-asset-card is-cash' : 'bank-asset-card';
+                                const iconSvg = isCash
+                                    ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>'
+                                    : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 10v11M9 10v11M15 10v11M19 10v11M12 3l9 7H3z"/></svg>';
+                                const badgeClass = isCash ? 'badge brass' : 'badge teal';
+                                const badgeText = isCash ? 'Cash in Hand' : 'Commercial Bank';
+                                const balColor = isCash ? 'var(--brass-text)' : 'var(--green-text)';
+                                const branchText = b.branchOrLocation || (isCash ? 'Cash Counter' : 'Main Branch');
+                                const ibanText = (b.ibanNo && b.ibanNo !== '-') ? b.ibanNo : 'N/A';
+
+                                const ledgerAccParam = (b.chartOfAccountId && b.chartOfAccountId > 0)
+                                    ? `accountId=${encodeURIComponent(b.chartOfAccountId)}`
+                                    : `account=${encodeURIComponent(b.accountName || b.bankName || '')}`;
+                                const dateParams = (fromVal && toVal) ? `&fromDate=${encodeURIComponent(fromVal)}&toDate=${encodeURIComponent(toVal)}` : '';
+                                const bankLedgerUrl = `/AccountLedger?${ledgerAccParam}${dateParams}`;
+
+                                return `
+                                    <div class="${cardClass}">
+                                        <div class="bank-card-top">
+                                            <div class="bank-identity">
+                                                <div class="bank-icon-wrap">
+                                                    ${iconSvg}
+                                                </div>
+                                                <div>
+                                                    <div class="bank-title">${escapeHtml(b.bankName)}</div>
+                                                    <div class="bank-branch">${escapeHtml(branchText)}</div>
+                                                </div>
+                                            </div>
+                                            <span class="${badgeClass}" style="font-size:10px;padding:2px 7px;">
+                                                ${badgeText}
+                                            </span>
+                                        </div>
+
+                                        <div class="bank-meta-row">
+                                            <div>
+                                                <span class="meta-lbl">A/C Title:</span>
+                                                <strong class="meta-val">${escapeHtml(b.accountName)}</strong>
+                                            </div>
+                                            <div>
+                                                <span class="meta-lbl">A/C No:</span>
+                                                <span class="meta-val font-mono" style="color:var(--teal-text);">${escapeHtml(b.accountNo || '-')}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="bank-balance-box">
+                                            <div class="bal-lbl">AVAILABLE BALANCE IN ACCOUNT</div>
+                                            <div class="bal-amount tnum font-weight-bold" style="color:${balColor};">
+                                                Rs ${Number(b.currentBalance || 0).toLocaleString('en-US')}
+                                            </div>
+                                        </div>
+
+                                        <div class="bank-flux-row">
+                                            <div class="flux-item in">
+                                                <span class="flux-lbl">Inflow (Wasooli / Dep)</span>
+                                                <span class="flux-val tnum">+ Rs ${Number(b.inflowAmount || 0).toLocaleString('en-US')}</span>
+                                            </div>
+                                            <div class="flux-divider"></div>
+                                            <div class="flux-item out">
+                                                <span class="flux-lbl">Outflow (Payments / With)</span>
+                                                <span class="flux-val tnum">- Rs ${Number(b.outflowAmount || 0).toLocaleString('en-US')}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="bank-card-foot">
+                                            <span class="iban-text" title="${escapeHtml(ibanText)}">IBAN: ${escapeHtml(ibanText)}</span>
+                                            <a href="${bankLedgerUrl}" class="link-btn" style="font-size:11.5px;">View ledger →</a>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            dashBankGrid.innerHTML = '<div style="grid-column:1 / -1;padding:25px;text-align:center;color:var(--text-faint);">No bank or cash accounts configured yet in Bank Master.</div>';
+                        }
+                    }
+
+                    // 11. Update Staff Activity Table
+                    if (data.staffMembers) {
+                        renderStaffActivityTable(data.staffMembers);
+                    }
+                })
+                .catch(err => {
+                    const filterBtn = document.getElementById('btnFilterDashboard');
+                    const filterText = document.getElementById('btnFilterText');
+                    if (filterBtn) filterBtn.classList.remove('loading');
+                    if (filterText) filterText.textContent = 'Filter';
+                    if (err.name !== 'AbortError') {
+                        console.warn('Dashboard summary data fetch failed, submitting form fallback:', err);
+                        const form = document.getElementById('dashFilterForm');
+                        if (form) form.submit();
+                    }
+                });
+        }
+
+        window.applyDashboardFilter = function () {
+            fetchDashboardSummaries();
+        };
+
+        window.handleFilterSubmit = function (e) {
+            if (e) e.preventDefault();
+            fetchDashboardSummaries();
+            return false;
+        };
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function renderStaffActivityTable(staffMembers) {
+            const countBadge = document.getElementById('staffMembersCountBadge');
+            if (countBadge) {
+                countBadge.textContent = `${staffMembers ? staffMembers.length : 0} staff members`;
+            }
+
+            const tbody = document.querySelector('#staffActivityTable tbody');
+            if (!tbody) return;
+
+            if (!staffMembers || staffMembers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-faint);font-size:13px;">No staff activity recorded yet</td></tr>';
+                return;
+            }
+
+            let html = '';
+            staffMembers.forEach(s => {
+                const staffId = s.staffId || s.StaffId;
+                const staffName = s.staffName || s.StaffName || '';
+                const username = s.username || s.Username || '';
+                const role = s.role || s.Role || '';
+                const billsCreated = s.billsCreatedCount ?? s.BillsCreatedCount ?? 0;
+                const billsModified = s.billsModifiedCount ?? s.BillsModifiedCount ?? 0;
+                const vouchersCreated = s.vouchersCreatedCount ?? s.VouchersCreatedCount ?? 0;
+                const vouchersModified = s.vouchersModifiedCount ?? s.VouchersModifiedCount ?? 0;
+                const totalBills = billsCreated + billsModified;
+                const totalVouchers = vouchersCreated + vouchersModified;
+                const totalHandled = totalBills + totalVouchers;
+                const totalSales = s.totalSalesVolume ?? s.TotalSalesVolume ?? 0;
+                const totalComm = s.totalCommission ?? s.TotalCommission ?? 0;
+                const totalVcVol = s.totalVouchersVolume ?? s.TotalVouchersVolume ?? 0;
+                const lastAct = s.lastActivity || s.LastActivity || '-';
+                const bills = s.billsWorkedOn || s.BillsWorkedOn || [];
+                const manualVouchers = s.manualVouchers || s.ManualVouchers || [];
+                const initial = staffName ? staffName.charAt(0).toUpperCase() : 'S';
+
+                html += `
+                    <tr id="staffRow_${staffId}">
+                        <td style="text-align:center;padding:6px;">
+                            <button type="button" class="btn-expand-toggle" id="staffExpandBtn_${staffId}" onclick="toggleStaffDetails(${staffId}, this)" title="Expand / Collapse Bills and Vouchers Handled">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleStaffDetails(${staffId}, document.getElementById('staffExpandBtn_${staffId}'))">
+                                <div style="width:30px;height:30px;border-radius:50%;background:rgba(198,138,62,0.18);border:1px solid var(--brass);display:flex;align-items:center;justify-content:center;color:var(--brass-text);font-weight:700;font-size:12px;">
+                                    ${escapeHtml(initial)}
+                                </div>
+                                <div>
+                                    <strong style="color:var(--text);font-size:13px;">${escapeHtml(staffName)}</strong>
+                                    <div style="font-size:11px;color:var(--text-faint);">@@${escapeHtml(username)}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span style="font-size:12px;color:var(--text-dim);">${escapeHtml(role)}</span></td>
+                        <td style="text-align:center;">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                <span class="badge" style="background:rgba(198,138,62,0.15);color:var(--brass-text);border:1px solid rgba(198,138,62,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;">${billsCreated} bills</span>
+                                ${vouchersCreated > 0 ? `<span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;" title="Standalone manual vouchers created without bill">${vouchersCreated} vouchers</span>` : ''}
+                            </div>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                                <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;">${billsModified} bills</span>
+                                ${vouchersModified > 0 ? `<span class="badge" style="background:rgba(198,138,62,0.15);color:var(--brass-text);border:1px solid rgba(198,138,62,0.3);font-size:11px;padding:2px 7px;border-radius:5px;font-weight:600;" title="Standalone manual vouchers modified">${vouchersModified} vouchers</span>` : ''}
+                            </div>
+                        </td>
+                        <td style="text-align:center;">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                                <strong><span class="badge gray" style="font-size:11.5px;padding:3px 8px;">${totalHandled} total</span></strong>
+                                ${(totalVouchers > 0 && totalBills > 0) ? `<span style="font-size:10px;color:var(--text-faint);">(${totalBills} b · ${totalVouchers} vc)</span>` : ''}
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <div class="tnum font-weight-bold" style="color:var(--text);">Rs ${Number(totalSales).toLocaleString('en-US')}</div>
+                            ${totalVcVol > 0 ? `<div class="tnum" style="font-size:10.5px;color:var(--teal-text);" title="Total volume of standalone manual vouchers">Vc: Rs ${Number(totalVcVol).toLocaleString('en-US')}</div>` : ''}
+                        </td>
+                        <td class="tnum" style="text-align:right;color:var(--brass-text);font-weight:600;padding-right:16px;white-space:nowrap;">Rs ${Number(totalComm).toLocaleString('en-US')}</td>
+                        <td style="font-size:11.5px;color:var(--text-dim);text-align:center;white-space:nowrap;padding:0 12px;">${escapeHtml(lastAct)}</td>
+                        <td style="text-align:center;">
+                            <button type="button" class="btn ghost icon-only" title="Expand / View Bills & Vouchers" onclick="toggleStaffDetails(${staffId}, document.getElementById('staffExpandBtn_${staffId}'))" style="padding:4px 8px;color:var(--teal-text);">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr class="staff-expand-row" id="staffDetails_${staffId}" style="display:none;">
+                        <td colspan="10" style="padding:0;background:var(--bg);">
+                            <div class="staff-expand-card">
+                                <div class="staff-expand-header">
+                                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                        <span class="badge brass" style="font-family:monospace;font-size:12.5px;font-weight:700;">${escapeHtml(staffName)}</span>
+                                        <span class="badge gray" style="font-size:11.5px;">${escapeHtml(role)}</span>
+                                        <span style="font-size:12px;color:var(--text-dim);">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:3px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                            Audit: ${bills.length} Bills · ${manualVouchers.length} Manual Vouchers
+                                        </span>
+                                    </div>
+                                    <div style="font-size:12px;color:var(--text-dim);">
+                                        Audit Tracking: <code style="color:var(--brass-text);">CreatedBy</code> &amp; <code style="color:var(--teal-text);">ModifiedBy</code>
+                                    </div>
+                                </div>
+
+                                <!-- 1. Bills Worked On Sub-Table -->
+                                <div style="font-size:12.5px;font-weight:600;color:var(--text-dim);margin:12px 0 6px 0;display:flex;align-items:center;gap:6px;">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    Bills Worked On (${bills.length} records)
+                                </div>
+
+                                ${bills.length > 0 ? `
+                                <div style="overflow-x:auto;">
+                                    <table style="width:100%;font-size:12px;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+                                        <thead>
+                                            <tr style="border-bottom:1px solid var(--border);background:var(--surface2);">
+                                                <th style="padding:8px 10px;text-align:center;width:35px;">#</th>
+                                                <th style="padding:8px 10px;width:100px;">BILL #</th>
+                                                <th style="padding:8px 10px;width:100px;">DATE</th>
+                                                <th style="padding:8px 10px;">SUPPLIER (BOAT / FARMER)</th>
+                                                <th style="padding:8px 10px;text-align:center;width:70px;">LOTS</th>
+                                                <th style="padding:8px 10px;text-align:right;width:110px;">TOTAL SALE</th>
+                                                <th style="padding:8px 10px;text-align:right;width:100px;">COMMISSION</th>
+                                                <th style="padding:8px 10px;text-align:right;width:110px;">NET PAYABLE</th>
+                                                <th style="padding:8px 10px;text-align:center;width:130px;">ACTIVITY</th>
+                                                <th style="padding:8px 10px;width:150px;">TIMESTAMP</th>
+                                                <th style="padding:8px 10px;text-align:center;width:80px;">STATUS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${bills.map((b, idx) => {
+                                                const billNo = b.billNo || b.BillNo || '';
+                                                const date = b.date || b.Date || '';
+                                                const suppName = b.supplierName || b.SupplierName || 'Walk-in Supplier';
+                                                const lots = b.lotsCount ?? b.LotsCount ?? 0;
+                                                const sale = b.totalSale ?? b.TotalSale ?? 0;
+                                                const comm = b.commission ?? b.Commission ?? 0;
+                                                const net = b.netPayable ?? b.NetPayable ?? 0;
+                                                const act = b.activityType || b.ActivityType || 'Created';
+                                                const ts = b.timestamp || b.Timestamp || '';
+                                                const st = b.status || b.Status || 'Due';
+                                                const linkedVouchers = b.linkedVouchers || b.LinkedVouchers || [];
+                                                const stClass = (st === 'Paid') ? 'badge green' : (st === 'Due' ? 'badge red' : 'badge gray');
+                                                const billKey = `${staffId}_${billNo}`;
+                                                const hasVouchers = linkedVouchers && linkedVouchers.length > 0;
+
+                                                return `
+                                                    <tr style="border-bottom:1px solid var(--border-soft);">
+                                                        <td style="padding:8px 10px;text-align:center;color:var(--text-faint);">${idx + 1}</td>
+                                                        <td style="padding:8px 10px;">
+                                                            <div style="display:flex;align-items:center;gap:6px;">
+                                                                ${hasVouchers ? `
+                                                                    <button type="button" class="btn-bill-expand" id="billExpandBtn_${billKey}" onclick="toggleBillVouchers('${billKey}', this)" title="Expand / Collapse ${linkedVouchers.length} Linked Vouchers">
+                                                                        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                                                                    </button>
+                                                                ` : ''}
+                                                                <span class="badge brass" style="font-family:monospace;font-weight:700;${hasVouchers ? 'cursor:pointer;' : ''}" ${hasVouchers ? `onclick="toggleBillVouchers('${billKey}', document.getElementById('billExpandBtn_${billKey}'))"` : ''}>
+                                                                    ${escapeHtml(billNo)}
+                                                                </span>
+                                                                ${hasVouchers ? `
+                                                                    <span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid rgba(47,158,140,0.3);" onclick="toggleBillVouchers('${billKey}', document.getElementById('billExpandBtn_${billKey}'))" title="Click to view ${linkedVouchers.length} linked vouchers">
+                                                                        ${linkedVouchers.length} vc ▾
+                                                                    </span>
+                                                                ` : ''}
+                                                            </div>
+                                                        </td>
+                                                        <td style="padding:8px 10px;color:var(--text-dim);">${escapeHtml(date)}</td>
+                                                        <td style="padding:8px 10px;"><strong>${escapeHtml(suppName)}</strong></td>
+                                                        <td style="padding:8px 10px;text-align:center;"><span class="badge gray">${lots} lots</span></td>
+                                                        <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;">Rs ${Number(sale).toLocaleString('en-US')}</td>
+                                                        <td class="tnum" style="padding:8px 10px;text-align:right;color:var(--brass-text);">Rs ${Number(comm).toLocaleString('en-US')}</td>
+                                                        <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;color:var(--green-text);">Rs ${Number(net).toLocaleString('en-US')}</td>
+                                                        <td style="padding:8px 10px;text-align:center;">
+                                                            <span class="badge" style="background:${act === 'Created' ? 'rgba(198,138,62,0.18)' : 'rgba(47,158,140,0.18)'};color:${act === 'Created' ? 'var(--brass-text)' : 'var(--teal-text)'};border:1px solid ${act === 'Created' ? 'var(--brass)' : 'var(--teal)'};font-size:10.5px;padding:2px 7px;">
+                                                                ${act === 'Created' ? 'Created (اصل اندراج)' : 'Modified (ترمیم)'}
+                                                            </span>
+                                                        </td>
+                                                        <td style="padding:8px 10px;font-size:11px;color:var(--text-dim);">${escapeHtml(ts)}</td>
+                                                        <td style="padding:8px 10px;text-align:center;"><span class="${stClass}" style="font-size:10px;">${escapeHtml(st)}</span></td>
+                                                    </tr>
+                                                    ${hasVouchers ? `
+                                                        <tr id="billVouchers_${billKey}" class="bill-vouchers-row" style="display:none;background:rgba(15, 28, 24, 0.75);border-bottom:1px solid rgba(255,255,255,0.06);">
+                                                            <td style="padding:6px 10px;text-align:center;color:var(--teal-text);">
+                                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                                                            </td>
+                                                            <td colspan="10" style="padding:8px 12px;">
+                                                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                                                                    <div style="display:flex;align-items:center;gap:6px;">
+                                                                        <span style="font-size:11px;font-weight:700;color:var(--teal-text);text-transform:uppercase;letter-spacing:0.5px;">
+                                                                            ↳ Linked Vouchers for Bill #${escapeHtml(billNo)}
+                                                                        </span>
+                                                                        <span class="badge gray" style="font-size:10px;padding:1px 6px;">${linkedVouchers.length} vouchers</span>
+                                                                    </div>
+                                                                    <div style="font-size:11px;color:var(--text-faint);">
+                                                                        Total Voucher Amount: <strong class="tnum" style="color:var(--brass-text);">Rs ${Number(linkedVouchers.reduce((sum, v) => sum + (v.amount || v.Amount || 0), 0)).toLocaleString('en-US')}</strong>
+                                                                    </div>
+                                                                </div>
+                                                                <div style="overflow-x:auto;border:1px solid rgba(255,255,255,0.08);border-radius:4px;background:rgba(0,0,0,0.3);">
+                                                                    <table style="width:100%;font-size:11px;border-collapse:collapse;">
+                                                                        <thead>
+                                                                            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:var(--text-faint);">
+                                                                                <th style="padding:5px 8px;text-align:left;width:120px;">VOUCHER #</th>
+                                                                                <th style="padding:5px 8px;text-align:left;width:140px;">TYPE</th>
+                                                                                <th style="padding:5px 8px;text-align:left;width:95px;">DATE</th>
+                                                                                <th style="padding:5px 8px;text-align:left;">PARTY / ACCOUNT</th>
+                                                                                <th style="padding:5px 8px;text-align:right;width:110px;">AMOUNT</th>
+                                                                                <th style="padding:5px 8px;text-align:left;">NARRATION</th>
+                                                                                <th style="padding:5px 8px;text-align:center;width:90px;">ACTIVITY</th>
+                                                                                <th style="padding:5px 8px;text-align:center;width:75px;">STATUS</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            ${linkedVouchers.map(lv => `
+                                                                                <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                                                                                    <td style="padding:5px 8px;"><span class="badge brass" style="font-family:monospace;font-size:10.5px;font-weight:700;">${escapeHtml(lv.voucherNo || lv.VoucherNo || '')}</span></td>
+                                                                                    <td style="padding:5px 8px;color:var(--teal-text);font-weight:600;">${escapeHtml(lv.voucherType || lv.VoucherType || '')}</td>
+                                                                                    <td style="padding:5px 8px;color:var(--text-dim);">${escapeHtml(lv.date || lv.Date || '')}</td>
+                                                                                    <td style="padding:5px 8px;color:var(--text);"><strong>${escapeHtml(lv.partyOrAccount || lv.PartyOrAccount || '')}</strong></td>
+                                                                                    <td class="tnum font-weight-bold" style="padding:5px 8px;text-align:right;color:var(--brass-text);">Rs ${Number(lv.amount || lv.Amount || 0).toLocaleString('en-US')}</td>
+                                                                                    <td style="padding:5px 8px;color:var(--text-dim);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(lv.narration || lv.Narration || '')}">${escapeHtml(lv.narration || lv.Narration || '-')}</td>
+                                                                                    <td style="padding:5px 8px;text-align:center;"><span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);font-size:10px;padding:1px 5px;">${escapeHtml(lv.activityType || lv.ActivityType || 'Created')}</span></td>
+                                                                                    <td style="padding:5px 8px;text-align:center;"><span class="badge green" style="font-size:9.5px;padding:1px 5px;">${escapeHtml(lv.status || lv.Status || 'Approved')}</span></td>
+                                                                                </tr>
+                                                                            `).join('')}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ` : ''}
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:12px;margin-top:10px;border-top:1px solid var(--border-soft);font-size:12px;">
+                                    <div>
+                                        <span style="color:var(--text-dim);">Total Bills Handled: </span>
+                                        <strong>${bills.length} Bills</strong>
+                                    </div>
+                                    <div style="display:flex;gap:18px;">
+                                        <div>
+                                            <span style="color:var(--text-dim);">Total Sales Volume: </span>
+                                            <strong class="tnum" style="color:var(--text);">Rs ${Number(totalSales).toLocaleString('en-US')}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="color:var(--text-dim);">Commission: </span>
+                                            <strong class="tnum" style="color:var(--brass-text);">Rs ${Number(totalComm).toLocaleString('en-US')}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : `
+                                <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-faint);font-size:12px;text-align:center;">
+                                    No bills handled by this staff member in the selected period.
+                                </div>
+                                `}
+
+                                <!-- 2. Standalone Manual Vouchers Section -->
+                                <div style="margin-top:18px;border-top:1px dashed var(--border);padding-top:16px;">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:rgba(47,158,140,0.18);color:var(--teal-text);">
+                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                            </span>
+                                            <strong style="color:var(--text);font-size:13px;letter-spacing:0.3px;">
+                                                Manual Vouchers Created Without Any Bill
+                                            </strong>
+                                            <span class="badge gray" style="font-size:11px;">${manualVouchers.length} records</span>
+                                        </div>
+                                        <div style="font-size:12px;color:var(--text-dim);">
+                                            Total Manual Voucher Volume: <strong class="tnum" style="color:var(--teal-text);">Rs ${Number(totalVcVol).toLocaleString('en-US')}</strong>
+                                        </div>
+                                    </div>
+
+                                    ${manualVouchers.length > 0 ? `
+                                    <div style="overflow-x:auto;">
+                                        <table style="width:100%;font-size:12px;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+                                            <thead>
+                                                <tr style="border-bottom:1px solid var(--border);background:var(--surface2);">
+                                                    <th style="padding:8px 10px;text-align:center;width:35px;">#</th>
+                                                    <th style="padding:8px 10px;width:130px;">VOUCHER #</th>
+                                                    <th style="padding:8px 10px;width:140px;">TYPE</th>
+                                                    <th style="padding:8px 10px;width:100px;">DATE</th>
+                                                    <th style="padding:8px 10px;">PARTY / ACCOUNT</th>
+                                                    <th style="padding:8px 10px;text-align:right;width:120px;">AMOUNT</th>
+                                                    <th style="padding:8px 10px;">NARRATION</th>
+                                                    <th style="padding:8px 10px;text-align:center;width:110px;">ACTIVITY</th>
+                                                    <th style="padding:8px 10px;width:150px;">TIMESTAMP</th>
+                                                    <th style="padding:8px 10px;text-align:center;width:80px;">STATUS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${manualVouchers.map((mv, vIdx) => {
+                                                    const vNo = mv.voucherNo || mv.VoucherNo || '';
+                                                    const vType = mv.voucherType || mv.VoucherType || '';
+                                                    const vDate = mv.date || mv.Date || '';
+                                                    const vParty = mv.partyOrAccount || mv.PartyOrAccount || '';
+                                                    const vAmt = mv.amount ?? mv.Amount ?? 0;
+                                                    const vNarr = mv.narration || mv.Narration || '-';
+                                                    const vAct = mv.activityType || mv.ActivityType || 'Created';
+                                                    const vTs = mv.timestamp || mv.Timestamp || '';
+                                                    const vSt = mv.status || mv.Status || 'Approved';
+
+                                                    return `
+                                                        <tr style="border-bottom:1px solid var(--border-soft);">
+                                                            <td style="padding:8px 10px;text-align:center;color:var(--text-faint);">${vIdx + 1}</td>
+                                                            <td style="padding:8px 10px;"><span class="badge brass" style="font-family:monospace;font-weight:700;">${escapeHtml(vNo)}</span></td>
+                                                            <td style="padding:8px 10px;"><span class="badge" style="background:rgba(47,158,140,0.15);color:var(--teal-text);border:1px solid rgba(47,158,140,0.3);font-size:11px;font-weight:600;">${escapeHtml(vType)}</span></td>
+                                                            <td style="padding:8px 10px;color:var(--text-dim);">${escapeHtml(vDate)}</td>
+                                                            <td style="padding:8px 10px;"><strong style="color:var(--text);">${escapeHtml(vParty)}</strong></td>
+                                                            <td class="tnum font-weight-bold" style="padding:8px 10px;text-align:right;color:var(--teal-text);">Rs ${Number(vAmt).toLocaleString('en-US')}</td>
+                                                            <td style="padding:8px 10px;color:var(--text-dim);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(vNarr)}">${escapeHtml(vNarr)}</td>
+                                                            <td style="padding:8px 10px;text-align:center;">
+                                                                <span class="badge" style="background:${vAct === 'Created' ? 'rgba(198,138,62,0.18)' : 'rgba(47,158,140,0.18)'};color:${vAct === 'Created' ? 'var(--brass-text)' : 'var(--teal-text)'};border:1px solid ${vAct === 'Created' ? 'var(--brass)' : 'var(--teal)'};font-size:10.5px;padding:2px 7px;">
+                                                                    ${vAct === 'Created' ? 'Created (اصل اندراج)' : 'Modified (ترمیم)'}
+                                                                </span>
+                                                            </td>
+                                                            <td style="padding:8px 10px;font-size:11px;color:var(--text-dim);">${escapeHtml(vTs)}</td>
+                                                            <td style="padding:8px 10px;text-align:center;"><span class="badge green" style="font-size:10px;">${escapeHtml(vSt)}</span></td>
+                                                        </tr>
+                                                    `;
+                                                }).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:10px;margin-top:8px;font-size:12px;">
+                                        <div>
+                                            <span style="color:var(--text-dim);">Total Standalone Vouchers: </span>
+                                            <strong>${manualVouchers.length} Vouchers</strong>
+                                        </div>
+                                        <div>
+                                            <span style="color:var(--text-dim);">Total Amount: </span>
+                                            <strong class="tnum" style="color:var(--teal-text);">Rs ${Number(totalVcVol).toLocaleString('en-US')}</strong>
+                                        </div>
+                                    </div>
+                                    ` : `
+                                    <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-faint);font-size:12px;text-align:center;">
+                                        No standalone manual vouchers created by this staff member in the selected period.
+                                    </div>
+                                    `}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        if (sel) {
+            sel.addEventListener('change', function () {
+                updateDurationInputs();
+                fetchDashboardSummaries();
+            });
+            updateDurationInputs();
+        }
+
+        if (fromInput) {
+            fromInput.addEventListener('input', function () {
+                if (this.value) this.dataset.isoDate = this.value;
+            });
+            fromInput.addEventListener('change', function () {
+                if (this.value) this.dataset.isoDate = this.value;
+                if (sel && sel.value === 'custom_date') fetchDashboardSummaries();
+            });
+        }
+
+        if (toInput) {
+            toInput.addEventListener('input', function () {
+                if (this.value) this.dataset.isoDate = this.value;
+            });
+            toInput.addEventListener('change', function () {
+                if (this.value) this.dataset.isoDate = this.value;
+                if (sel && sel.value === 'custom_date') fetchDashboardSummaries();
+            });
+        }
+
+        const filterBtnEl = document.getElementById('btnFilterDashboard');
+        if (filterBtnEl) {
+            filterBtnEl.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (sel && sel.value === 'custom_date') {
+                    if (fromInput && fromInput.value) fromInput.dataset.isoDate = fromInput.value;
+                    if (toInput && toInput.value) toInput.dataset.isoDate = toInput.value;
+                }
+                fetchDashboardSummaries();
+            });
+        }
+    })();
+
+
+    // Toggle Staff Details Sub-table (Matching NewBill Pattern)
+    window.toggleStaffDetails = function (staffId, btn) {
+        const detailRow = document.getElementById('staffDetails_' + staffId);
+        if (!detailRow) {
+            console.warn('Detail row not found for staffId:', staffId);
+            return;
+        }
+
+        const expandBtn = btn || document.getElementById('staffExpandBtn_' + staffId);
+        const isHidden = window.getComputedStyle(detailRow).display === 'none' || detailRow.style.display === 'none';
+        if (isHidden) {
+            detailRow.style.display = 'table-row';
+            if (expandBtn) expandBtn.classList.add('expanded');
+        } else {
+            detailRow.style.display = 'none';
+            if (expandBtn) expandBtn.classList.remove('expanded');
+        }
+    };
+
+    // Toggle Linked Vouchers Accordion for a Bill
+    window.toggleBillVouchers = function (key, btn) {
+        const row = document.getElementById('billVouchers_' + key);
+        if (!row) return;
+
+        const expandBtn = btn || document.getElementById('billExpandBtn_' + key);
+        const isHidden = window.getComputedStyle(row).display === 'none' || row.style.display === 'none';
+        if (isHidden) {
+            row.style.display = 'table-row';
+            if (expandBtn) expandBtn.classList.add('expanded');
+        } else {
+            row.style.display = 'none';
+            if (expandBtn) expandBtn.classList.remove('expanded');
+        }
+    };
+</script>
+}

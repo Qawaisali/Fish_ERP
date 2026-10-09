@@ -1,0 +1,218 @@
+@model ERP_Core.Dtos.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    var userInitial = !string.IsNullOrEmpty(Model.Name) ? Model.Name.Substring(0, 1).ToUpper() : "U";
+    var isSuperAdmin = Model.RoleName.Equals("Admin", StringComparison.OrdinalIgnoreCase) || Model.RoleName.Equals("Super Admin", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- ========================================================================== -->
+    <!-- 1. PROFILE HERO BANNER                                                     -->
+    <!-- ========================================================================== -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: 16px; background: #FFFFFF;">
+        <!-- Top Cover Accent Strip -->
+        <div class="p-4" style="background: linear-gradient(135deg, #1E4E42 0%, #153E35 60%, #0D2822 100%); height: 100px; position: relative;">
+            <div class="position-absolute top-0 end-0 p-3 opacity-25 text-white">
+                <i class="fa-solid fa-shield-halved fa-5x"></i>
+            </div>
+        </div>
+
+        <!-- Profile Info Row -->
+        <div class="card-body p-4 pt-0">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                
+                <!-- Avatar & Identity -->
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <!-- Overlapping Avatar -->
+                    <div class="position-relative" style="margin-top: -48px;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-lg"
+                             style="width: 92px; height: 92px; font-size: 2.2rem; background: @(isSuperAdmin ? "linear-gradient(135deg, #F59E0B, #D97706)" : "linear-gradient(135deg, var(--teal), #0F766E)"); border: 4px solid #FFFFFF;">
+                            @userInitial
+                        </div>
+                        @if (Model.Active)
+                        {
+                            <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-2 border-white rounded-circle" title="Active Account" style="margin-right: 4px; margin-bottom: 4px;"></span>
+                        }
+                    </div>
+
+                    <!-- User Name & Meta Badges -->
+                    <div class="pt-3">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <h3 class="fw-bold mb-0" style="color: #0F172A !important; font-size: 1.45rem; letter-spacing: -0.01em;">@Model.Name</h3>
+                            <span class="badge rounded-pill px-3 py-1 font-monospace" style="background-color: #E6F4F1; color: var(--teal); font-size: 0.75rem; border: 1px solid rgba(47, 111, 94, 0.25);">
+                                Emp #@Model.EmpId
+                            </span>
+                            @if (Model.Active)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.72rem;">Active</span>
+                            }
+                        </div>
+                        <div class="d-flex align-items-center gap-2 text-muted small flex-wrap" style="font-size: 0.82rem;">
+                            <span><i class="fa-solid fa-at text-muted me-1"></i><strong class="text-dark">@Model.UserName</strong></span>
+                            <span class="opacity-50">&bull;</span>
+                            <span><i class="fa-solid fa-briefcase text-muted me-1"></i>@Model.DesignationName</span>
+                            <span class="opacity-50">&bull;</span>
+                            <span><i class="fa-solid fa-building text-muted me-1"></i>@Model.CompanyName</span>
+                            <span class="opacity-50">&bull;</span>
+                            <span><i class="fa-solid fa-user-shield text-muted me-1"></i><span class="badge bg-light text-dark border">@Model.RoleName</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Status Pill -->
+                <div class="pt-3 d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-secondary border px-3 py-2" style="font-size: 0.78rem;">
+                        <i class="fa-regular fa-calendar-check me-1 text-teal-custom" style="color: var(--teal);"></i> Member Since @(Model.CreatedOn.HasValue ? Model.CreatedOn.Value.ToString("MMM yyyy") : "System Setup")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-4" role="alert" style="border-radius: 10px;">
+            <i class="fa-solid fa-circle-check text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-4" role="alert" style="border-radius: 10px;">
+            <i class="fa-solid fa-circle-exclamation text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ========================================================================== -->
+    <!-- 2. PROFILE DETAILS & EMPLOYMENT INFORMATION                                -->
+    <!-- ========================================================================== -->
+    <div class="row g-4">
+        
+        <!-- Left Side: Organization Overview & Accessible Modules -->
+        <div class="col-12 col-lg-4">
+            <!-- Employment Context Card -->
+            <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 14px; background: #FFFFFF;">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="fa-solid fa-briefcase text-teal-custom" style="color: var(--teal);"></i>
+                    <h6 class="fw-bold text-dark mb-0">Employment Information</h6>
+                </div>
+                <div class="d-flex flex-column gap-3 small">
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">EMPLOYEE CODE</span>
+                        <strong class="text-dark font-monospace">#@Model.EmpId</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">COMPANY</span>
+                        <strong class="text-dark">@Model.CompanyName</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">DESIGNATION</span>
+                        <strong class="text-dark">@Model.DesignationName</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">SECURITY ROLE</span>
+                        <span class="badge bg-light text-dark border px-2 py-1 mt-1">@Model.RoleName</span>
+                    </div>
+                    <div>
+                        <span class="text-muted d-block" style="font-size: 0.72rem;">DEPARTMENT</span>
+                        <strong class="text-dark">@Model.DepartmentName</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accessible Modules Preview -->
+            @if (Model.AccessibleModules != null && Model.AccessibleModules.Any())
+            {
+                <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 14px; background: #FFFFFF;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fa-solid fa-key text-teal-custom" style="color: var(--teal);"></i>
+                        <h6 class="fw-bold text-dark mb-0">Authorized Modules</h6>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var mod in Model.AccessibleModules)
+                        {
+                            <span class="badge bg-light text-dark border px-2 py-1 small">@mod</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Company Managed Credentials Notice -->
+            <div class="card border-0 shadow-sm p-3 bg-light" style="border-radius: 14px; border-left: 4px solid var(--teal) !important;">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="fa-solid fa-circle-info text-teal-custom mt-1" style="color: var(--teal);"></i>
+                    <div class="small text-muted">
+                        <strong class="text-dark d-block">Account Credentials &amp; Access</strong>
+                        Your login username and security role access permissions are assigned and managed centrally by the company administration.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Personal & Contact Profile Form -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm" style="border-radius: 14px; background: #FFFFFF;">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-regular fa-user text-teal-custom" style="color: var(--teal);"></i>
+                        <h6 class="fw-bold text-dark mb-0">Personal &amp; Contact Profile</h6>
+                    </div>
+                    <span class="text-muted small">Update your personal contact details and display name</span>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-controller="Profile" asp-action="UpdateProfile" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Full Name *</label>
+                                <input type="text" name="Name" value="@Model.UpdateForm.Name" class="form-control form-control-sm" required style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Username (Login ID)</label>
+                                <input type="text" value="@Model.UserName" class="form-control form-control-sm bg-light text-muted" readonly style="border-radius: 8px;" />
+                                <span class="text-muted" style="font-size: 0.70rem;">Username is assigned by company and cannot be modified</span>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Email Address *</label>
+                                <input type="email" name="Email" value="@Model.UpdateForm.Email" class="form-control form-control-sm" required style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Phone / Mobile Number</label>
+                                <input type="tel" name="PhoneNumber" value="@Model.UpdateForm.PhoneNumber" class="form-control form-control-sm" placeholder="e.g. +92 300 1234567" style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Employee ID</label>
+                                <input type="text" value="#@Model.EmpId" class="form-control form-control-sm bg-light font-monospace" readonly style="border-radius: 8px;" />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-dark">Account Created</label>
+                                <input type="text" value="@(Model.CreatedOn.HasValue ? Model.CreatedOn.Value.ToString("dd MMMM yyyy, hh:mm tt") : "System Default")" class="form-control form-control-sm bg-light" readonly style="border-radius: 8px;" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-sm btn-teal px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm" style="border-radius: 8px;">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>Save Profile Changes</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

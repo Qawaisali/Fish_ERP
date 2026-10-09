@@ -1,0 +1,1495 @@
+@model ERP_Core.Dtos.OpeningBalanceViewModel
+
+@{
+    ViewData["Title"] = "Opening Balance";
+    ViewData["SubTitle"] = "Financial Year select karein aur Chart of Accounts (Level 3) ke opening balances darj karein.";
+}
+
+@section Styles {
+    <!-- TomSelect Core CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+    <style>
+        /* ========================================================================= */
+        /* OPENING BALANCE MODULE - LUXURY DARK THEME STYLES                         */
+        /* ========================================================================= */
+
+        /* 1. Custom Entry Grid Table (Non-DataTables to avoid pagination/sorting) */
+        .ob-grid-table-container {
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+            border-radius: 10px;
+            background: var(--surface, #0E1A17);
+            overflow: visible;
+        }
+
+        .ob-grid-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            color: var(--text, #EAEFF4);
+        }
+
+        .ob-grid-table thead th {
+            background: var(--surface2, #142420);
+            color: var(--text-dim, #8E9C98);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+            white-space: nowrap;
+        }
+
+        .ob-grid-table tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        .ob-grid-table tbody tr.ob-row {
+            background: transparent;
+            transition: background-color 0.15s ease;
+        }
+
+        .ob-grid-table tbody tr.ob-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .ob-grid-table tfoot td {
+            padding: 14px 16px;
+            border-top: 2px solid var(--border, rgba(255, 255, 255, 0.15));
+            background: var(--surface2, #142420);
+        }
+
+        /* 2. TomSelect Searchable Dropdown Dark Theme */
+        .ts-wrapper.form-select-dark .ts-control,
+        .ts-wrapper .ts-control {
+            background-color: var(--surface2, #142420) !important;
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.14)) !important;
+            color: var(--text, #EAEFF4) !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            min-height: 40px !important;
+            padding: 8px 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            color: var(--text, #EAEFF4) !important;
+            font-size: 13px !important;
+        }
+
+        .ts-wrapper .ts-control .item {
+            color: var(--text, #EAEFF4) !important;
+            font-size: 13px !important;
+        }
+
+        /* Global & Body-Level TomSelect Dropdown Menu */
+        .ts-dropdown,
+        .ts-wrapper.form-select-dark .ts-dropdown {
+            background-color: #0E1A17 !important;
+            border: 1px solid rgba(198, 138, 62, 0.35) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+            color: #EAEFF4 !important;
+            z-index: 999999 !important;
+            font-family: 'Inter', -apple-system, sans-serif !important;
+            overflow: hidden !important;
+        }
+
+        .ts-dropdown .dropdown-input-wrap {
+            padding: 8px !important;
+            background: #142420 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .ts-dropdown .dropdown-input {
+            background: #0C1917 !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            color: #EAEFF4 !important;
+            border-radius: 6px !important;
+            padding: 7px 10px !important;
+            font-size: 13px !important;
+        }
+
+        .ts-dropdown .dropdown-input:focus {
+            border-color: #C68A3E !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.2) !important;
+        }
+
+        .ts-dropdown .option {
+            color: #EAEFF4 !important;
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+            cursor: pointer !important;
+        }
+
+        .ts-dropdown .option.active,
+        .ts-dropdown .option:hover {
+            background-color: #1B302B !important;
+            color: #E5C358 !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #2F6F5E !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+
+        .ts-dropdown .no-results {
+            color: #8E9C98 !important;
+            padding: 12px 14px !important;
+            font-size: 13px !important;
+            font-style: italic !important;
+        }
+
+        /* 3. Transaction Type Select */
+        .tran-type-select {
+            background-color: var(--surface2, #142420) !important;
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.14)) !important;
+            color: var(--green-text, #4EBF9E);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            height: 40px;
+            width: 100%;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tran-type-select:focus {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.2);
+        }
+
+        .tran-type-select option {
+            background-color: #142420;
+            color: #EAEFF4;
+            padding: 8px;
+        }
+
+        /* 4. Opening Balance Amount Input */
+        .ob-amount-input {
+            background-color: var(--surface2, #142420) !important;
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.14)) !important;
+            color: #EAEFF4 !important;
+            border-radius: 8px;
+            padding: 8px 14px 8px 36px;
+            font-size: 13.5px;
+            font-weight: 600;
+            height: 40px;
+            width: 100%;
+            text-align: right;
+            font-family: 'Inter', monospace;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .ob-amount-input:focus {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25);
+            background-color: #0E1A17 !important;
+        }
+
+        .ob-amount-input::placeholder {
+            color: rgba(142, 156, 152, 0.35) !important;
+            font-weight: 400 !important;
+        }
+
+        .currency-badge {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--brass-text, #E5C358);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* 5. Account Name Textbox */
+        .ob-account-textbox {
+            background-color: var(--surface2, #142420) !important;
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.14)) !important;
+            color: var(--text, #EAEFF4) !important;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            height: 40px;
+            width: 100%;
+            outline: none;
+            cursor: default;
+            transition: all 0.2s ease;
+        }
+
+        .ob-grid-table tbody tr.ob-row.has-amount {
+            background: rgba(198, 138, 62, 0.06) !important;
+        }
+
+        .ob-grid-table tbody tr.ob-row.has-amount td:first-child {
+            border-left: 3px solid var(--brass, #C68A3E);
+        }
+
+        /* 6. Filter Buttons & Clear Actions */
+        .filter-btn {
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--brass, #C68A3E) !important;
+            color: #0E1A17 !important;
+            font-weight: 700 !important;
+            border-color: var(--brass, #C68A3E) !important;
+        }
+
+        .btn-clear-row,
+        .btn-remove-row {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-dim, #8E9C98);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-clear-row:hover,
+        .btn-remove-row:hover {
+            color: var(--red-text, #E57373);
+            background: rgba(229, 115, 115, 0.14);
+            border-color: rgba(229, 115, 115, 0.3);
+        }
+
+        /* 7. Custom Luxury Alert Modal */
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(4, 9, 8, 0.82);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: alertFadeIn 0.2s ease-out;
+        }
+
+        @@keyframes alertFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @@keyframes alertPopIn {
+            from { opacity: 0; transform: scale(0.92) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .custom-alert-card {
+            background: linear-gradient(180deg, #162923 0%, #0E1A17 100%);
+            border: 1px solid rgba(198, 138, 62, 0.45);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            width: 92%;
+            max-width: 520px;
+            padding: 30px 28px 24px;
+            position: relative;
+            text-align: center;
+            animation: alertPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .alert-close-btn {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim, #8E9C98);
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .alert-close-btn:hover {
+            color: #FFF;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .alert-icon-wrap {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .alert-icon-wrap.alert-warning {
+            background: radial-gradient(circle, rgba(229, 115, 115, 0.25) 0%, rgba(229, 115, 115, 0.05) 70%);
+            border: 1px solid rgba(229, 115, 115, 0.45);
+            color: #FF8A80;
+            box-shadow: 0 0 24px rgba(229, 115, 115, 0.25);
+        }
+
+        .alert-icon-wrap.alert-info {
+            background: radial-gradient(circle, rgba(198, 138, 62, 0.25) 0%, rgba(198, 138, 62, 0.05) 70%);
+            border: 1px solid rgba(198, 138, 62, 0.45);
+            color: var(--brass-text, #E5C358);
+            box-shadow: 0 0 24px rgba(198, 138, 62, 0.25);
+        }
+
+        .alert-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #FFF;
+            margin: 0 0 6px;
+            letter-spacing: -0.2px;
+        }
+
+        .alert-subtitle {
+            font-size: 13px;
+            color: var(--text-dim, #8E9C98);
+            margin: 0 0 20px;
+            line-height: 1.5;
+        }
+
+        /* Stats Grid Inside Alert */
+        .alert-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .alert-stat-box {
+            background: #11201C;
+            border-radius: 10px;
+            padding: 12px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+        }
+
+        .alert-stat-box .stat-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            color: var(--text-dim, #8E9C98);
+            margin-bottom: 4px;
+        }
+
+        .alert-stat-box .stat-val {
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .alert-stat-box.stat-debit .stat-val {
+            color: var(--green-text, #4EBF9E);
+        }
+
+        .alert-stat-box.stat-credit .stat-val {
+            color: var(--red-text, #E57373);
+        }
+
+        .alert-stat-box.stat-diff {
+            background: rgba(229, 115, 115, 0.08);
+            border-color: rgba(229, 115, 115, 0.35);
+        }
+
+        .alert-stat-box.stat-diff .stat-val {
+            color: #FF8A80;
+        }
+
+        .alert-stat-box .stat-tag {
+            font-size: 10px;
+            color: var(--text-dim, #8E9C98);
+            font-weight: 500;
+        }
+
+        .alert-stat-box .stat-tag.stat-tag-diff {
+            color: #FF8A80;
+            font-weight: 700;
+        }
+
+        /* Tip / Advisory Box */
+        .alert-tip-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--text-dim, #8E9C98);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 20px;
+            line-height: 1.45;
+        }
+
+        .alert-tip-box svg {
+            flex-shrink: 0;
+            color: var(--brass-text, #E5C358);
+        }
+
+        .alert-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+    </style>
+}
+
+<!-- Summary Statistics Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL VOUCHERS</div>
+        <div class="val tnum">@Model.TotalVouchers</div>
+        <div class="sub">Opening Balance entries saved</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">TOTAL DEBIT POSTED</div>
+        <div class="val tnum" style="color:var(--green-text);">Rs @Model.TotalDebitSum.ToString("N2")</div>
+        <div class="sub">Total opening debit values</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">TOTAL CREDIT POSTED</div>
+        <div class="val tnum" style="color:var(--red-text);">Rs @Model.TotalCreditSum.ToString("N2")</div>
+        <div class="sub">Total opening credit values</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">LEVEL 3 ACCOUNTS</div>
+        <div class="val tnum" style="color:var(--brass-text);">@Model.AvailableCoaAccounts.Count</div>
+        <div class="sub">Eligible lowest-level accounts</div>
+    </div>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Navigation Subtabs -->
+<div class="subtabs no-print" style="margin-bottom:18px;">
+    <button type="button" class="subtab-btn active" id="tabEntryBtn" onclick="switchObTab('entry')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        @(Model.Id.HasValue && Model.Id.Value > 0 ? "Edit Opening Balance (" + Model.OBCode + ")" : "Opening Balance Entry")
+    </button>
+    <button type="button" class="subtab-btn" id="tabHistoryBtn" onclick="switchObTab('history')">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:-2px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Fiscal Years History (@Model.RecentVouchers.Count)
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 1. ENTRY VIEW: HEADER CARD + DYNAMIC LEVEL 3 COA ROWS                     -->
+<!-- ========================================================================= -->
+<div id="obEntryView">
+    <form asp-controller="OpeningBalance" asp-action="Save" method="post" id="obForm" onsubmit="return validateObForm()">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" value="@(Model.Id ?? 0)" />
+        <input type="hidden" name="CompanyId" value="@Model.CompanyId" />
+
+        <!-- Master Information Card -->
+        <div class="card" style="margin-bottom:20px;padding:20px 24px;border:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+                <div>
+                    <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--brass-text);display:flex;align-items:center;gap:8px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>
+                        Opening Balance Details
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Select financial year to establish or update opening balances. Only one opening balance exists per financial year.</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="badge badge-green" style="font-size:11px;padding:5px 10px;">
+                        1 Opening Balance per Financial Year
+                    </span>
+                    <span class="badge badge-brass" style="font-size:12px;padding:5px 12px;font-family:monospace;letter-spacing:0.5px;">
+                        Code: @Model.OBCode
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-grid c3">
+                <!-- Financial Year Searchable Dropdown -->
+                <div class="field">
+                    <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-weight:600;font-size:12.5px;">Financial Year <span style="color:var(--red-text);">*</span></span>
+                        <a href="/FinancialYear" target="_blank" style="font-size:11px;color:var(--brass-text);text-decoration:none;">+ Manage FY</a>
+                    </label>
+                    <select name="FinancialYearId" id="fySelect" class="searchable-select" data-placeholder="-- Select Financial Year --" required>
+                        <option value="">-- Select Financial Year --</option>
+                        @foreach (var fy in Model.AvailableFinancialYears)
+                        {
+                            <option value="@fy.Id" selected="@(fy.Id == Model.FinancialYearId)">
+                                @fy.DisplayText
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Fiscal Period (Readonly, Auto from Financial Year) -->
+                <div class="field">
+                    <label style="font-weight:600;font-size:12.5px;margin-bottom:6px;">Fiscal Period Range</label>
+                    <div style="height:40px;background:var(--surface2);border:1px solid var(--border);color:var(--teal-text,#3bba9f);border-radius:8px;padding:8px 12px;font-size:13px;display:flex;align-items:center;gap:8px;font-weight:500;">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>@(string.IsNullOrEmpty(Model.FiscalPeriodText) ? "Select a financial year" : Model.FiscalPeriodText)</span>
+                    </div>
+                </div>
+
+                <!-- Voucher Code (Auto Generated) -->
+                <div class="field">
+                    <label style="font-weight:600;font-size:12.5px;margin-bottom:6px;">Voucher Code</label>
+                    <input type="text" name="OBCode" value="@Model.OBCode" readonly style="height:40px;background:rgba(255,255,255,0.03);color:var(--brass-text);font-weight:600;font-family:monospace;border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:not-allowed;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Preloaded Level 3 Accounts Entry Grid Card -->
+        <div class="card" style="margin-bottom:20px;padding:20px 24px;border:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);display:flex;align-items:center;gap:8px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <span>Level 3 Chart of Accounts Entries</span>
+                        <span class="badge badge-brass" style="font-size:11px;" id="entryCountBadge">@Model.Details.Count Accounts</span>
+                        <span class="badge badge-green" style="font-size:11px;" id="activeEntriesBadge">0 Active with Balance</span>
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                        All Level 3 accounts preloaded. Enter amounts only for accounts that have opening balances; blank accounts will not be saved.
+                    </div>
+                </div>
+
+                <!-- Search & Filters Toolbar -->
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <div style="position:relative;width:240px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="accountSearchInput" placeholder="Filter accounts..." oninput="filterAccounts(this.value)" 
+                               style="height:34px;padding:6px 12px 6px 30px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px;outline:none;width:100%;" />
+                    </div>
+
+                    <button type="button" class="btn ghost btn-sm filter-btn active" id="btnFilterAll" onclick="setAccountFilter('all')" style="font-size:12px;padding:6px 12px;">
+                        All (@Model.Details.Count)
+                    </button>
+                    <button type="button" class="btn ghost btn-sm filter-btn" id="btnFilterActive" onclick="setAccountFilter('active')" style="font-size:12px;padding:6px 12px;">
+                        With Amount Only
+                    </button>
+                    <button type="button" class="btn ghost btn-sm" onclick="clearAllAmounts()" style="font-size:12px;padding:6px 12px;color:var(--red-text);border-color:rgba(229,115,115,0.3);">
+                        Clear Amounts
+                    </button>
+                    <button type="button" class="btn ghost btn-sm" id="btnRestoreAccounts" onclick="restoreAllRemovedAccounts()" style="display:none;font-size:12px;padding:6px 12px;color:var(--brass-text);border-color:rgba(198,138,62,0.4);align-items:center;">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Restore Removed (<span id="removedCount">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            @if (!Model.Details.Any())
+            {
+                <div style="background:rgba(198,138,62,0.1);border:1px solid rgba(198,138,62,0.4);color:var(--brass-text);padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:12.5px;display:flex;align-items:center;gap:10px;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span>Abhi tak koi Level 3 Account nahi mila. Customer ya Supplier Master me accounts banayein ya <a href="/ChartOfAccounts" style="color:#FFF;text-decoration:underline;">Chart of Accounts</a> me Level 3 sub-accounts create karein.</span>
+                </div>
+            }
+
+            <!-- Table of Preloaded Account Entries -->
+            <div class="ob-grid-table-container">
+                <table class="ob-grid-table" id="obEntriesTable">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;text-align:center;">#</th>
+                            <th style="width:110px;">Code</th>
+                            <th style="min-width:320px;">Chart of Account Name (Level 3)</th>
+                            <th style="width:160px;">Tran Type</th>
+                            <th style="width:230px;text-align:right;">Opening Balance Value</th>
+                            <th style="width:45px;text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="obEntriesBody">
+                        @for (int i = 0; i < Model.Details.Count; i++)
+                        {
+                            var row = Model.Details[i];
+                            var hasAmount = row.OBDtlOpenBlnc.HasValue && row.OBDtlOpenBlnc.Value > 0;
+                            <tr class="ob-row @(hasAmount ? "has-amount" : "")" id="obRow_@i"
+                                data-account-name="@(row.COAName?.ToLowerInvariant() ?? "")"
+                                data-account-code="@(row.COACode?.ToLowerInvariant() ?? "")"
+                                data-has-amount="@(hasAmount ? "true" : "false")">
+                                <td class="row-index" style="text-align:center;color:var(--text-dim);font-weight:600;">@(i + 1)</td>
+                                <td>
+                                    <input type="hidden" name="Details[@i].Id" value="@(row.Id ?? 0)" />
+                                    <input type="hidden" name="Details[@i].COAId" value="@row.COAId" />
+                                    <input type="hidden" name="Details[@i].COACode" value="@row.COACode" />
+                                    <input type="hidden" name="Details[@i].COAName" value="@row.COAName" />
+                                    <input type="hidden" name="Details[@i].ParentAccountName" value="@row.ParentAccountName" />
+                                    <span class="tcode" style="font-size:12px;font-weight:600;color:var(--brass-text);padding:4px 8px;background:rgba(198,138,62,0.12);border:1px solid rgba(198,138,62,0.25);border-radius:6px;display:inline-block;">
+                                        @(string.IsNullOrWhiteSpace(row.COACode) ? "-" : row.COACode)
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <input type="text"
+                                               class="ob-account-textbox"
+                                               value="@row.COAName"
+                                               readonly
+                                               title="@row.COAName" />
+                                        @if (!string.IsNullOrEmpty(row.ParentAccountName))
+                                        {
+                                            <span class="badge badge-gray" style="font-size:11px;white-space:nowrap;" title="Parent Group">
+                                                @row.ParentAccountName
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <select name="Details[@i].OBDtlTranType" class="tran-type-select" onchange="onTranTypeChange(this); recalcTotals();">
+                                        <option value="DEB" selected="@(row.OBDtlTranType == "DEB")">DEB (Debit)</option>
+                                        <option value="CRE" selected="@(row.OBDtlTranType == "CRE")">CRE (Credit)</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div style="position:relative;display:flex;align-items:center;">
+                                        <span class="currency-badge">Rs</span>
+                                        <input type="number" step="0.01" min="0" name="Details[@i].OBDtlOpenBlnc"
+                                               class="ob-amount-input tnum"
+                                               value="@(hasAmount ? row.OBDtlOpenBlnc!.Value.ToString("0.00") : "")"
+                                               placeholder="0.00"
+                                               oninput="onAmountInputChanged(this)" />
+                                    </div>
+                                </td>
+                                <td style="text-align:center;">
+                                    <button type="button" class="btn-remove-row" onclick="removeAccountRow(this, event)" title="Remove account from this voucher">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align:right;color:var(--text-dim);font-weight:600;">
+                                Balance Totals Summary:
+                            </td>
+                            <td>
+                                <div style="font-size:12px;color:var(--text-dim);">Total Debit: <span id="footDebitSum" class="tnum" style="color:var(--green-text);font-weight:700;">Rs 0.00</span></div>
+                                <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">Total Credit: <span id="footCreditSum" class="tnum" style="color:var(--red-text);font-weight:700;">Rs 0.00</span></div>
+                            </td>
+                            <td style="text-align:right;">
+                                <div style="font-size:11px;color:var(--text-dim);margin-bottom:3px;">Status &amp; Net Difference:</div>
+                                <div id="balanceStatusBadge" class="badge badge-gray" style="font-size:12px;padding:5px 12px;">
+                                    No amounts entered
+                                </div>
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Accounting Note -->
+            <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:12px;color:var(--text-dim);">
+                    Tip: Search or filter above to find accounts quickly. Zero/blank accounts will not be saved into the database.
+                </div>
+                <div style="font-size:12px;font-weight:600;color:var(--brass-text);">
+                    Double-Entry Rule: Total Debit and Total Credit must be exactly equal before submitting.
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit & Actions Bar -->
+        <div class="form-card" style="padding:16px 24px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:10px;">
+            <div>
+                <a href="/OpeningBalance" class="btn ghost" style="padding:10px 18px;font-size:13px;">
+                    Reset / New Voucher
+                </a>
+            </div>
+            <div style="display:flex;gap:18px;align-items:center;">
+                <div id="quickSummaryPreview" style="font-size:12.5px;color:var(--text-dim);text-align:right;">
+                    <div>Debit: <strong style="color:var(--green-text);" id="previewDeb">Rs 0.00</strong> | Credit: <strong style="color:var(--red-text);" id="previewCre">Rs 0.00</strong></div>
+                    <div style="margin-top:2px;">Diff: <strong id="previewDiff" style="color:var(--brass-text);">Rs 0.00</strong></div>
+                </div>
+                <button type="submit" class="btn brass" id="btnSaveOb" style="padding:10px 26px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    <span>Save Opening Balance</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 2. HISTORY VIEW: LIST OF SAVED OPENING BALANCE VOUCHERS                   -->
+<!-- ========================================================================= -->
+<div id="obHistoryView" style="display:none;">
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h3 style="font-size:16px;font-weight:600;margin:0;color:var(--text);">Fiscal Years Opening Balance Records</h3>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Each fiscal year has strictly one active opening balance record.</div>
+            </div>
+            <div style="font-size:12.5px;color:var(--teal-text,#3bba9f);font-weight:500;display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Select any Financial Year above to view or update opening balances.
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="dynamic-table" id="obHistoryTable">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Fiscal Period</th>
+                        <th>Financial Year</th>
+                        <th style="text-align:center;">Entries</th>
+                        <th style="text-align:right;">Total Debit</th>
+                        <th style="text-align:right;">Total Credit</th>
+                        <th style="text-align:center;">Status</th>
+                        <th>Created By</th>
+                        <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.RecentVouchers != null && Model.RecentVouchers.Any())
+                    {
+                        foreach (var v in Model.RecentVouchers)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="tcode" style="font-weight:600;color:var(--brass-text);">@v.OBCode</span>
+                                </td>
+                                <td>
+                                    <span style="font-size:12px;color:var(--text);font-weight:500;">@(string.IsNullOrEmpty(v.FiscalPeriod) ? v.OBDate.ToString("dd-MMM-yyyy") : v.FiscalPeriod)</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-gray">@(string.IsNullOrEmpty(v.FinancialYearCode) ? "FY #" + v.FinancialYearId : v.FinancialYearCode)</span>
+                                </td>
+                                <td style="text-align:center;">
+                                    <span class="badge badge-brass">@v.TotalEntries lines</span>
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">
+                                    Rs @v.TotalDebit.ToString("N2")
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">
+                                    Rs @v.TotalCredit.ToString("N2")
+                                </td>
+                                <td style="text-align:center;">
+                                    @if (v.IsBalanced)
+                                    {
+                                        <span class="badge badge-green" style="font-size:11px;">Balanced</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-amber" style="font-size:11px;" title="Diff: Rs @v.Difference.ToString("N2")">Diff: Rs @v.Difference.ToString("N0")</span>
+                                    }
+                                </td>
+                                <td style="font-size:12px;color:var(--text-dim);">
+                                    @v.CreatedBy <br />
+                                    <small style="color:var(--text-faint);">@v.CreatedOn?.ToString("dd/MM/yy HH:mm")</small>
+                                </td>
+                                <td style="text-align:center;">
+                                    <div class="row-actions" style="justify-content:center;display:flex;gap:6px;">
+                                        <button type="button" class="btn-icon" title="View Lines" onclick="viewVoucherDetails(@v.Id)" style="background:transparent;border:none;color:var(--text);cursor:pointer;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </button>
+                                        <a href="/OpeningBalance/Index?id=@v.Id&fyId=@v.FinancialYearId" class="btn-icon" title="Edit Voucher" style="color:var(--brass-text);text-decoration:none;display:inline-flex;align-items:center;">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        </a>
+                                        <form asp-controller="OpeningBalance" asp-action="Delete" asp-route-id="@v.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete Opening Balance voucher @v.OBCode?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-icon" title="Delete Voucher" style="background:transparent;border:none;color:var(--red-text);cursor:pointer;">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 3. VIEW DETAILS MODAL                                                     -->
+<!-- ========================================================================= -->
+<div id="voucherModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);z-index:999999;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:90%;max-width:700px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:18px;">
+            <div>
+                <h3 style="margin:0;font-size:16px;color:var(--brass-text);" id="modalVoucherCode">Voucher Details</h3>
+                <div style="font-size:12px;color:var(--text-dim);" id="modalVoucherMeta">Date: - | FY: -</div>
+            </div>
+            <button type="button" onclick="closeVoucherModal()" style="background:transparent;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">&times;</button>
+        </div>
+
+        <div class="table-wrap ob-grid-table-container">
+            <table class="ob-grid-table" id="modalDetailsTable">
+                <thead>
+                    <tr>
+                        <th>Account Code</th>
+                        <th>Account Name (Level 3)</th>
+                        <th style="text-align:center;">Type</th>
+                        <th style="text-align:right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="modalEntriesBody">
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight:700;background:var(--surface2);">
+                        <td colspan="2" style="text-align:right;">Totals:</td>
+                        <td style="text-align:center;" id="modalTotTypes">-</td>
+                        <td style="text-align:right;" id="modalTotAmt">-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div style="margin-top:20px;text-align:right;">
+            <button type="button" class="btn ghost" onclick="closeVoucherModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 4. CUSTOM LUXURY BALANCE VALIDATION MODAL                                 -->
+<!-- ========================================================================= -->
+<div id="balanceAlertModal" class="custom-alert-overlay" style="display:none;" onclick="handleAlertBackdropClick(event)">
+    <div class="custom-alert-card" role="dialog" aria-modal="true">
+        <!-- Close Button -->
+        <button type="button" class="alert-close-btn" onclick="closeBalanceAlert()" title="Close">&times;</button>
+
+        <!-- Icon Header with pulsing glow -->
+        <div class="alert-icon-wrap alert-warning" id="alertIconWrap">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/>
+            </svg>
+        </div>
+
+        <h3 class="alert-title" id="alertModalTitle">Credit Must Be Equal to Debit</h3>
+        <p class="alert-subtitle" id="alertModalSubtitle">Your opening balance entries are currently unbalanced. In double-entry bookkeeping, Total Debit and Total Credit must be identical before saving.</p>
+
+        <!-- Dynamic Stats Comparison Row -->
+        <div class="alert-stats-grid" id="alertStatsGrid">
+            <div class="alert-stat-box stat-debit">
+                <div class="stat-lbl">TOTAL DEBIT</div>
+                <div class="stat-val" id="alertDebitVal">Rs 0.00</div>
+                <div class="stat-tag">Debit (DR)</div>
+            </div>
+            <div class="alert-stat-box stat-credit">
+                <div class="stat-lbl">TOTAL CREDIT</div>
+                <div class="stat-val" id="alertCreditVal">Rs 0.00</div>
+                <div class="stat-tag">Credit (CR)</div>
+            </div>
+            <div class="alert-stat-box stat-diff">
+                <div class="stat-lbl">DIFFERENCE</div>
+                <div class="stat-val" id="alertDiffVal">Rs 0.00</div>
+                <div class="stat-tag stat-tag-diff">Unbalanced</div>
+            </div>
+        </div>
+
+        <!-- Advice / Guidance Box -->
+        <div class="alert-tip-box" id="alertTipBox">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span id="alertTipText">Please adjust account values or enter offsetting credit/debit entries to balance this voucher.</span>
+        </div>
+
+        <!-- Action Button -->
+        <div class="alert-actions">
+            <button type="button" class="btn brass" onclick="closeBalanceAlert()" style="padding:10px 32px;font-size:13.5px;font-weight:600;min-width:160px;">
+                Review Balances
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<!-- Ensure TomSelect JS library is loaded for Financial Year -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+    let activeFilterMode = 'all'; // 'all' or 'active'
+
+    /**
+     * Initializes a TomSelect instance on any standard <select> element
+     */
+    function initTomSelect(el, placeholderText) {
+        if (!el) return null;
+
+        if (el.tomselect) {
+            el.tomselect.destroy();
+        }
+
+        if (typeof TomSelect === 'undefined') {
+            setTimeout(() => initTomSelect(el, placeholderText), 80);
+            return null;
+        }
+
+        const placeholder = placeholderText || el.getAttribute('data-placeholder') || '-- Select --';
+
+        const ts = new TomSelect(el, {
+            placeholder: placeholder,
+            allowEmptyOption: true,
+            create: false,
+            maxItems: 1,
+            plugins: ['dropdown_input'],
+            dropdownParent: 'body',
+            searchField: ['text'],
+            onInitialize: function () {
+                if (this.wrapper) {
+                    this.wrapper.classList.add('form-select-dark');
+                }
+            }
+        });
+
+        return ts;
+    }
+
+    // Called whenever an amount input value changes
+    function onAmountInputChanged(input) {
+        const val = parseFloat(input.value) || 0;
+        const row = input.closest('tr');
+        if (row) {
+            if (val > 0) {
+                row.setAttribute('data-has-amount', 'true');
+                row.classList.add('has-amount');
+            } else {
+                row.setAttribute('data-has-amount', 'false');
+                row.classList.remove('has-amount');
+            }
+        }
+        recalcTotals();
+        applyVisibility();
+    }
+
+    // Remove an account row from the opening balance voucher
+    function removeAccountRow(btn, event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        const row = btn.closest('tr');
+        if (!row) return;
+
+        // Reset amount value so totals don't calculate it
+        const input = row.querySelector('.ob-amount-input');
+        if (input) {
+            input.value = '';
+        }
+        row.setAttribute('data-has-amount', 'false');
+        row.classList.remove('has-amount');
+
+        // Smooth collapse animation
+        row.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+        row.style.opacity = '0';
+        row.style.transform = 'scale(0.97)';
+
+        setTimeout(() => {
+            row.setAttribute('data-removed', 'true');
+            row.style.display = 'none';
+            row.style.opacity = '1';
+            row.style.transform = 'none';
+
+            updateRowNumbers();
+            recalcTotals();
+            updateTabCounts();
+            applyVisibility();
+        }, 150);
+    }
+
+    // Keep clearSingleRowAmount as alias for backward compatibility
+    function clearSingleRowAmount(btn, event) {
+        removeAccountRow(btn, event);
+    }
+
+    // Restore all removed accounts back into the table
+    function restoreAllRemovedAccounts() {
+        const removedRows = document.querySelectorAll('#obEntriesBody .ob-row[data-removed="true"]');
+        removedRows.forEach(r => {
+            r.setAttribute('data-removed', 'false');
+        });
+        updateRowNumbers();
+        recalcTotals();
+        updateTabCounts();
+        applyVisibility();
+    }
+
+    // Update row numbers 1, 2, 3... for all non-removed rows
+    function updateRowNumbers() {
+        const activeRows = document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"])');
+        activeRows.forEach((r, idx) => {
+            const idxCell = r.querySelector('.row-index');
+            if (idxCell) {
+                idxCell.textContent = (idx + 1);
+            }
+        });
+    }
+
+    // Update tab badges and restore button
+    function updateTabCounts() {
+        const activeRows = document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"])').length;
+        const btnAll = document.getElementById('btnFilterAll');
+        if (btnAll) {
+            btnAll.textContent = `All (${activeRows})`;
+        }
+
+        const removedCount = document.querySelectorAll('#obEntriesBody .ob-row[data-removed="true"]').length;
+        const btnRestore = document.getElementById('btnRestoreAccounts');
+        const removedCountSpan = document.getElementById('removedCount');
+        if (btnRestore && removedCountSpan) {
+            if (removedCount > 0) {
+                removedCountSpan.textContent = removedCount;
+                btnRestore.style.display = 'inline-flex';
+            } else {
+                btnRestore.style.display = 'none';
+            }
+        }
+    }
+
+    // Clear all entered amounts
+    function clearAllAmounts() {
+        if (!confirm('Are you sure you want to clear all entered amounts?')) return;
+        document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"]) .ob-amount-input').forEach(input => {
+            input.value = '';
+        });
+        document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"])').forEach(row => {
+            row.setAttribute('data-has-amount', 'false');
+            row.classList.remove('has-amount');
+        });
+        recalcTotals();
+        applyVisibility();
+    }
+
+    // Filter toggle (all vs active with amounts)
+    function setAccountFilter(mode) {
+        activeFilterMode = mode;
+        const btnAll = document.getElementById('btnFilterAll');
+        const btnActive = document.getElementById('btnFilterActive');
+        if (btnAll && btnActive) {
+            if (mode === 'all') {
+                btnAll.classList.add('active');
+                btnActive.classList.remove('active');
+            } else {
+                btnAll.classList.remove('active');
+                btnActive.classList.add('active');
+            }
+        }
+        applyVisibility();
+    }
+
+    // Filter accounts by search input text
+    function filterAccounts(searchVal) {
+        applyVisibility();
+    }
+
+    // Apply combined filter (text search + active amount filter + removed check)
+    function applyVisibility() {
+        const searchInput = document.getElementById('accountSearchInput');
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        const rows = document.querySelectorAll('#obEntriesBody .ob-row');
+
+        rows.forEach(r => {
+            const isRemoved = r.getAttribute('data-removed') === 'true';
+            if (isRemoved) {
+                r.style.display = 'none';
+                return;
+            }
+
+            const name = r.getAttribute('data-account-name') || '';
+            const code = r.getAttribute('data-account-code') || '';
+            const hasAmount = r.getAttribute('data-has-amount') === 'true';
+
+            const matchesText = !query || name.includes(query) || code.includes(query);
+            const matchesFilter = activeFilterMode === 'all' || (activeFilterMode === 'active' && hasAmount);
+
+            if (matchesText && matchesFilter) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
+    }
+
+    // Tran Type Color & styling toggle
+    function onTranTypeChange(selectEl) {
+        if (!selectEl) return;
+        if (selectEl.value === 'CRE') {
+            selectEl.style.color = 'var(--red-text, #E57373)';
+        } else {
+            selectEl.style.color = 'var(--green-text, #4EBF9E)';
+        }
+    }
+
+    // Recalculate Debit, Credit, and Balance Totals
+    function recalcTotals() {
+        let debTotal = 0;
+        let creTotal = 0;
+        let activeCount = 0;
+
+        const rows = document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"])');
+        rows.forEach(r => {
+            const val = parseFloat(r.querySelector('.ob-amount-input')?.value) || 0;
+            if (val > 0) {
+                activeCount++;
+                const tranType = r.querySelector('.tran-type-select')?.value || 'DEB';
+                if (tranType === 'DEB') {
+                    debTotal += val;
+                } else {
+                    creTotal += val;
+                }
+            }
+        });
+
+        const diff = Math.abs(debTotal - creTotal);
+        const isBalanced = diff < 0.01;
+
+        // Update Footers
+        const footDebit = document.getElementById('footDebitSum');
+        const footCredit = document.getElementById('footCreditSum');
+        if (footDebit) footDebit.innerText = 'Rs ' + debTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (footCredit) footCredit.innerText = 'Rs ' + creTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Update Status Badge
+        const statusBadge = document.getElementById('balanceStatusBadge');
+        if (statusBadge) {
+            if (activeCount === 0) {
+                statusBadge.className = 'badge badge-gray';
+                statusBadge.innerText = 'No amounts entered';
+            } else if (isBalanced) {
+                statusBadge.className = 'badge badge-green';
+                statusBadge.innerText = '✓ Balanced: Rs ' + debTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            } else {
+                statusBadge.className = 'badge badge-amber';
+                statusBadge.innerText = '⚠️ Difference: Rs ' + diff.toLocaleString('en-US', { minimumFractionDigits: 2 }) + ' (Unbalanced)';
+            }
+        }
+
+        // Update Quick Preview in Submit Bar
+        const prevDeb = document.getElementById('previewDeb');
+        const prevCre = document.getElementById('previewCre');
+        const prevDiff = document.getElementById('previewDiff');
+        if (prevDeb) prevDeb.innerText = 'Rs ' + debTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        if (prevCre) prevCre.innerText = 'Rs ' + creTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        if (prevDiff) {
+            prevDiff.innerText = 'Rs ' + diff.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            prevDiff.style.color = isBalanced && activeCount > 0 ? 'var(--green-text)' : (diff > 0.01 ? 'var(--red-text)' : 'var(--brass-text)');
+        }
+
+        // Update Active Entries Badge
+        const activeBadge = document.getElementById('activeEntriesBadge');
+        if (activeBadge) {
+            activeBadge.innerText = `${activeCount} Active with Balance`;
+        }
+
+        // Update Save button tooltip
+        const saveBtn = document.getElementById('btnSaveOb');
+        if (saveBtn) {
+            if (activeCount > 0 && !isBalanced) {
+                saveBtn.title = 'Cannot save: Debit and Credit are not equal';
+            } else {
+                saveBtn.title = 'Save Opening Balance';
+            }
+        }
+    }
+
+    // Custom Luxury Alert Modal Handler
+    function showBalanceAlert(options) {
+        const modal = document.getElementById('balanceAlertModal');
+        if (!modal) return;
+
+        const iconWrap = document.getElementById('alertIconWrap');
+        const titleEl = document.getElementById('alertModalTitle');
+        const subTitleEl = document.getElementById('alertModalSubtitle');
+        const statsGrid = document.getElementById('alertStatsGrid');
+        const debitValEl = document.getElementById('alertDebitVal');
+        const creditValEl = document.getElementById('alertCreditVal');
+        const diffValEl = document.getElementById('alertDiffVal');
+        const tipTextEl = document.getElementById('alertTipText');
+
+        if (titleEl) titleEl.innerText = options.title || 'Credit Must Be Equal to Debit';
+        if (subTitleEl) subTitleEl.innerText = options.subtitle || 'Your opening balance entries are currently unbalanced.';
+
+        if (options.isComparison && options.debTotal !== undefined) {
+            if (iconWrap) {
+                iconWrap.className = 'alert-icon-wrap alert-warning';
+            }
+            if (statsGrid) statsGrid.style.display = 'grid';
+            if (debitValEl) debitValEl.innerText = 'Rs ' + options.debTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (creditValEl) creditValEl.innerText = 'Rs ' + options.creTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (diffValEl) diffValEl.innerText = 'Rs ' + options.diff.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (tipTextEl) tipTextEl.innerText = options.tip || 'Please adjust account values or enter offsetting credit/debit entries to balance this voucher.';
+        } else {
+            if (iconWrap) {
+                iconWrap.className = 'alert-icon-wrap alert-info';
+            }
+            if (statsGrid) statsGrid.style.display = 'none';
+            if (tipTextEl) tipTextEl.innerText = options.tip || 'Please review your entries before proceeding.';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeBalanceAlert() {
+        const modal = document.getElementById('balanceAlertModal');
+        if (modal) modal.style.display = 'none';
+        reenableAllRows();
+    }
+
+    function handleAlertBackdropClick(event) {
+        if (event.target && event.target.id === 'balanceAlertModal') {
+            closeBalanceAlert();
+        }
+    }
+
+    // Form Validation before submit: MUST check Credit == Debit using luxury modal
+    function validateObForm() {
+        const fySelect = document.getElementById('fySelect');
+        if (!fySelect || !fySelect.value) {
+            showBalanceAlert({
+                title: 'Financial Year Required',
+                subtitle: 'Please select a Financial Year before saving this Opening Balance voucher.',
+                tip: 'Select the current fiscal year from the "Financial Year" dropdown.',
+                isComparison: false
+            });
+            if (fySelect?.tomselect) fySelect.tomselect.focus();
+            else fySelect?.focus();
+            return false;
+        }
+
+        let debTotal = 0;
+        let creTotal = 0;
+        let activeCount = 0;
+
+        const rows = document.querySelectorAll('#obEntriesBody .ob-row:not([data-removed="true"])');
+        rows.forEach(r => {
+            const amt = parseFloat(r.querySelector('.ob-amount-input')?.value) || 0;
+            if (amt > 0) {
+                activeCount++;
+                const tranType = r.querySelector('.tran-type-select')?.value || 'DEB';
+                if (tranType === 'CRE') {
+                    creTotal += amt;
+                } else {
+                    debTotal += amt;
+                }
+            }
+        });
+
+        if (activeCount === 0) {
+            showBalanceAlert({
+                title: 'No Amounts Entered',
+                subtitle: 'Please enter an opening balance amount for at least one account before submitting.',
+                tip: 'Type opening balance amounts into the "Opening Balance Value" column for your eligible accounts.',
+                isComparison: false
+            });
+            return false;
+        }
+
+        const diff = Math.abs(debTotal - creTotal);
+        if (diff > 0.01) {
+            showBalanceAlert({
+                title: 'Credit Must Be Equal to Debit',
+                subtitle: 'Your opening balance entries are currently unbalanced. In double-entry bookkeeping, Total Debit and Total Credit must be identical before saving.',
+                debTotal: debTotal,
+                creTotal: creTotal,
+                diff: diff,
+                tip: 'Please balance your entries by adjusting amounts or adding matching credit/debit rows.',
+                isComparison: true
+            });
+            return false;
+        }
+
+        // Optimize POST payload: Disable empty & removed rows so only rows with entered amounts are submitted
+        // Re-index sequentially to avoid index gaps in ASP.NET Core model binding
+        let activeSeq = 0;
+        document.querySelectorAll('#obEntriesBody .ob-row').forEach(r => {
+            const isRemoved = r.getAttribute('data-removed') === 'true';
+            const amt = parseFloat(r.querySelector('.ob-amount-input')?.value) || 0;
+            if (!isRemoved && amt > 0) {
+                r.querySelectorAll('input, select').forEach(el => {
+                    el.disabled = false;
+                    if (el.name && el.name.includes('Details[')) {
+                        el.name = el.name.replace(/Details\[\d+\]/, `Details[${activeSeq}]`);
+                    }
+                });
+                activeSeq++;
+            } else {
+                r.querySelectorAll('input, select').forEach(el => {
+                    el.disabled = true;
+                });
+            }
+        });
+
+        return true;
+    }
+
+    function reenableAllRows() {
+        document.querySelectorAll('#obEntriesBody .ob-row input, #obEntriesBody .ob-row select').forEach(el => {
+            el.disabled = false;
+        });
+    }
+
+    // Switch between Entry and History subtabs
+    function switchObTab(tab) {
+        const entryView = document.getElementById('obEntryView');
+        const historyView = document.getElementById('obHistoryView');
+        const tabEntryBtn = document.getElementById('tabEntryBtn');
+        const tabHistoryBtn = document.getElementById('tabHistoryBtn');
+
+        if (tab === 'history') {
+            if (entryView) entryView.style.display = 'none';
+            if (historyView) historyView.style.display = 'block';
+            if (tabEntryBtn) tabEntryBtn.classList.remove('active');
+            if (tabHistoryBtn) tabHistoryBtn.classList.add('active');
+
+            // Initialize or recalculate DataTables columns for the dynamic table
+            if (window.ERPDataTables) {
+                window.ERPDataTables.init('#obHistoryTable');
+            }
+            if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable && window.jQuery.fn.DataTable.isDataTable('#obHistoryTable')) {
+                setTimeout(function () {
+                    window.jQuery('#obHistoryTable').DataTable().columns.adjust();
+                }, 50);
+            }
+        } else {
+            if (entryView) entryView.style.display = 'block';
+            if (historyView) historyView.style.display = 'none';
+            if (tabEntryBtn) tabEntryBtn.classList.add('active');
+            if (tabHistoryBtn) tabHistoryBtn.classList.remove('active');
+        }
+    }
+
+    // View Details Modal via AJAX
+    async function viewVoucherDetails(id) {
+        const modal = document.getElementById('voucherModal');
+        const body = document.getElementById('modalEntriesBody');
+        if (!modal || !body) return;
+
+        body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;">Loading details...</td></tr>';
+        modal.style.display = 'flex';
+
+        try {
+            const res = await fetch(`/OpeningBalance/GetVoucherDetails/${id}`);
+            const data = await res.json();
+            if (!data.success) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--red-text);">${data.message}</td></tr>`;
+                return;
+            }
+
+            document.getElementById('modalVoucherCode').innerText = `Voucher: ${data.obCode}`;
+            document.getElementById('modalVoucherMeta').innerText = `FY: ${data.financialYear} | Fiscal Period: ${data.fiscalPeriod || data.obDate} | Created By: ${data.createdBy || 'User'}`;
+
+            let html = '';
+            data.details.forEach(d => {
+                const color = d.tranType === 'CRE' ? 'var(--red-text)' : 'var(--green-text)';
+                html += `
+                    <tr>
+                        <td><span class="tcode">${d.accountCode || '-'}</span></td>
+                        <td>${d.accountName}</td>
+                        <td style="text-align:center;"><span class="badge" style="color:${color};border:1px solid currentColor;">${d.tranType}</span></td>
+                        <td class="tnum" style="text-align:right;font-weight:600;color:${color};">Rs ${d.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            body.innerHTML = html;
+            document.getElementById('modalTotTypes').innerText = `Deb: Rs ${data.totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            document.getElementById('modalTotAmt').innerText = `Cre: Rs ${data.totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        } catch (e) {
+            body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--red-text);">Failed to load voucher details: ${e.message}</td></tr>`;
+        }
+    }
+
+    function closeVoucherModal() {
+        const modal = document.getElementById('voucherModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // Keyboard navigation (Esc to close modals)
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeBalanceAlert();
+            closeVoucherModal();
+        }
+    });
+
+    // Initialize UI on DOM ready
+    document.addEventListener('DOMContentLoaded', function () {
+        // Suppress any DataTables alert popups
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+            window.jQuery.fn.dataTable.ext.errMode = 'none';
+        }
+
+        // 1. Initialize Financial Year Searchable Select & reload on change to display saved entries
+        const fyEl = document.getElementById('fySelect');
+        const currentFyId = '@Model.FinancialYearId';
+        if (fyEl) {
+            fyEl.addEventListener('change', function () {
+                const val = this.value;
+                if (val && val !== currentFyId) {
+                    window.location.href = '@Url.Action("Index", "OpeningBalance")?fyId=' + encodeURIComponent(val);
+                }
+            });
+            const fyTs = initTomSelect(fyEl, '-- Select Financial Year --');
+            if (fyTs) {
+                fyTs.on('change', function (val) {
+                    if (val && val !== currentFyId) {
+                        window.location.href = '@Url.Action("Index", "OpeningBalance")?fyId=' + encodeURIComponent(val);
+                    }
+                });
+            }
+        }
+
+        // 2. Initialize Tran Type colors
+        document.querySelectorAll('#obEntriesBody .tran-type-select').forEach(el => {
+            onTranTypeChange(el);
+        });
+
+        // 3. Initial totals calculation & safety row re-enable
+        reenableAllRows();
+        recalcTotals();
+    });
+</script>
+}

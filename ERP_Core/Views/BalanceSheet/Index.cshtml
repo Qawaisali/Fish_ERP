@@ -1,0 +1,84 @@
+@model ERP_Core.Dtos.BalanceSheetViewModel
+
+@{
+    ViewData["Title"] = "Balance Sheet";
+    ViewData["SubTitle"] = "Assets, liabilities aur equity ka balance hisaab.";
+}
+
+<div class="section-title" style="margin-bottom:4px;">Balance Sheet</div>
+<div class="section-desc" id="bsAsOnDesc">As on @DateTime.Parse(Model.AsOnDate).ToString("dd MMMM yyyy")</div>
+
+<div class="filter-bar">
+    <form method="get" class="d-flex align-items-end gap-3 flex-wrap w-100" asp-controller="BalanceSheet" asp-action="Index">
+        <div class="field">
+            <label>As on date</label>
+            <input type="date" name="asOnDate" value="@Model.AsOnDate" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v18M16 3v18"/></svg>
+                Apply date
+            </button>
+            <button type="button" class="btn brass" onclick="AarhatApp.printLedgerStatement('Balance Sheet Summary', 'Opening', '@Model.AsOnDate', @Model.TotalAssets, @Model.TotalLiabilitiesEquity, 0, [
+                {date:'@Model.AsOnDate', ref:'AST-01', desc:'Cash in Hand', debit:@Model.CashInHand, credit:0, balance:@Model.CashInHand},
+                {date:'@Model.AsOnDate', ref:'AST-02', desc:'Bank Balance', debit:@Model.BankBalance, credit:0, balance:@(Model.CashInHand + Model.BankBalance)},
+                {date:'@Model.AsOnDate', ref:'AST-03', desc:'Customer Receivables', debit:@Model.CustomerReceivables, credit:0, balance:@(Model.CashInHand + Model.BankBalance + Model.CustomerReceivables)},
+                {date:'@Model.AsOnDate', ref:'AST-04', desc:'Stock (Unsold Lots)', debit:@Model.StockUnsoldLots, credit:0, balance:@Model.TotalAssets},
+                {date:'@Model.AsOnDate', ref:'LIA-01', desc:'Supplier Payables', debit:0, credit:@Model.SupplierPayables, balance:@(Model.TotalAssets - Model.SupplierPayables)},
+                {date:'@Model.AsOnDate', ref:'LIA-02', desc:'Outstanding Expenses', debit:0, credit:@Model.OutstandingExpenses, balance:@(Model.TotalAssets - Model.SupplierPayables - Model.OutstandingExpenses)},
+                {date:'@Model.AsOnDate', ref:'EQU-01', desc:'Owner Equity Capital', debit:0, credit:@Model.OwnersEquity, balance:0}
+            ])">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                Print Balance Sheet
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="pl-grid">
+    <!-- Assets Card -->
+    <div class="card">
+        <div class="card-head"><h3>Assets</h3></div>
+        <div class="pl-line">
+            <span>Cash in Hand</span>
+            <span class="amt tnum">Rs @Model.CashInHand.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Bank Balance</span>
+            <span class="amt tnum">Rs @Model.BankBalance.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Customer Receivables</span>
+            <span class="amt tnum">Rs @Model.CustomerReceivables.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Stock (Unsold Lots)</span>
+            <span class="amt tnum">Rs @Model.StockUnsoldLots.ToString("N0")</span>
+        </div>
+        <div class="pl-line total">
+            <span>Total Assets</span>
+            <span class="amt tnum green">Rs @Model.TotalAssets.ToString("N0")</span>
+        </div>
+    </div>
+
+    <!-- Liabilities & Equity Card -->
+    <div class="card">
+        <div class="card-head"><h3>Liabilities &amp; Equity</h3></div>
+        <div class="pl-line">
+            <span>Supplier Payables</span>
+            <span class="amt tnum red">Rs @Model.SupplierPayables.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Outstanding Expenses</span>
+            <span class="amt tnum red">Rs @Model.OutstandingExpenses.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Owner's Equity</span>
+            <span class="amt tnum">Rs @Model.OwnersEquity.ToString("N0")</span>
+        </div>
+        <div class="pl-line total">
+            <span>Total Liabilities &amp; Equity</span>
+            <span class="amt tnum" style="color:var(--brass-text);">Rs @Model.TotalLiabilitiesEquity.ToString("N0")</span>
+        </div>
+    </div>
+</div>

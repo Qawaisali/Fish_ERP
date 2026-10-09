@@ -1,0 +1,1546 @@
+@model ERP_Core.Dtos.SalesReportViewModel
+
+@{
+    ViewData["Title"] = "Sales Report";
+    ViewData["SubTitle"] = "Supplier (Boat / Catch) aur Customer (Buyer / خریدار) wise bikri, commission revenue aur settlement report.";
+}
+
+@section Styles {
+    <!-- TomSelect CSS for Searchable Dropdown -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+    <style>
+        .filter-bar-modern {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-grid-unified {
+            display: grid;
+            grid-template-columns: 160px 160px minmax(320px, 1fr) auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 992px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Stat Cards Matching Supplier Payable stat-grid-payable */
+        .stat-grid-payable {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        @@media (max-width: 992px) {
+            .stat-grid-payable {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .stat-grid-payable {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box-modern {
+            background: linear-gradient(135deg, var(--surface, #132420) 0%, var(--surface2, #1A2F2A) 100%);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-box-modern:hover {
+            transform: translateY(-2px);
+            border-color: var(--brass, #C68A3E);
+        }
+
+        .stat-box-modern .stat-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-dim, #9FB6AF);
+            margin-bottom: 6px;
+        }
+
+        .stat-box-modern .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text, #EAF1EE);
+            line-height: 1.1;
+        }
+
+        .stat-box-modern .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-faint, #5E7873);
+            margin-top: 4px;
+        }
+
+        .stat-glow-green .stat-num { color: var(--green-text, #6FE0A0); }
+        .stat-glow-red .stat-num { color: var(--red-text, #FF8A7A); }
+        .stat-glow-brass .stat-num { color: var(--brass-text, #E3AE66); }
+
+        /* Party Header Banner */
+        .party-banner {
+            background: rgba(198, 138, 62, 0.08);
+            border: 1px solid rgba(198, 138, 62, 0.35);
+            border-radius: var(--radius, 10px);
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Outstanding Balance Summary Box at bottom of Report */
+        .outstanding-box {
+            background: linear-gradient(135deg, rgba(198,138,62,0.12) 0%, rgba(198,138,62,0.04) 100%);
+            border: 1px solid rgba(198,138,62,0.45);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        /* TomSelect Dark Overrides */
+        .ts-wrapper .ts-control {
+            background-color: var(--surface2, #1A2F2A) !important;
+            border: 1px solid var(--border, #2C4740) !important;
+            color: var(--text, #EAF1EE) !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            padding: 7px 12px !important;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-wrapper .ts-control .item {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-dropdown {
+            background-color: #0E1A17 !important;
+            border: 1px solid rgba(198, 138, 62, 0.4) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+            color: #EAF1EE !important;
+            z-index: 999999 !important;
+        }
+
+        .ts-dropdown .optgroup-header {
+            color: #C68A3E !important;
+            background: #132420 !important;
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            padding: 6px 12px !important;
+            border-bottom: 1px solid rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-dropdown .option {
+            color: #EAF1EE !important;
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .ts-dropdown .option.active, .ts-dropdown .option:hover {
+            background-color: #1B302B !important;
+            color: #E3AE66 !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #2F6F5E !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+    </style>
+}
+
+<!-- Page Toolbar -->
+<div class="toolbar" style="margin-bottom:14px;">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Sales &amp; Settlement Report</div>
+        <div class="section-desc" style="margin-bottom:0;">
+            Supplier (Boat / Catch) aur Customer (Buyer / خریدار) wise bikri, commission revenue aur settlement report.
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Subtabs (Sales Summary vs Individual Party Sales Report) -->
+<div class="subtabs no-print" style="margin-bottom:16px;">
+    <button type="button" class="subtab-btn @(Model.IsPartyReportView ? "" : "active")" id="salesTabSummaryBtn" onclick="switchSalesTab('summary')">
+        All Sales Summary
+    </button>
+    <button type="button" class="subtab-btn @(Model.IsPartyReportView ? "active" : "")" id="salesTabReportBtn" onclick="switchSalesTab('report')">
+        @if (Model.IsSingleCustomerView)
+        {
+            <span>Customer Sales Report: @Model.SelectedCustomerName</span>
+        }
+        else if (Model.IsSingleSupplierView)
+        {
+            <span>Supplier Sales Report: @Model.SelectedSupplierName</span>
+        }
+        else
+        {
+            <span>Party Sales Report</span>
+        }
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- FILTER BAR (From Date, To Date, Single Supplier/Customer Dropdown)        -->
+<!-- ========================================================================= -->
+<div class="filter-bar-modern no-print">
+    <form method="get" asp-controller="SalesReport" asp-action="Index" id="salesFilterForm">
+        <div class="filter-grid-unified">
+            <!-- Field 1: From Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                <input type="date" name="fromDate" id="filterFromDate" value="@Model.FromDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 2: To Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                <input type="date" name="toDate" id="filterToDate" value="@Model.ToDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 3: Combined Select Supplier or Customer Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">
+                    Select Supplier or Customer
+                </label>
+                <select name="partyKey" id="filterPartySelect" class="searchable-select">
+                    <option value="">-- All Suppliers &amp; Customers (Summary) --</option>
+                    <optgroup label="🐟 Suppliers (Boats / Farmers / ماہی گیر)">
+                        @foreach (var s in Model.SuppliersList)
+                        {
+                            <option value="s_@s.Id" selected="@(Model.PartyType == "supplier" && Model.SelectedSupplierId == s.Id)">
+                                [Supplier] @s.DisplayText
+                            </option>
+                        }
+                    </optgroup>
+                    <optgroup label="🛍️ Customers (Buyers / خریدار)">
+                        @foreach (var c in Model.CustomersList)
+                        {
+                            <option value="c_@c.Id" selected="@(Model.PartyType == "customer" && Model.SelectedCustomerId == c.Id)">
+                                [Customer] @c.DisplayText
+                            </option>
+                        }
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- Filter Actions -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn brass" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    Filter Report
+                </button>
+                <a href="/SalesReport" class="btn ghost" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;">
+                    Reset
+                </a>
+                <button type="button" class="btn brass" id="btnSalesPrintReport" onclick="printSalesReport()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                    Print
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STAT CARDS (ADAPTIVE: CUSTOMER PURCHASE VS SUPPLIER SETTLEMENT)           -->
+<!-- ========================================================================= -->
+@if (Model.IsSingleCustomerView)
+{
+    <!-- Customer Perspective Stats -->
+    <div class="stat-grid-payable">
+        <div class="stat-box-modern stat-glow-green">
+            <div class="stat-lbl">TOTAL CUSTOMER PURCHASES</div>
+            <div class="stat-num tnum" style="color:var(--green-text);">
+                Rs @Model.TotalGrossSale.ToString("N0")
+            </div>
+            <div class="stat-sub">Total amount purchased across @Model.TotalLotsCount lots</div>
+        </div>
+
+        <div class="stat-box-modern">
+            <div class="stat-lbl">TOTAL WEIGHT PURCHASED</div>
+            <div class="stat-num tnum">@Model.TotalWeightKg.ToString("N1") Kg</div>
+            <div class="stat-sub">Across @Model.TotalBillsCount Bill(s) / Auctions</div>
+        </div>
+
+        <div class="stat-box-modern stat-glow-brass">
+            <div class="stat-lbl">TOTAL PURCHASED LOTS</div>
+            <div class="stat-num tnum" style="color:var(--brass-text);">
+                @Model.TotalLotsCount Lots
+            </div>
+            <div class="stat-sub">Average Rate: Rs @(Model.TotalWeightKg > 0 ? (Model.TotalGrossSale / Model.TotalWeightKg).ToString("N1") : "0.0") / Kg</div>
+        </div>
+
+        <div class="stat-box-modern">
+            <div class="stat-lbl">BUYER / CUSTOMER</div>
+            <div class="stat-num" style="font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                @(Model.SelectedCustomerName ?? "Customer")
+            </div>
+            <div class="stat-sub">City: @(Model.SelectedCustomerCity ?? "-") &bull; Phone: @(Model.SelectedCustomerPhone ?? "-")</div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Supplier & Consolidated Settlement Stats -->
+    <div class="stat-grid-payable">
+        <div class="stat-box-modern stat-glow-green">
+            <div class="stat-lbl">
+                @(Model.IsSingleSupplierView ? "OUR COMMISSION (SALES)" : "AARHAT NET SALES (COMMISSION)")
+            </div>
+            <div class="stat-num tnum" style="color:var(--green-text);">
+                Rs @Model.TotalCommissionSales.ToString("N0")
+            </div>
+            <div class="stat-sub">
+                Our Sales is Commission (~@Model.AverageCommissionRate% of turnover)
+            </div>
+        </div>
+
+        <div class="stat-box-modern">
+            <div class="stat-lbl">TOTAL AUCTION TURNOVER</div>
+            <div class="stat-num tnum">Rs @Model.TotalGrossSale.ToString("N0")</div>
+            <div class="stat-sub">Total Sale (Receivable from Buyers)</div>
+        </div>
+
+        <div class="stat-box-modern stat-glow-red">
+            <div class="stat-lbl">DEDUCTED EXPENSES</div>
+            <div class="stat-num tnum" style="color:var(--red-text);">Rs @Model.TotalExpenses.ToString("N0")</div>
+            <div class="stat-sub">Labour: Rs @Model.TotalLabourExpense.ToString("N0") &bull; Ice: Rs @Model.TotalIceExpense.ToString("N0")@(Model.TotalDeposit > 0 ? $" • Martey: Rs {Model.TotalDeposit:N0}" : "")</div>
+        </div>
+
+        <div class="stat-box-modern stat-glow-brass">
+            <div class="stat-lbl">NET PAYABLE TO SUPPLIERS</div>
+            <div class="stat-num tnum font-weight-bold" style="color:var(--brass-text);">
+                Rs @Model.TotalNetPayable.ToString("N0")
+            </div>
+            <div class="stat-sub">Net Payable Due to Boat accounts</div>
+        </div>
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 1: SALES & SETTLEMENT SUMMARY (DATA TABLE VIEW)                    -->
+<!-- ========================================================================= -->
+<div id="salesSummaryView" style="display:@(Model.IsPartyReportView ? "none" : "block");">
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);">All Sales &amp; Settlement Summary</h3>
+            <div style="font-size:12px;color:var(--text-dim);">Period: @Model.FromDateFormatted &mdash; @Model.ToDateFormatted</div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="dynamic-table" id="allSalesTable">
+                <thead>
+                    <tr>
+                        <th style="width:40px;text-align:center;">#</th>
+                        <th style="width:85px;">Date</th>
+                        <th style="width:75px;">Bill #</th>
+                        <th style="width:135px;max-width:135px;">Supplier (Boat)</th>
+                        <th style="max-width:175px;">Buyer(s)</th>
+                        <th style="text-align:right;">Weight (Kg)</th>
+                        <th style="text-align:right;">Gross Catch (Dr)</th>
+                        <th style="text-align:right;">Commission (Sales)</th>
+                        <th style="text-align:right;">Expenses</th>
+                        <th style="text-align:right;">Martey</th>
+                        <th style="text-align:right;">Net Payable</th>
+                        <th style="width:65px;text-align:center;">Status</th>
+                        <th class="no-sort" style="width:95px;text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items != null && Model.Items.Any())
+                    {
+                        int idx = 1;
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td style="text-align:center;color:var(--text-dim);font-weight:600;">@idx</td>
+                                <td style="white-space:nowrap;">@item.BillDateFormatted</td>
+                                <td>
+                                    <a href="/NewBill?billNo=@item.BillNo" style="font-weight:700;color:var(--brass-text);text-decoration:none;">
+                                        @item.BillNo
+                                    </a>
+                                </td>
+                                <td style="max-width:135px;">
+                                    <div style="font-weight:700;white-space:normal;word-break:break-word;line-height:1.25;">@item.SupplierName</div>
+                                    @if (item.SupplierCity != "-")
+                                    {
+                                        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">@item.SupplierCity</div>
+                                    }
+                                </td>
+                                <td style="max-width:175px;">
+                                    <div style="white-space:normal;word-break:break-word;line-height:1.35;max-width:175px;" title="@item.CustomerNames">
+                                        @item.CustomerNames
+                                    </div>
+                                    <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">@item.LotsCount lot(s) &bull; @item.TotalCrates crates</div>
+                                </td>
+                                <td class="tnum" style="text-align:right;color:var(--text-dim);white-space:nowrap;">
+                                    @(item.TotalWeightKg > 0 ? item.TotalWeightKg.ToString("N1") : "-")
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:#2eccb6;white-space:nowrap;">
+                                    Rs @item.GrossSaleAmount.ToString("N0")
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);white-space:nowrap;">
+                                    <div>Rs @item.CommissionAmount.ToString("N0")</div>
+                                    <div style="font-size:10px;color:var(--text-dim);font-weight:normal;">@item.CommissionPercent%</div>
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);white-space:nowrap;">
+                                    <div>- Rs @item.TotalExpense.ToString("N0")</div>
+                                    @if (item.TotalExpense > 0)
+                                    {
+                                        <div style="font-size:10px;color:var(--text-dim);font-weight:normal;">
+                                            L:@item.LabourExpense.ToString("N0") | I:@item.IceExpense.ToString("N0")
+                                        </div>
+                                    }
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);white-space:nowrap;">
+                                    <div>@(item.Deposit > 0 ? $"- Rs {item.Deposit:N0}" : "Rs 0")</div>
+                                </td>
+                                <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text);white-space:nowrap;">
+                                    Rs @item.NetPayableAmount.ToString("N0")
+                                </td>
+                                <td style="text-align:center;">
+                                    @if (string.Equals(item.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge badge-green">Paid</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-brass">@(string.IsNullOrEmpty(item.Status) ? "Due" : item.Status)</span>
+                                    }
+                                </td>
+                                <td style="text-align:center;">
+                                    <button type="button" class="btn ghost btn-sm" style="padding:4px 10px;font-size:11.5px;"
+                                            onclick="viewBillReport(@item.BillId, 'supplier', @(item.SupplierId ?? 0))" title="Print Catch Bill">
+                                        View Bill
+                                    </button>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                        <th style="padding:12px 14px !important;text-align:center;"></th>
+                        <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;" colspan="4">Total Settlement Summary:</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">@Model.TotalWeightKg.ToString("N1")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:#2eccb6;padding:12px 14px !important;">Rs @Model.TotalGrossSale.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @Model.TotalCommissionSales.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">- Rs @Model.TotalExpenses.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">- Rs @Model.TotalDeposit.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);font-size:13.5px;padding:12px 14px !important;">Rs @Model.TotalNetPayable.ToString("N0")</th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th style="padding:12px 14px !important;"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 2: INDIVIDUAL PARTY SALES REPORT (SUPPLIER OR CUSTOMER)             -->
+<!-- ========================================================================= -->
+<div id="salesReportView" style="display:@(Model.IsPartyReportView ? "block" : "none");">
+    <div class="card">
+        @if (Model.IsSingleCustomerView)
+        {
+            <!-- ========================================================================= -->
+            <!-- CUSTOMER SALES REPORT BANNER & TABLE                                      -->
+            <!-- ========================================================================= -->
+            <div class="party-banner">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:var(--brass-text);margin:0;">
+                        @Model.SelectedCustomerName
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                        City: <strong>@(Model.SelectedCustomerCity ?? "-")</strong> &nbsp;|&nbsp;
+                        Phone: <strong>@(Model.SelectedCustomerPhone ?? "-")</strong> &nbsp;|&nbsp;
+                        COA Code: <span class="tcode">@(Model.SelectedCustomerAccountCode ?? "-")</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11.5px;color:var(--text-dim);">Customer Purchase Period:</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">
+                        @Model.FromDateFormatted &mdash; @Model.ToDateFormatted
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Individual Purchase Lots Table (All Lots in Date Range) -->
+            <div class="table-wrap">
+                <table class="dynamic-table" id="customerSalesTable">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;text-align:center;">#</th>
+                            <th style="width:90px;">Date</th>
+                            <th style="width:80px;">Bill #</th>
+                            <th style="width:85px;text-align:center;">Lot #</th>
+                            <th>Fish Variety (جنس)</th>
+                            <th style="width:110px;text-align:center;">Weight (Md-Kg-P)</th>
+                            <th style="width:95px;text-align:right;">Net Wt (Kg)</th>
+                            <th style="width:95px;text-align:right;">Rate / Kg</th>
+                            <th style="width:125px;text-align:right;">Total (Rs)</th>
+                            <th class="no-sort" style="width:95px;text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items != null && Model.Items.Any())
+                        {
+                            int cIdx = 1;
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td style="text-align:center;color:var(--text-dim);font-weight:600;">@cIdx</td>
+                                    <td style="white-space:nowrap;">@item.BillDateFormatted</td>
+                                    <td>
+                                        <a href="/NewBill?billNo=@item.BillNo" style="font-weight:700;color:var(--brass-text);text-decoration:none;">
+                                            @item.BillNo
+                                        </a>
+                                    </td>
+                                    <td style="text-align:center;font-family:monospace;font-weight:700;color:var(--brass-text);">
+                                        @(string.IsNullOrWhiteSpace(item.LotNo) ? $"LOT-{cIdx}" : item.LotNo)
+                                    </td>
+                                    <td>
+                                        <div style="font-size:12.5px;font-weight:600;color:var(--text);line-height:1.3;">
+                                            @(string.IsNullOrWhiteSpace(item.FishNames) ? "Fish Catch" : item.FishNames)
+                                        </div>
+                                    </td>
+                                    <td style="text-align:center;font-family:monospace;font-weight:700;color:var(--brass-text);">
+                                        @(string.IsNullOrWhiteSpace(item.WeightStr) ? "-" : item.WeightStr)
+                                    </td>
+                                    <td class="tnum" style="text-align:right;color:var(--green-text);font-weight:600;white-space:nowrap;">
+                                        @(item.TotalWeightKg > 0 ? item.TotalWeightKg.ToString("N2") + " Kg" : "-")
+                                    </td>
+                                    <td class="tnum" style="text-align:right;color:var(--brass-text);white-space:nowrap;">
+                                        @(item.RatePerKg > 0 ? $"Rs {item.RatePerKg:N1}" : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:#2eccb6;white-space:nowrap;">
+                                        Rs @item.GrossSaleAmount.ToString("N0")
+                                    </td>
+                                    <td style="text-align:center;">
+                                        <button type="button" class="btn ghost btn-sm" style="padding:4px 10px;font-size:11.5px;"
+                                                onclick="viewBillReport(@item.BillId, 'customer', @(Model.SelectedCustomerId ?? 0))" title="Print Customer Purchase Slip from New Bill">
+                                            View Bill
+                                        </button>
+                                    </td>
+                                </tr>
+                                cIdx++;
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                            <th style="padding:12px 14px !important;text-align:center;"></th>
+                            <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;" colspan="3">Customer Totals (@Model.TotalLotsCount Lots across @Model.TotalBillsCount Bills):</th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="padding:12px 14px !important;text-align:center;font-family:monospace;color:var(--brass-text);">@ERP_Core.Dtos.BillLotItemDto.FormatKgToMaund(Model.TotalWeightKg)</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">@Model.TotalWeightKg.ToString("N2") Kg</th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:#2eccb6;font-size:14px;padding:12px 14px !important;">Rs @Model.TotalGrossSale.ToString("N0")</th>
+                            <th style="padding:12px 14px !important;"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Total Customer Purchases Highlight Banner -->
+            <div class="outstanding-box" style="justify-content:space-between;">
+                <div>
+                    <div style="font-size:13px;color:var(--text);font-weight:600;">
+                        Customer Purchase Summary: @Model.SelectedCustomerName
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px;">
+                        Period: @Model.FromDateFormatted to @Model.ToDateFormatted &bull; @Model.TotalBillsCount Bill(s) / @Model.TotalLotsCount Lot(s)
+                    </div>
+                </div>
+                <div style="padding:10px 20px;background:rgba(46,204,182,0.15);border:1px solid #2eccb6;border-radius:8px;text-align:right;">
+                    <span style="font-size:11px;color:#2eccb6;font-weight:700;text-transform:uppercase;display:block;letter-spacing:0.5px;">TOTAL PURCHASES (RECEIVABLE):</span>
+                    <strong style="font-size:22px;color:#2eccb6;" class="tnum">Rs @Model.TotalGrossSale.ToString("N0")</strong>
+                </div>
+            </div>
+        }
+        else if (Model.IsSingleSupplierView)
+        {
+            <!-- ========================================================================= -->
+            <!-- SUPPLIER SALES REPORT BANNER & TABLE                                      -->
+            <!-- ========================================================================= -->
+            <div class="party-banner">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:var(--brass-text);margin:0;">
+                        @Model.SelectedSupplierName
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                        Jetty/Village: <strong>@(Model.SelectedSupplierVillage ?? "-")</strong> &nbsp;|&nbsp;
+                        Phone: <strong>@(Model.SelectedSupplierPhone ?? "-")</strong> &nbsp;|&nbsp;
+                        COA Code: <span class="tcode">@(Model.SelectedSupplierAccountCode ?? "-")</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11.5px;color:var(--text-dim);">Supplier Settlement Period:</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">
+                        @Model.FromDateFormatted &mdash; @Model.ToDateFormatted
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supplier Individual Sales Report Table -->
+            <div class="table-wrap">
+                <table class="dynamic-table" id="supplierSalesTable">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;text-align:center;">#</th>
+                            <th style="width:90px;">Date</th>
+                            <th style="width:80px;">Bill #</th>
+                            <th>Buyer(s)</th>
+                            <th style="width:60px;text-align:center;">Lots</th>
+                            <th style="width:80px;text-align:right;">Weight (Kg)</th>
+                            <th style="width:105px;text-align:right;">Gross Catch</th>
+                            <th style="width:115px;text-align:right;">Commission (Sales)</th>
+                            <th style="width:95px;text-align:right;">Expenses</th>
+                            <th style="width:95px;text-align:right;">Martey</th>
+                            <th style="width:110px;text-align:right;">Net Payable</th>
+                            <th style="width:70px;text-align:center;">Status</th>
+                            <th class="no-sort" style="width:95px;text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items != null && Model.Items.Any())
+                        {
+                            int sIdx = 1;
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td style="text-align:center;color:var(--text-dim);font-weight:600;">@sIdx</td>
+                                    <td style="white-space:nowrap;">@item.BillDateFormatted</td>
+                                    <td>
+                                        <a href="/NewBill?billNo=@item.BillNo" style="font-weight:700;color:var(--brass-text);text-decoration:none;">
+                                            @item.BillNo
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div style="white-space:normal;word-break:break-word;line-height:1.35;max-width:260px;" title="@item.CustomerNames">
+                                            @item.CustomerNames
+                                        </div>
+                                    </td>
+                                    <td style="text-align:center;color:var(--text-dim);">
+                                        @item.LotsCount
+                                    </td>
+                                    <td class="tnum" style="text-align:right;color:var(--text-dim);white-space:nowrap;">
+                                        @(item.TotalWeightKg > 0 ? item.TotalWeightKg.ToString("N1") : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:#2eccb6;white-space:nowrap;">
+                                        Rs @item.GrossSaleAmount.ToString("N0")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);white-space:nowrap;">
+                                        <div>Rs @item.CommissionAmount.ToString("N0")</div>
+                                        <div style="font-size:10px;color:var(--text-dim);font-weight:normal;">@item.CommissionPercent%</div>
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);white-space:nowrap;">
+                                        <div>- Rs @item.TotalExpense.ToString("N0")</div>
+                                        @if (item.TotalExpense > 0)
+                                        {
+                                            <div style="font-size:10px;color:var(--text-dim);font-weight:normal;">
+                                                L:@item.LabourExpense.ToString("N0") | I:@item.IceExpense.ToString("N0")
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);white-space:nowrap;">
+                                        <div>@(item.Deposit > 0 ? $"- Rs {item.Deposit:N0}" : "Rs 0")</div>
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text);white-space:nowrap;">
+                                        Rs @item.NetPayableAmount.ToString("N0")
+                                    </td>
+                                    <td style="text-align:center;">
+                                        @if (string.Equals(item.Status, "Paid", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge badge-green">Paid</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-brass">@(string.IsNullOrEmpty(item.Status) ? "Due" : item.Status)</span>
+                                        }
+                                    </td>
+                                    <td style="text-align:center;">
+                                        <button type="button" class="btn ghost btn-sm" style="padding:4px 10px;font-size:11.5px;"
+                                                onclick="viewBillReport(@item.BillId, 'supplier', @(Model.SelectedSupplierId ?? 0))" title="Print Catch Bill from New Bill">
+                                            View Bill
+                                        </button>
+                                    </td>
+                                </tr>
+                                sIdx++;
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                            <th style="padding:12px 14px !important;text-align:center;"></th>
+                            <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;" colspan="3">Supplier Totals (@(Model.Items?.Count ?? 0) Bills):</th>
+                            <th style="text-align:center;padding:12px 14px !important;">@Model.TotalLotsCount</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">@Model.TotalWeightKg.ToString("N1")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:#2eccb6;padding:12px 14px !important;">Rs @Model.TotalGrossSale.ToString("N0")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @Model.TotalCommissionSales.ToString("N0")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">- Rs @Model.TotalExpenses.ToString("N0")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">- Rs @Model.TotalDeposit.ToString("N0")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);font-size:13.5px;padding:12px 14px !important;">Rs @Model.TotalNetPayable.ToString("N0")</th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="padding:12px 14px !important;"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Commission Highlight Banner -->
+            <div class="outstanding-box" style="justify-content:space-between;">
+                <div>
+                    <div style="font-size:13px;color:var(--text);font-weight:600;">
+                        Supplier Sales Summary: @Model.SelectedSupplierName
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px;">
+                        Period: @Model.FromDateFormatted to @Model.ToDateFormatted &bull; @(Model.Items?.Count ?? 0) Bill(s)
+                    </div>
+                </div>
+                <div style="padding:10px 20px;background:rgba(111,224,160,0.15);border:1px solid #6FE0A0;border-radius:8px;text-align:right;">
+                    <span style="font-size:11px;color:var(--green-text);font-weight:700;text-transform:uppercase;display:block;letter-spacing:0.5px;">TOTAL COMMISSION (SALES):</span>
+                    <strong style="font-size:22px;color:var(--green-text);" class="tnum">Rs @Model.TotalCommissionSales.ToString("N0")</strong>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- No Party Selected Prompt -->
+            <div style="text-align:center;padding:48px 24px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(198,138,62,0.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid rgba(198,138,62,0.3);">
+                    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brass-text);">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">Koi Party Select Nahi Hai</h3>
+                <p style="font-size:13px;color:var(--text-dim);max-width:480px;margin:0 auto 18px;">
+                    Upar diye gaye dropdown <strong>Select Supplier or Customer</strong> se koi bhi Supplier ya Customer chun kar <strong>Filter Report</strong> dabayein.
+                </p>
+                <button type="button" class="btn brass" onclick="switchSalesTab('summary')">
+                    Go to All Sales Summary
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <!-- TomSelect JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        let partyTomSelect = null;
+
+        // Subtab Navigation
+        function switchSalesTab(tab) {
+            const summaryView = document.getElementById('salesSummaryView');
+            const reportView = document.getElementById('salesReportView');
+            const btnSummary = document.getElementById('salesTabSummaryBtn');
+            const btnReport = document.getElementById('salesTabReportBtn');
+
+            if (tab === 'summary') {
+                if (summaryView) summaryView.style.display = 'block';
+                if (reportView) reportView.style.display = 'none';
+                if (btnSummary) btnSummary.classList.add('active');
+                if (btnReport) btnReport.classList.remove('active');
+            } else {
+                if (summaryView) summaryView.style.display = 'none';
+                if (reportView) reportView.style.display = 'block';
+                if (btnSummary) btnSummary.classList.remove('active');
+                if (btnReport) btnReport.classList.add('active');
+            }
+
+            setTimeout(function () {
+                if (window.jQuery && jQuery.fn.DataTable) {
+                    jQuery('.dynamic-table').each(function () {
+                        if (jQuery.fn.DataTable.isDataTable(this)) {
+                            jQuery(this).DataTable().columns.adjust().draw();
+                        }
+                    });
+                }
+            }, 80);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Searchable Dropdown for Combined Supplier & Customer
+            const selectEl = document.getElementById('filterPartySelect');
+            if (selectEl && typeof TomSelect !== 'undefined') {
+                partyTomSelect = new TomSelect(selectEl, {
+                    placeholder: '-- Select Supplier or Customer --',
+                    allowEmptyOption: true,
+                    create: false,
+                    maxItems: 1,
+                    plugins: ['dropdown_input', 'optgroup_columns']
+                });
+            }
+        });
+
+        // Open EXACT Bill Report from New Bill via /NewBill/GetBillJson/{id}
+        function viewBillReport(billId, partyType, partyId) {
+            if (!billId || billId <= 0) return;
+
+            fetch('/NewBill/GetBillJson/' + billId)
+                .then(res => res.json())
+                .then(res => {
+                    if (!res || !res.success || !res.data) {
+                        alert(res?.message || 'Failed to load bill for viewing.');
+                        return;
+                    }
+
+                    const d = res.data;
+                    const isCustomer = (partyType === 'customer');
+
+                    if (isCustomer) {
+                        // Exact Customer Purchase Slip from New Bill
+                        let custLots = (d.lots || []);
+                        if (partyId && Number(partyId) > 0) {
+                            const filtered = custLots.filter(l => l.customerId == partyId);
+                            if (filtered.length > 0) custLots = filtered;
+                        }
+                        const custName = (custLots.length > 0 && custLots[0].customerName)
+                            ? custLots[0].customerName
+                            : (d.customerName || '@(Model.SelectedCustomerName?.Replace("'", "\\'") ?? "Customer")');
+
+                        if (window.AarhatApp && typeof window.AarhatApp.printCustomerBillInvoice === 'function') {
+                            window.AarhatApp.printCustomerBillInvoice(
+                                d.billNo,
+                                custName,
+                                d.supplierName || 'General Boat Catch',
+                                d.dateFormatted,
+                                custLots,
+                                d.voucherNo || '',
+                                d.status || 'Due',
+                                false
+                            );
+                        } else if (custLots.length > 0 && window.AarhatApp && typeof window.AarhatApp.printBillItemReport === 'function') {
+                            const l = custLots[0];
+                            window.AarhatApp.printBillItemReport(
+                                d.billNo,
+                                d.dateFormatted,
+                                d.supplierName,
+                                l.lotNo,
+                                l.fishName,
+                                custName,
+                                l.weightStr,
+                                l.weightKg,
+                                l.ratePerKg,
+                                l.amount,
+                                d.voucherNo,
+                                d.status,
+                                false
+                            );
+                        } else {
+                            window.open('/NewBill?billNo=' + d.billNo, '_blank');
+                        }
+                    } else {
+                        // Exact Catch Bill from New Bill
+                        const lots = (d.lots || []).map(l => ({
+                            lotNo: l.lotNo,
+                            fish: l.fishName,
+                            customer: l.customerName,
+                            weightStr: l.weightStr || '',
+                            weight: l.weightKg,
+                            rate: l.ratePerKg,
+                            amount: l.amount
+                        }));
+
+                        if (window.AarhatApp && typeof window.AarhatApp.printBillInvoice === 'function') {
+                            window.AarhatApp.printBillInvoice(
+                                d.billNo,
+                                d.supplierName || 'General Boat Catch',
+                                d.dateFormatted,
+                                d.totalGrossAmount,
+                                d.commissionAmount,
+                                d.totalExpense,
+                                d.netPayable,
+                                lots,
+                                d.deposit,
+                                d.status,
+                                d.paidToSupplier,
+                                d.labourExpense,
+                                d.iceExpense
+                            );
+                        } else {
+                            window.open('/NewBill?billNo=' + d.billNo, '_blank');
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error("Error viewing bill:", err);
+                    alert("Error loading bill report: " + err);
+                });
+        }
+
+        // Print Report Dispatcher: Customer Sales Report, Supplier Sales Report, or Consolidated Report
+        function printSalesReport() {
+            const isCustomer = @(Model.IsSingleCustomerView ? "true" : "false");
+            const isSupplier = @(Model.IsSingleSupplierView ? "true" : "false");
+
+            if (isCustomer) {
+                printSingleCustomerSalesReportModal();
+            } else if (isSupplier) {
+                printSingleSupplierSalesReportModal();
+            } else {
+                printConsolidatedSummaryModal();
+            }
+        }
+
+        // 1. Single Customer Individual Purchase Report (All Lots in Date Range)
+        function printSingleCustomerSalesReportModal() {
+            const fromDate = '@Model.FromDateFormatted';
+            const toDate = '@Model.ToDateFormatted';
+            const customerName = '@(Model.SelectedCustomerName?.Replace("'", "\\'") ?? "Customer")';
+            const city = '@(Model.SelectedCustomerCity?.Replace("'", "\\'") ?? "-")';
+            const phone = '@(Model.SelectedCustomerPhone?.Replace("'", "\\'") ?? "-")';
+            const totalGross = 'Rs @Model.TotalGrossSale.ToString("N0")';
+            const totalWeight = '@Model.TotalWeightKg.ToString("N2")';
+
+            let rowsHtml = '';
+            @if (Model.Items != null)
+            {
+                int pIdx = 1;
+                foreach (var i in Model.Items)
+                {
+                    <text>
+                    rowsHtml += `
+                        <tr>
+                            <td class="sales-center" style="font-size:10.5px;padding:6px 3px;">@pIdx</td>
+                            <td class="sales-center" style="font-size:10.5px;padding:6px 3px;">@i.BillDateFormatted</td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:700;font-size:10.5px;padding:6px 3px;">@i.BillNo</td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:700;font-size:10.5px;padding:6px 3px;color:#8a5a1e;">@(string.IsNullOrWhiteSpace(i.LotNo) ? $"LOT-{pIdx}" : i.LotNo)</td>
+                            <td class="sales-name" style="font-size:10.5px;padding:6px 6px;font-weight:600;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.35;">@(string.IsNullOrWhiteSpace(i.FishNames) ? "Fish Catch" : i.FishNames?.Replace("'", "\\'"))</div>
+                            </td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:700;color:#8a5a1e;font-size:10.5px;padding:6px 3px;">@(string.IsNullOrWhiteSpace(i.WeightStr) ? "-" : i.WeightStr)</td>
+                            <td class="sales-num" style="font-size:10.5px;padding:6px 4px;">@(i.RatePerKg > 0 ? $"Rs {i.RatePerKg:N1}" : "-")</td>
+                            <td class="sales-num" style="font-size:10.5px;font-weight:700;padding:6px 4px;color:#111;">Rs @i.GrossSaleAmount.ToString("N0")</td>
+                        </tr>
+                    `;
+                    </text>
+                    pIdx++;
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sales-doc-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sales-doc-tbl th,
+                    .sales-doc-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sales-doc-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                    }
+                    .sales-doc-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sales-doc-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                    }
+                    .sales-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sales-center {
+                        text-align: center !important;
+                    }
+                    .sales-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.35 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand" style="flex:1;">
+                        <div style="font-size:25px;font-weight:900;letter-spacing:0.5px;line-height:1.15;color:#111;">
+                            ZAHID HUSSAIN <span style="color:#8a5a1e;">&amp; SONS</span>
+                        </div>
+                        <div class="sub" style="font-size:12px;color:#444;font-weight:600;margin-top:3px;">Fish Commission Agents · Sukkur Fish Harbour</div>
+                        <div class="sub" style="font-size:11.5px;color:#555;font-weight:600;margin-top:2px;">Owner: Zahid Hussain (0300-3110890) | Munshi: Yaseen (0334-3942837)</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>CUSTOMER PURCHASE BILL (PARCHI)</h2>
+                        <div style="font-size:12px;font-weight:700;color:#8a5a1e;margin-top:2px;">خریدار کھری رسید (نیلام پرچی)</div>
+                        <div class="sub" style="margin-top:4px;">Period: <strong>${fromDate} to ${toDate}</strong></div>
+                    </div>
+                </div>
+
+                <div class="pp-meta" style="grid-template-columns: 1.8fr 1.2fr;gap:16px;background:#fcfbf8;border:1px solid #e7dfd0;padding:12px 16px;border-radius:6px;align-items:center;margin-bottom:14px;">
+                    <div>
+                        <b style="font-size:10px;color:#777;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;display:block;">Customer (Buyer / خریدار)</b>
+                        <strong style="color:#0f5132;font-size:14px;display:block;word-break:break-word;">${customerName}</strong>
+                        <span style="color:#555;font-size:11.5px;">(${city} &bull; Phone: ${phone})</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <b style="font-size:10px;color:#777;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;display:block;">Purchase Period / تاریخ</b>
+                        <span style="font-weight:700;font-size:13px;color:#111;">${fromDate} to ${toDate}</span>
+                    </div>
+                </div>
+
+                <table class="sales-doc-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;text-align:center;">#</th>
+                            <th style="width:75px;text-align:center;">Date</th>
+                            <th style="width:65px;text-align:center;">Bill #</th>
+                            <th style="width:65px;text-align:center;">Lot #</th>
+                            <th style="text-align:left;padding-left:6px !important;">Fish Variety (جنس)</th>
+                            <th style="width:95px;text-align:center;">Weight (Md-Kg-P)</th>
+                            <th style="width:85px;text-align:right;padding-right:5px !important;">Rate / Kg</th>
+                            <th style="width:105px;text-align:right;padding-right:5px !important;">Total (Rs)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="8" style="text-align:center;padding:16px;">No purchase lot records found for this customer in selected period.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f4f3ed;border-top:2px solid #222;">
+                            <td colspan="5" style="text-align:right;font-weight:700;padding-right:8px !important;">Total Weight &amp; Receivable:</td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:800;color:#8a5a1e;font-size:11px;">@ERP_Core.Dtos.BillLotItemDto.FormatKgToMaund(Model.TotalWeightKg)</td>
+                            <td class="sales-num" style="font-size:10px;color:#666;white-space:nowrap;text-align:right;">
+                                <div style="font-weight:700;color:#8a5a1e;">Rs @(Model.TotalWeightKg > 0 ? (Model.TotalGrossSale / Model.TotalWeightKg).ToString("N2") : "0.00") <span style="font-size:9px;color:#555;">/ Kg</span></div>
+                                <div style="font-weight:800;color:#0f5132;margin-top:1px;">Rs @(Model.TotalWeightKg > 0 ? ((Model.TotalGrossSale / Model.TotalWeightKg) * 40).ToString("N1") : "0.0") <span style="font-size:8.5px;color:#555;">/ Md</span></div>
+                            </td>
+                            <td class="sales-num" style="font-weight:800;color:#111;font-size:11.5px;">${totalGross}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="pp-totals" style="margin-top:14px;width:350px;margin-left:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e2e2;font-size:12.5px;">
+                        <span>Purchased Lots:</span>
+                        <strong>@Model.TotalLotsCount lot(s) across @Model.TotalBillsCount Bill(s)</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e2e2;font-size:12.5px;">
+                        <span>Total Fish Weight:</span>
+                        <strong style="color:#0f5132;font-family:monospace;">@ERP_Core.Dtos.BillLotItemDto.FormatKgToMaund(Model.TotalWeightKg)</strong>
+                    </div>
+                    <div class="final" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14.5px;font-weight:700;border-top:1px solid #161616;border-bottom:2px solid #161616;margin-top:2px;">
+                        <span style="white-space:nowrap;">Total Receivable (واجب الادا):</span>
+                        <strong style="white-space:nowrap;font-size:16px;color:#111;font-family:monospace;">${totalGross}</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:40px;">
+                    <div>Buyer Signature (خریدار)</div>
+                    <div>Munshi / Auctioneer (منشی)</div>
+                    <div>Fishery Aarhat Stamp (مہر)</div>
+                </div>
+
+                <div class="pp-foot" style="margin-top:20px;">
+                    <div>Official computer-generated Aarhat Customer Purchase Slip · Zahid Hussain &amp; Sons · Sukkur Fish Harbour.</div>
+                    <div style="margin-top:6px;font-size:10.5px;color:#666;border-top:1px dashed #dedede;padding-top:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 12px;">
+                        <span>Software Design &amp; Develope: <strong style="color:#222;">ICT Systems PVT Ltd</strong></span>
+                        <span>Mob: <strong style="color:#222;">+92 3313223528</strong></span>
+                        <span>Email: <strong style="color:#222;">sales@ictsystems.com.pk</strong></span>
+                    </div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Print Customer Purchase Bill — " + customerName, content);
+            } else {
+                window.print();
+            }
+        }
+
+        // 2. Single Supplier Individual Sales Report in Universal Print Modal
+        function printSingleSupplierSalesReportModal() {
+            const fromDate = '@Model.FromDateFormatted';
+            const toDate = '@Model.ToDateFormatted';
+            const supplierName = '@(Model.SelectedSupplierName?.Replace("'", "\\'") ?? "Supplier")';
+            const village = '@(Model.SelectedSupplierVillage?.Replace("'", "\\'") ?? "-")';
+            const phone = '@(Model.SelectedSupplierPhone?.Replace("'", "\\'") ?? "-")';
+            const totalGross = 'Rs @Model.TotalGrossSale.ToString("N0")';
+            const totalComm = 'Rs @Model.TotalCommissionSales.ToString("N0")';
+            const totalExp = '- Rs @Model.TotalExpenses.ToString("N0")';
+            const totalDeposit = 'Rs @Model.TotalDeposit.ToString("N0")';
+            const netPayable = 'Rs @Model.TotalNetPayable.ToString("N0")';
+            const totalWeight = '@Model.TotalWeightKg.ToString("N1")';
+
+            let rowsHtml = '';
+            @if (Model.Items != null)
+            {
+                foreach (var i in Model.Items)
+                {
+                    <text>
+                    rowsHtml += `
+                        <tr>
+                            <td class="sales-center" style="font-size:10px;padding:6px 2px;">@i.BillDateFormatted</td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:700;font-size:10.5px;padding:6px 2px;">@i.BillNo</td>
+                            <td class="sales-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.35;">@(i.CustomerNames?.Replace("'", "\\'") ?? "-")</div>
+                            </td>
+                            <td class="sales-center" style="font-size:10.5px;padding:6px 2px;">@i.LotsCount</td>
+                            <td class="sales-num" style="font-size:10.5px;padding:6px 4px;">@i.TotalWeightKg.ToString("N1")</td>
+                            <td class="sales-num" style="font-size:10.5px;font-weight:600;padding:6px 4px;">Rs @i.GrossSaleAmount.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#0f5132;font-weight:700;padding:6px 4px;">Rs @i.CommissionAmount.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#842029;padding:6px 4px;">- Rs @i.TotalExpense.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#842029;padding:6px 4px;">@(i.Deposit > 0 ? $"- Rs {i.Deposit:N0}" : "Rs 0")</td>
+                            <td class="sales-num" style="font-size:10.5px;font-weight:700;padding:6px 4px;">Rs @i.NetPayableAmount.ToString("N0")</td>
+                        </tr>
+                    `;
+                    </text>
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sales-doc-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sales-doc-tbl th,
+                    .sales-doc-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sales-doc-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                    }
+                    .sales-doc-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sales-doc-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                    }
+                    .sales-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sales-center {
+                        text-align: center !important;
+                    }
+                    .sales-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.35 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ZAHID HUSSAIN <span>&amp; SONS</span>
+                        <div class="sub">Fish Commission Agents · Sukkur Fish Harbour</div>
+                        <div class="sub" style="font-size:11px;color:#555;margin-top:2px;">Owner: 0300-3110890 | Munshi: 0334-3942837</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>SUPPLIER SALES REPORT</h2>
+                        <div class="sub">Individual Catch &amp; Commission Breakdown</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Supplier (Boat / Farmer):</span>
+                        <strong style="font-size:14px;color:#153229;">${supplierName}</strong>
+                        <span style="color:#555;font-size:11.5px;margin-left:8px;">(${village} &bull; Phone: ${phone})</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Report Period:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                    </div>
+                </div>
+
+                <table class="sales-doc-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:10%;">Date</th>
+                            <th style="width:9%;">Bill #</th>
+                            <th style="width:19%;text-align:left;padding-left:6px !important;">Buyer(s)</th>
+                            <th style="width:5%;">Lots</th>
+                            <th style="width:8%;text-align:right;padding-right:5px !important;">Weight</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Gross<br>Catch</th>
+                            <th style="width:10%;text-align:right;padding-right:5px !important;">Comm.</th>
+                            <th style="width:8%;text-align:right;padding-right:5px !important;">Expenses</th>
+                            <th style="width:8%;text-align:right;padding-right:5px !important;">Martey</th>
+                            <th style="width:12%;text-align:right;padding-right:5px !important;">Net<br>Payable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="10" style="text-align:center;padding:16px;">No sales records found for this supplier in selected period.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align:left;font-weight:700;padding-left:6px !important;">Totals:</td>
+                            <td class="sales-center" style="font-weight:700;">@Model.TotalLotsCount</td>
+                            <td class="sales-num" style="font-weight:700;">${totalWeight}</td>
+                            <td class="sales-num" style="font-weight:700;">${totalGross}</td>
+                            <td class="sales-num" style="color:#0f5132;font-weight:700;">- ${totalComm}</td>
+                            <td class="sales-num" style="color:#842029;font-weight:700;">${totalExp}</td>
+                            <td class="sales-num" style="color:#842029;font-weight:700;">- ${totalDeposit}</td>
+                            <td class="sales-num" style="font-weight:800;">${netPayable}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:18px;margin-bottom:24px;">
+                    <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;padding:12px 24px;text-align:right;min-width:300px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13.5px;font-weight:800;color:#1b5e20;letter-spacing:0.5px;">TOTAL COMMISSION:</span>
+                        <strong style="font-size:22px;color:#1b5e20;margin-left:20px;">${totalComm}</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:35px;">
+                    <div>Prepared By</div>
+                    <div>Verified By</div>
+                    <div>Supplier Signature</div>
+                    <div>Accountant</div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Print Sales Report — " + supplierName, content);
+            } else {
+                window.print();
+            }
+        }
+
+        // 3. Consolidated All Suppliers Summary Report in Universal Print Modal
+        function printConsolidatedSummaryModal() {
+            const fromDate = '@Model.FromDateFormatted';
+            const toDate = '@Model.ToDateFormatted';
+            const totalGross = 'Rs @Model.TotalGrossSale.ToString("N0")';
+            const totalComm = 'Rs @Model.TotalCommissionSales.ToString("N0")';
+            const totalExp = '- Rs @Model.TotalExpenses.ToString("N0")';
+            const totalDeposit = 'Rs @Model.TotalDeposit.ToString("N0")';
+            const netPayable = 'Rs @Model.TotalNetPayable.ToString("N0")';
+            const totalWeight = '@Model.TotalWeightKg.ToString("N1")';
+
+            let rowsHtml = '';
+            @if (Model.Items != null)
+            {
+                foreach (var i in Model.Items)
+                {
+                    <text>
+                    rowsHtml += `
+                        <tr>
+                            <td class="sales-center" style="font-size:10px;padding:6px 2px;">@i.BillDateFormatted</td>
+                            <td class="sales-center" style="font-family:monospace;font-weight:700;font-size:10.5px;padding:6px 2px;">@i.BillNo</td>
+                            <td class="sales-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.35;font-weight:600;">@(i.SupplierName?.Replace("'", "\\'") ?? "-")</div>
+                            </td>
+                            <td class="sales-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.35;">@(i.CustomerNames?.Replace("'", "\\'") ?? "-")</div>
+                            </td>
+                            <td class="sales-num" style="font-size:10.5px;padding:6px 4px;">@i.TotalWeightKg.ToString("N1")</td>
+                            <td class="sales-num" style="font-size:10.5px;font-weight:600;padding:6px 4px;">Rs @i.GrossSaleAmount.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#0f5132;font-weight:700;padding:6px 4px;">Rs @i.CommissionAmount.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#842029;padding:6px 4px;">- Rs @i.TotalExpense.ToString("N0")</td>
+                            <td class="sales-num" style="font-size:10.5px;color:#842029;padding:6px 4px;">@(i.Deposit > 0 ? $"- Rs {i.Deposit:N0}" : "Rs 0")</td>
+                            <td class="sales-num" style="font-size:10.5px;font-weight:700;padding:6px 4px;">Rs @i.NetPayableAmount.ToString("N0")</td>
+                        </tr>
+                    `;
+                    </text>
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sales-doc-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sales-doc-tbl th,
+                    .sales-doc-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sales-doc-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                    }
+                    .sales-doc-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sales-doc-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                    }
+                    .sales-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sales-center {
+                        text-align: center !important;
+                    }
+                    .sales-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.35 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ZAHID HUSSAIN <span>&amp; SONS</span>
+                        <div class="sub">Fish Commission Agents · Sukkur Fish Harbour</div>
+                        <div class="sub" style="font-size:11px;color:#555;margin-top:2px;">Owner: 0300-3110890 | Munshi: 0334-3942837</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>CONSOLIDATED SALES REPORT</h2>
+                        <div class="sub">All Suppliers &amp; Boats Sales Summary</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Report:</span>
+                        <strong style="font-size:14px;color:#153229;">All Suppliers &amp; Boats Sales</strong>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Period:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                    </div>
+                </div>
+
+                <table class="sales-doc-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:9%;">Date</th>
+                            <th style="width:8%;">Bill #</th>
+                            <th style="width:13%;text-align:left;padding-left:6px !important;">Supplier</th>
+                            <th style="width:16%;text-align:left;padding-left:6px !important;">Buyer(s)</th>
+                            <th style="width:7%;text-align:right;padding-right:5px !important;">Weight</th>
+                            <th style="width:10%;text-align:right;padding-right:5px !important;">Gross<br>Catch</th>
+                            <th style="width:9%;text-align:right;padding-right:5px !important;">Comm.</th>
+                            <th style="width:8%;text-align:right;padding-right:5px !important;">Expenses</th>
+                            <th style="width:8%;text-align:right;padding-right:5px !important;">Martey</th>
+                            <th style="width:12%;text-align:right;padding-right:5px !important;">Net<br>Payable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="10" style="text-align:center;padding:14px;">No sales records found</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:left;font-weight:700;padding-left:6px !important;">Totals:</td>
+                            <td class="sales-num" style="font-weight:700;">${totalWeight}</td>
+                            <td class="sales-num" style="font-weight:700;">${totalGross}</td>
+                            <td class="sales-num" style="color:#0f5132;font-weight:700;">- ${totalComm}</td>
+                            <td class="sales-num" style="color:#842029;font-weight:700;">${totalExp}</td>
+                            <td class="sales-num" style="color:#842029;font-weight:700;">- ${totalDeposit}</td>
+                            <td class="sales-num" style="font-weight:800;">${netPayable}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:18px;margin-bottom:20px;">
+                    <div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:8px;padding:12px 24px;text-align:right;min-width:300px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13.5px;font-weight:800;color:#1b5e20;letter-spacing:0.5px;">TOTAL COMMISSION:</span>
+                        <strong style="font-size:22px;color:#1b5e20;margin-left:20px;">${totalComm}</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:35px;">
+                    <div>Prepared By</div>
+                    <div>Verified By</div>
+                    <div>Accountant</div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Print Sales Report — Consolidated", content);
+            } else {
+                window.print();
+            }
+        }
+    </script>
+}

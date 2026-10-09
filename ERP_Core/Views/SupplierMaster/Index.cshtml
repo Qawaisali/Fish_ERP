@@ -1,0 +1,333 @@
+@model ERP_Core.Dtos.SupplierMasterViewModel
+
+@{
+    ViewData["Title"] = "Farmer Master";
+    ViewData["SubTitle"] = "Farmers, kashti wale aur mallah manage karein.";
+}
+
+<!-- TomSelect CSS for Searchable Dropdowns -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+<style>
+    /* TomSelect Dark Overrides */
+    .ts-wrapper .ts-control {
+        background-color: var(--surface2, #1A2F2A) !important;
+        border: 1px solid var(--border, #2C4740) !important;
+        color: var(--text, #EAF1EE) !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        min-height: 40px !important;
+        padding: 8px 12px !important;
+    }
+
+    .ts-wrapper.focus .ts-control {
+        border-color: var(--brass, #C68A3E) !important;
+        box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+    }
+
+    .ts-wrapper .ts-control input {
+        color: var(--text, #EAF1EE) !important;
+    }
+
+    .ts-wrapper .ts-control .item {
+        color: var(--text, #EAF1EE) !important;
+    }
+
+    .ts-dropdown {
+        background-color: #0E1A17 !important;
+        border: 1px solid rgba(198, 138, 62, 0.4) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+        color: #EAF1EE !important;
+        z-index: 999999 !important;
+    }
+
+    .ts-dropdown .option {
+        color: #EAF1EE !important;
+        padding: 9px 14px !important;
+        font-size: 13px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .ts-dropdown .option.active, .ts-dropdown .option:hover {
+        background-color: #1B302B !important;
+        color: #E3AE66 !important;
+    }
+
+    .ts-dropdown .option.selected {
+        background-color: #2F6F5E !important;
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+    }
+</style>
+
+<div class="toolbar">
+    <div class="search">
+        <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="supSearchInput" placeholder="Farmer dhoondein..." onkeyup="filterSupplierTable()" />
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="SupplierDistribution" asp-action="Index" class="btn btn-outline-secondary" style="border-color:var(--border);color:var(--brass);font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            Child Distribution
+        </a>
+        <button type="button" class="btn brass" onclick="openAddSupplierModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Add Farmer
+        </button>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Add / Edit Farmer Collapsible Form -->
+<div class="form-card" id="supplierForm" style="display:none;margin-bottom:20px;">
+    <h4 id="supFormTitle" style="color:var(--brass);margin-bottom:14px;font-size:15px;font-weight:600;">Add Farmer</h4>
+    <form asp-controller="SupplierMaster" asp-action="SaveSupplier" method="post" id="mainSupplierForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="supFormId" value="0" />
+        <div class="form-grid">
+            <div class="field">
+                <label>Farmer / Boat Name <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="name" id="supName" placeholder="e.g. Younus Boat Co. / Rasool Bux" required />
+            </div>
+            <div class="field">
+                <label style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>Parent Farmer / Boat</span>
+                    <span style="font-size:11px;color:var(--muted);font-weight:normal;">(Agar employee/mallah hai)</span>
+                </label>
+                <select name="parentSupplierId" id="supParentSupplier" placeholder="-- Independent (No Parent) --">
+                    <option value="">-- Independent Farmer (Direct) --</option>
+                    @foreach (var p in Model.ParentSuppliersList)
+                    {
+                        <option value="@p.Id">@p.DisplayName</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <label>Phone <span style="color:var(--red-text);">*</span></label>
+                <input type="tel" name="phone" id="supPhone" placeholder="0300-0000000" required />
+            </div>
+            <div class="field">
+                <label>Village / Jetty <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="villageOrJetty" id="supVillage" placeholder="Ibrahim Hyderi / Gwadar" required />
+            </div>
+            <div class="field">
+                <label>Bank / Easypaisa Account</label>
+                <input type="text" name="accountNo" id="supAccountNo" placeholder="Account no. / title" />
+            </div>
+            <div class="field">
+                <label>Status</label>
+                <select name="status" id="supStatus" class="searchable-select">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="btn ghost" onclick="cancelSupplierForm()">Cancel</button>
+            <button type="submit" class="btn brass" id="btnSaveSupplier">Save Farmer</button>
+        </div>
+    </form>
+</div>
+
+<!-- Hidden Delete Form -->
+<form id="deleteSupplierForm" asp-controller="SupplierMaster" asp-action="DeleteSupplier" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteSupplierId" value="0" />
+</form>
+
+<!-- Suppliers Table Card -->
+<div class="card">
+    <div class="table-wrap">
+        <table id="supplierTable" class="dynamic-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Parent Farmer / Boat</th>
+                    <th>Phone</th>
+                    <th>Village / Jetty</th>
+                    <th>Status</th>
+                    <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                </tr>
+                <tr class="dt-col-filter">
+                    <th><input type="text" placeholder="Filter Name..." /></th>
+                    <th><input type="text" placeholder="Filter Parent..." /></th>
+                    <th><input type="text" placeholder="Filter Phone..." /></th>
+                    <th><input type="text" placeholder="Filter Village..." /></th>
+                    <th>
+                        <select>
+                            <option value="">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sup in Model.Suppliers)
+                {
+                    <tr>
+                        <td>
+                            <strong>@sup.Name</strong>
+                            @if (!string.IsNullOrEmpty(sup.AccountCode))
+                            {
+                                <div style="font-size:11px;color:var(--teal-text);margin-top:2px;">COA: @sup.AccountCode</div>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(sup.ParentSupplierName))
+                            {
+                                <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(198,138,62,0.12);border:1px solid rgba(198,138,62,0.3);color:var(--brass);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M12 14v8"/><path d="M5 18h14"/></svg>
+                                    @sup.ParentSupplierName
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color:var(--muted);font-size:12px;">Direct / Independent</span>
+                            }
+                        </td>
+                        <td>@sup.Phone</td>
+                        <td>@sup.VillageOrJetty</td>
+                        <td>
+                            <span class="badge @(sup.Status == "Active" ? "badge-green" : "badge-red")">@sup.Status</span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div class="row-actions" style="justify-content:center;">
+                                <a href="/SupplierPayable?supplierId=@sup.Id" title="View Payable Statement">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+                                </a>
+                                <button type="button" title="Print Statement" onclick="AarhatApp.printLedgerStatement('@sup.Name.Replace("'", "\\'") (Supplier)', '2026-08-01', '2026-08-31', 0, @sup.PayableBalance, @sup.PayableBalance, [])">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                                </button>
+                                <button type="button" title="Edit Farmer" onclick="editSupplier(@sup.Id, '@sup.Name.Replace("'", "\\'")', '@sup.Phone', '@sup.VillageOrJetty.Replace("'", "\\'")', '@sup.AccountNo.Replace("'", "\\'")', '@sup.Status', @(sup.ParentSupplierId.HasValue ? sup.ParentSupplierId.Value.ToString() : "null"))">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button type="button" title="Delete Farmer" style="color:var(--red-text);" onclick="deleteSupplier(@sup.Id, '@sup.Name.Replace("'", "\\'")')">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TomSelect JS Library -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+let parentSupplierTomSelect = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+    initParentSupplierDropdown();
+});
+
+function initParentSupplierDropdown() {
+    const parentSelectEl = document.getElementById('supParentSupplier');
+    if (parentSelectEl && typeof TomSelect !== 'undefined' && !parentSupplierTomSelect) {
+        parentSupplierTomSelect = new TomSelect(parentSelectEl, {
+            create: false,
+            maxItems: 1,
+            placeholder: '-- Independent (No Parent) --',
+            allowEmptyOption: true,
+            sortField: {
+                field: 'text',
+                direction: 'asc'
+            }
+        });
+    }
+}
+
+function filterSupplierTable() {
+    const input = document.getElementById('supSearchInput');
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll('#supplierTable tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+
+function openAddSupplierModal() {
+    document.getElementById('supFormId').value = '0';
+    document.getElementById('supName').value = '';
+    document.getElementById('supPhone').value = '';
+    document.getElementById('supVillage').value = '';
+    document.getElementById('supAccountNo').value = '';
+    document.getElementById('supFormTitle').innerText = 'Add Farmer / Employee Mallah';
+    document.getElementById('btnSaveSupplier').innerText = 'Save Farmer';
+
+    if (parentSupplierTomSelect) {
+        parentSupplierTomSelect.setValue('');
+    } else {
+        const pSel = document.getElementById('supParentSupplier');
+        if (pSel) pSel.value = '';
+    }
+
+    const statusSel = document.getElementById('supStatus');
+    if (statusSel) {
+        if (statusSel.tomselect) statusSel.tomselect.setValue('Active');
+        else statusSel.value = 'Active';
+    }
+
+    const form = document.getElementById('supplierForm');
+    form.style.display = 'block';
+    window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+}
+
+function editSupplier(id, name, phone, village, accountNo, status, parentSupplierId) {
+    document.getElementById('supFormId').value = id;
+    document.getElementById('supName').value = name || '';
+    document.getElementById('supPhone').value = (phone === '-' ? '' : phone);
+    document.getElementById('supVillage').value = (village === '-' ? '' : village);
+    document.getElementById('supAccountNo').value = (accountNo === '-' ? '' : accountNo);
+    document.getElementById('supFormTitle').innerText = 'Edit Farmer';
+    document.getElementById('btnSaveSupplier').innerText = 'Update Farmer';
+
+    if (parentSupplierTomSelect) {
+        parentSupplierTomSelect.setValue(parentSupplierId ? String(parentSupplierId) : '');
+    } else {
+        const pSel = document.getElementById('supParentSupplier');
+        if (pSel) pSel.value = parentSupplierId ? String(parentSupplierId) : '';
+    }
+
+    const statusSel = document.getElementById('supStatus');
+    if (statusSel) {
+        if (statusSel.tomselect) statusSel.tomselect.setValue(status || 'Active');
+        else statusSel.value = status || 'Active';
+    }
+
+    const form = document.getElementById('supplierForm');
+    form.style.display = 'block';
+    window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+}
+
+function cancelSupplierForm() {
+    document.getElementById('supplierForm').style.display = 'none';
+}
+
+function deleteSupplier(id, name) {
+    if (confirm(`Are you sure you want to delete farmer '${name}'? Linked Chart of Accounts head will also be removed.`)) {
+        document.getElementById('deleteSupplierId').value = id;
+        document.getElementById('deleteSupplierForm').submit();
+    }
+}
+</script>
+

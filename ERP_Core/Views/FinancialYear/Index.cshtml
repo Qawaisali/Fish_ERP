@@ -1,0 +1,454 @@
+@model ERP_Core.Dtos.FinancialYearViewModel
+
+@{
+    ViewData["Title"] = "Financial Year Master";
+    ViewData["SubTitle"] = "Mali saal ke doraniye, live status aur books locking manage karein.";
+}
+
+<!-- Summary Statistics KPI Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL FINANCIAL YEARS</div>
+        <div class="val tnum">@Model.TotalYears</div>
+        <div class="sub">Fiscal periods configured</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">ACTIVE / OPEN YEARS</div>
+        <div class="val tnum" style="color:var(--green-text);">@Model.ActiveYears</div>
+        <div class="sub">Available for entries</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">LOCKED / CLOSED</div>
+        <div class="val tnum" style="color:var(--red-text);">@Model.LockedYears</div>
+        <div class="sub">Audited &amp; Read-Only</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">CURRENT LIVE YEAR</div>
+        <div class="val tnum" style="color:var(--brass-text);font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            @Model.CurrentActiveYearName
+        </div>
+        <div class="sub">Primary transaction period</div>
+    </div>
+</div>
+
+<!-- Toolbar: Search, Filters & Action Button -->
+<div class="toolbar" style="margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;flex:1;max-width:750px;flex-wrap:wrap;">
+        <div class="search" style="flex:1;min-width:200px;">
+            <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="fySearchInput" placeholder="Search by description or code..." onkeyup="filterFyTable()" />
+        </div>
+        <select id="companyFilter" class="form-select" onchange="filterFyTable()" style="width:170px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Companies</option>
+            @foreach (var comp in Model.AvailableCompanies)
+            {
+                <option value="@comp.CompanyId">@comp.CompanyName</option>
+            }
+        </select>
+        <select id="statusFilter" class="form-select" onchange="filterFyTable()" style="width:140px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Statuses</option>
+            <option value="Current">Current Live</option>
+            <option value="Open">Open (Unlocked)</option>
+            <option value="Locked">Locked</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </div>
+    <button type="button" class="btn brass" id="btnToggleFyForm" onclick="toggleFyForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="btnAddBtnText">Add Financial Year</span>
+    </button>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Add / Edit Financial Year Collapsible Form Card -->
+<div class="form-card" id="fyFormCard" style="display:none;margin-bottom:24px;border:1px solid var(--brass);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div>
+            <h3 id="formTitle" style="font-size:16px;font-weight:600;margin:0;color:var(--brass-text);">Add New Financial Year</h3>
+            <p id="formSubTitle" style="font-size:12px;color:var(--text-dim);margin:2px 0 0 0;">Define fiscal accounting periods for transactions and reporting.</p>
+        </div>
+        <button type="button" class="btn ghost" onclick="resetFyForm()" style="padding:6px 12px;font-size:12.5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Cancel / Close
+        </button>
+    </div>
+
+    <form id="fyForm" asp-controller="FinancialYear" asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" id="formId" value="0" />
+
+        <div class="form-grid c3">
+            <div class="field">
+                <label>Description <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="Description" id="formDescription" placeholder="e.g. FY 2026-2027" required />
+            </div>
+
+            <div class="field">
+                <label>Year Code</label>
+                <input type="text" name="Code" id="formCode" placeholder="e.g. FY2627 (Auto-calculated)" />
+            </div>
+
+            <div class="field">
+                <label>Target Company <span style="color:var(--red-text);">*</span></label>
+                <select name="CompanyID" id="formCompanyID" required>
+                    @foreach (var comp in Model.AvailableCompanies)
+                    {
+                        <option value="@comp.CompanyId">@comp.CompanyName (@(string.IsNullOrEmpty(comp.Code) ? $"ID #{comp.CompanyId}" : comp.Code))</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Start Date <span style="color:var(--red-text);">*</span></label>
+                <input type="date" name="StartDate" id="formStartDate" onchange="onDatesChange()" required />
+            </div>
+
+            <div class="field">
+                <label>End Date <span style="color:var(--red-text);">*</span></label>
+                <input type="date" name="EndDate" id="formEndDate" onchange="onDatesChange()" required />
+            </div>
+
+            <div class="field">
+                <label>Active Status</label>
+                <select name="Active" id="formActive">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+
+            <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+                <input type="checkbox" name="CurrentYear" id="formCurrentYear" value="true" style="width:18px;height:18px;accent-color:var(--brass);cursor:pointer;" />
+                <label for="formCurrentYear" style="margin-bottom:0;cursor:pointer;font-weight:600;color:var(--text);">
+                    Set as Live / Current Year
+                </label>
+            </div>
+
+            <div class="field" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+                <input type="checkbox" name="LockYear" id="formLockYear" value="true" style="width:18px;height:18px;accent-color:var(--red-text);cursor:pointer;" />
+                <label for="formLockYear" style="margin-bottom:0;cursor:pointer;font-weight:600;color:var(--text);">
+                    Lock Year (Prevent Edits / Read-Only)
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="btn ghost" onclick="resetFyForm()">Reset Form</button>
+            <button type="submit" class="btn brass" id="btnSubmitFy">
+                <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="btnSubmitText">Save Financial Year</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Financial Years List Data Table Card -->
+<div class="card">
+    <div class="card-head" style="padding:16px 20px;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h3 style="font-size:15px;margin:0;">Financial Years (@Model.FinancialYears.Count)</h3>
+            <span style="font-size:12px;color:var(--text-dim);">Database table [CFinancialYears] configuration</span>
+        </div>
+        <span class="badge badge-brass" style="font-size:11px;">Table: [CFinancialYears]</span>
+    </div>
+
+    <div class="table-wrap">
+        <table id="fyTable">
+            <thead>
+                <tr>
+                    <th style="width:90px;">Code</th>
+                    <th>Description</th>
+                    <th>Company</th>
+                    <th>Period Duration</th>
+                    <th>Live Status</th>
+                    <th>Lock Status</th>
+                    <th>Active</th>
+                    <th style="text-align:right;width:150px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.FinancialYears != null && Model.FinancialYears.Any())
+                {
+                    @foreach (var fy in Model.FinancialYears)
+                    {
+                        var isActive = fy.Active == true || fy.Active == null;
+                        var isCurrent = fy.CurrentYear;
+                        var isLocked = fy.LockYear;
+
+                        <tr id="row-fy-@fy.Id"
+                            data-id="@fy.Id"
+                            data-description="@fy.Description"
+                            data-code="@fy.Code"
+                            data-companyid="@fy.CompanyID"
+                            data-startdate="@fy.StartDate.ToString("yyyy-MM-dd")"
+                            data-enddate="@fy.EndDate.ToString("yyyy-MM-dd")"
+                            data-current="@(isCurrent ? "true" : "false")"
+                            data-locked="@(isLocked ? "true" : "false")"
+                            data-active="@(isActive ? "true" : "false")">
+
+                            <td>
+                                <strong>@(string.IsNullOrEmpty(fy.Code) ? $"FY-{fy.Id}" : fy.Code)</strong>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;color:var(--text);">@fy.Description</div>
+                                @if (fy.CreatedOn.HasValue)
+                                {
+                                    <div style="font-size:11px;color:var(--text-faint);">Created: @fy.CreatedOn.Value.ToString("dd MMM yyyy")</div>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge badge-gray">@fy.CompanyName</span>
+                            </td>
+                            <td>
+                                <div style="font-size:12.5px;font-weight:500;">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    @fy.StartDate.ToString("dd MMM yyyy") &rarr; @fy.EndDate.ToString("dd MMM yyyy")
+                                </div>
+                            </td>
+                            <td>
+                                @if (isCurrent)
+                                {
+                                    <span class="badge badge-brass" style="font-weight:600;">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;vertical-align:middle;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                        Live Current
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-gray">Standard</span>
+                                }
+                            </td>
+                            <td>
+                                @if (isLocked)
+                                {
+                                    <span class="badge badge-red" title="Books closed, read-only">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                        Locked
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-green" title="Open for transactions">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                        Open
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                @if (isActive)
+                                {
+                                    <span class="badge badge-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-red">Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align:right;">
+                                <div class="row-actions" style="justify-content:flex-end;gap:4px;">
+                                    <!-- Edit Action -->
+                                    <button type="button" title="Edit Financial Year" class="btn ghost" style="padding:4px 7px;" onclick="loadFyForEdit(@fy.Id)">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    </button>
+
+                                    <!-- Set Current Action -->
+                                    @if (!isCurrent)
+                                    {
+                                        <form asp-controller="FinancialYear" asp-action="SetCurrent" asp-route-id="@fy.Id" method="post" style="display:inline;" onsubmit="return confirm('Set \'@fy.Description\' as active live financial year?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn ghost" style="padding:4px 7px;color:var(--brass-text);" title="Set as Current Live Year">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <!-- Toggle Lock Action -->
+                                    <form asp-controller="FinancialYear" asp-action="ToggleLock" asp-route-id="@fy.Id" method="post" style="display:inline;" onsubmit="return confirm('@(isLocked ? "Unlock" : "Lock") financial year \'@fy.Description\'?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost" style="padding:4px 7px;" title="@(isLocked ? "Unlock Books" : "Lock Books")">
+                                            @if (isLocked)
+                                            {
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--green-text)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--red-text)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                            }
+                                        </button>
+                                    </form>
+
+                                    <!-- Toggle Active Action -->
+                                    <form asp-controller="FinancialYear" asp-action="ToggleStatus" asp-route-id="@fy.Id" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost" style="padding:4px 7px;" title="@(isActive ? "Deactivate Year" : "Activate Year")">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brass-text)" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+                                        </button>
+                                    </form>
+
+                                    <!-- Delete Action -->
+                                    @if (!isCurrent)
+                                    {
+                                        <form asp-controller="FinancialYear" asp-action="Delete" asp-route-id="@fy.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete \'@fy.Description\'?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn ghost" style="padding:4px 7px;color:var(--red-text);" title="Delete Financial Year">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyTableRow">
+                        <td colspan="8" style="text-align:center;padding:36px 16px;color:var(--text-dim);">
+                            <div style="font-size:15px;font-weight:500;margin-bottom:6px;">No financial years found</div>
+                            <div style="font-size:12.5px;color:var(--text-faint);">Click "Add Financial Year" above to configure your accounting period.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Auto populate Description and Code when dates change
+    function onDatesChange() {
+        const startVal = document.getElementById('formStartDate').value;
+        const endVal = document.getElementById('formEndDate').value;
+        const descInput = document.getElementById('formDescription');
+        const codeInput = document.getElementById('formCode');
+
+        if (startVal && endVal) {
+            const startYear = new Date(startVal).getFullYear();
+            const endYear = new Date(endVal).getFullYear();
+
+            if (!descInput.value || descInput.value.startsWith('FY ')) {
+                descInput.value = 'FY ' + startYear + '-' + endYear;
+            }
+            if (!codeInput.value || codeInput.value.startsWith('FY')) {
+                const s2 = String(startYear).slice(-2);
+                const e2 = String(endYear).slice(-2);
+                codeInput.value = 'FY' + s2 + e2;
+            }
+        }
+    }
+
+    // Live Search and Filtering
+    function filterFyTable() {
+        const searchVal = (document.getElementById('fySearchInput').value || '').toLowerCase().trim();
+        const companyVal = (document.getElementById('companyFilter').value || '').trim();
+        const statusVal = (document.getElementById('statusFilter').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#fyTable tbody tr[id^="row-fy-"]');
+
+        rows.forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            const rowCompany = row.getAttribute('data-companyid');
+            const rowCurrent = row.getAttribute('data-current') === 'true';
+            const rowLocked = row.getAttribute('data-locked') === 'true';
+            const rowActive = row.getAttribute('data-active') === 'true';
+
+            const matchesSearch = !searchVal || rowText.includes(searchVal);
+            const matchesCompany = !companyVal || rowCompany === companyVal;
+
+            let matchesStatus = true;
+            if (statusVal === 'current') matchesStatus = rowCurrent;
+            else if (statusVal === 'open') matchesStatus = !rowLocked;
+            else if (statusVal === 'locked') matchesStatus = rowLocked;
+            else if (statusVal === 'active') matchesStatus = rowActive;
+            else if (statusVal === 'inactive') matchesStatus = !rowActive;
+
+            if (matchesSearch && matchesCompany && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Toggle Form visibility
+    function toggleFyForm() {
+        const formCard = document.getElementById('fyFormCard');
+        if (formCard.style.display === 'none' || formCard.style.display === '') {
+            formCard.style.display = 'block';
+            formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('formDescription').focus();
+        } else {
+            resetFyForm();
+        }
+    }
+
+    // Load Financial Year for Editing
+    function loadFyForEdit(id) {
+        const row = document.getElementById('row-fy-' + id);
+        if (!row) return;
+
+        const description = row.getAttribute('data-description');
+        const code = row.getAttribute('data-code');
+        const companyId = row.getAttribute('data-companyid');
+        const startDate = row.getAttribute('data-startdate');
+        const endDate = row.getAttribute('data-enddate');
+        const current = row.getAttribute('data-current') === 'true';
+        const locked = row.getAttribute('data-locked') === 'true';
+        const active = row.getAttribute('data-active');
+
+        // Populate form
+        document.getElementById('formId').value = id;
+        document.getElementById('formDescription').value = description;
+        document.getElementById('formCode').value = code;
+        document.getElementById('formCompanyID').value = companyId;
+        document.getElementById('formStartDate').value = startDate;
+        document.getElementById('formEndDate').value = endDate;
+        document.getElementById('formCurrentYear').checked = current;
+        document.getElementById('formLockYear').checked = locked;
+        document.getElementById('formActive').value = active;
+
+        // Switch to Edit Mode
+        document.getElementById('formTitle').innerText = 'Edit Financial Year: ' + description;
+        document.getElementById('formSubTitle').innerText = 'Updating configuration for Financial Year ID #' + id;
+        document.getElementById('btnSubmitText').innerText = 'Update Financial Year';
+        document.getElementById('btnAddBtnText').innerText = 'Edit Mode Active';
+
+        const formCard = document.getElementById('fyFormCard');
+        formCard.style.display = 'block';
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('formDescription').focus();
+    }
+
+    // Reset Form to Add Mode
+    function resetFyForm() {
+        document.getElementById('fyForm').reset();
+        document.getElementById('formId').value = '0';
+        document.getElementById('formActive').value = 'true';
+        document.getElementById('formCurrentYear').checked = false;
+        document.getElementById('formLockYear').checked = false;
+
+        document.getElementById('formTitle').innerText = 'Add New Financial Year';
+        document.getElementById('formSubTitle').innerText = 'Define fiscal accounting periods for transactions and reporting.';
+        document.getElementById('btnSubmitText').innerText = 'Save Financial Year';
+        document.getElementById('btnAddBtnText').innerText = 'Add Financial Year';
+
+        document.getElementById('fyFormCard').style.display = 'none';
+    }
+</script>
+}

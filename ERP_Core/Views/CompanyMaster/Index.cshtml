@@ -1,0 +1,418 @@
+@model ERP_Core.Dtos.CompanyMasterViewModel
+
+@{
+    ViewData["Title"] = "Company Master";
+    ViewData["SubTitle"] = "Aap ki company ki bunyadi tafseelaat — branches, contact aur profile records manage karein.";
+}
+
+<!-- Summary Statistics Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL COMPANIES</div>
+        <div class="val tnum">@Model.TotalCompanies</div>
+        <div class="sub">Registered entities</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">ACTIVE COMPANIES</div>
+        <div class="val tnum" style="color:var(--green-text);">@Model.ActiveCompanies</div>
+        <div class="sub">Operational units</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">INACTIVE</div>
+        <div class="val tnum" style="color:var(--red-text);">@Model.InactiveCompanies</div>
+        <div class="sub">Disabled / Closed</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">BRANCH OFFICES</div>
+        <div class="val tnum" style="color:var(--brass-text);">@Model.BranchCompanies</div>
+        <div class="sub">Sub-entities &amp; branches</div>
+    </div>
+</div>
+
+<!-- Toolbar: Live Search & Add Button -->
+<div class="toolbar" style="margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;flex:1;max-width:650px;">
+        <div class="search" style="flex:1;">
+            <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="companySearchInput" placeholder="Search by name, code, phone, email, city..." onkeyup="filterCompanyTable()" />
+        </div>
+        <select id="statusFilter" class="form-select" onchange="filterCompanyTable()" style="width:140px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </div>
+    <button type="button" class="btn brass" id="btnToggleCompanyForm" onclick="toggleCompanyForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="btnAddBtnText">Add New Company</span>
+    </button>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Add / Edit Company Collapsible Form Card -->
+<div class="form-card" id="companyFormCard" style="display:none;margin-bottom:24px;border:1px solid var(--brass);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div>
+            <h3 id="formTitle" style="font-size:16px;font-weight:600;margin:0;color:var(--brass-text);">Add New Company</h3>
+            <p id="formSubTitle" style="font-size:12px;color:var(--text-dim);margin:2px 0 0 0;">Create a new master company profile or branch office.</p>
+        </div>
+        <button type="button" class="btn ghost" onclick="resetCompanyForm()" style="padding:6px 12px;font-size:12.5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Cancel / Close
+        </button>
+    </div>
+
+    <form id="companyForm" asp-controller="CompanyMaster" asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="CompanyId" id="formCompanyId" value="0" />
+
+        <div class="form-grid c3">
+            <div class="field">
+                <label>Company Name <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="CompanyName" id="formCompanyName" placeholder="e.g. Zahid Hussain & Sons" required />
+            </div>
+
+            <div class="field">
+                <label>Company Code</label>
+                <input type="text" name="Code" id="formCode" placeholder="Auto-generated if empty (e.g. CMP-001)" />
+            </div>
+
+            <div class="field">
+                <label>Parent Company (Head Office)</label>
+                <select name="ParentId" id="formParentId">
+                    <option value="">-- None (Independent / Head Office) --</option>
+                    @foreach (var parent in Model.ParentCompanies)
+                    {
+                        <option value="@parent.CompanyId">@parent.CompanyName (@(string.IsNullOrEmpty(parent.Code) ? $"ID #{parent.CompanyId}" : parent.Code))</option>
+                    }
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Prefix (Document / Billing)</label>
+                <input type="text" name="Prefix" id="formPrefix" placeholder="e.g. ZHS, CMP, BR" />
+            </div>
+
+            <div class="field">
+                <label>Phone Number</label>
+                <input type="tel" name="Phone" id="formPhone" placeholder="e.g. 021-35001234" />
+            </div>
+
+            <div class="field">
+                <label>Mobile / WhatsApp</label>
+                <input type="tel" name="Mobile" id="formMobile" placeholder="e.g. 0300-1234567" />
+            </div>
+
+            <div class="field">
+                <label>Email Address</label>
+                <input type="email" name="EmailId" id="formEmailId" placeholder="e.g. info@company.com" />
+            </div>
+
+            <div class="field">
+                <label>Country</label>
+                <input type="text" name="Country" id="formCountry" value="Pakistan" placeholder="Pakistan" />
+            </div>
+
+            <div class="field">
+                <label>State / Province</label>
+                <input type="text" name="State" id="formState" value="Sindh" placeholder="Sindh / Balochistan / Punjab" />
+            </div>
+
+            <div class="field" style="grid-column:span 2;">
+                <label>Physical Address</label>
+                <input type="text" name="Address" id="formAddress" placeholder="e.g. Shop # 14, Fish Harbour Market, Karachi" />
+            </div>
+
+            <div class="field">
+                <label>Status</label>
+                <select name="Active" id="formActive">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="btn ghost" onclick="resetCompanyForm()">Reset Form</button>
+            <button type="submit" class="btn brass" id="btnSubmitCompany">
+                <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="btnSubmitText">Save Company</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Companies List Data Card -->
+<div class="card">
+    <div class="card-head" style="padding:16px 20px;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h3 style="font-size:15px;margin:0;">Registered Companies (@Model.Companies.Count)</h3>
+            <span style="font-size:12px;color:var(--text-dim);">Detailed listing from CCompanies database table</span>
+        </div>
+        <span class="badge badge-brass" style="font-size:11px;">Table: [CCompanies]</span>
+    </div>
+
+    <div class="table-wrap">
+        <table id="companyTable">
+            <thead>
+                <tr>
+                    <th style="width:70px;">ID / Code</th>
+                    <th>Company Name</th>
+                    <th>Head / Branch</th>
+                    <th>Contact Info</th>
+                    <th>Location</th>
+                    <th>Prefix</th>
+                    <th>Status</th>
+                    <th style="text-align:right;width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Companies != null && Model.Companies.Any())
+                {
+                    @foreach (var c in Model.Companies)
+                    {
+                        var isBranch = c.ParentId != null && c.ParentId > 0;
+                        var parentObj = isBranch ? Model.ParentCompanies.FirstOrDefault(p => p.CompanyId == c.ParentId) : null;
+                        var isActive = c.Active == true || c.Active == null;
+
+                        <tr id="row-company-@c.CompanyId"
+                            data-id="@c.CompanyId"
+                            data-name="@(c.CompanyName ?? "")"
+                            data-code="@(c.Code ?? "")"
+                            data-prefix="@(c.Prefix ?? "")"
+                            data-parentid="@(c.ParentId ?? 0)"
+                            data-phone="@(c.Phone ?? "")"
+                            data-mobile="@(c.Mobile ?? "")"
+                            data-email="@(c.EmailId ?? "")"
+                            data-address="@(c.Address ?? "")"
+                            data-country="@(c.Country ?? "")"
+                            data-state="@(c.State ?? "")"
+                            data-active="@(isActive ? "true" : "false")">
+
+                            <td>
+                                <strong>@(string.IsNullOrEmpty(c.Code) ? $"#{c.CompanyId}" : c.Code)</strong>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;color:var(--text);">@c.CompanyName</div>
+                                @if (c.CreatedOn.HasValue)
+                                {
+                                    <div style="font-size:11px;color:var(--text-faint);">Added: @c.CreatedOn.Value.ToString("dd MMM yyyy")</div>
+                                }
+                            </td>
+                            <td>
+                                @if (isBranch)
+                                {
+                                    <span class="badge badge-brass" title="Branch of @(parentObj?.CompanyName ?? $"Parent #{c.ParentId}")">
+                                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><polyline points="6 9 12 15 18 9"/></svg>
+                                        Branch (@(parentObj != null ? parentObj.CompanyName : $"#{c.ParentId}"))
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-gray">Main / Head Office</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(c.Phone) || !string.IsNullOrWhiteSpace(c.Mobile))
+                                {
+                                    <div style="font-size:12.5px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>@(c.Mobile ?? c.Phone)</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(c.EmailId))
+                                {
+                                    <div style="font-size:11.5px;color:var(--text-dim);"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:3px;vertical-align:middle;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>@c.EmailId</div>
+                                }
+                                @if (string.IsNullOrWhiteSpace(c.Phone) && string.IsNullOrWhiteSpace(c.Mobile) && string.IsNullOrWhiteSpace(c.EmailId))
+                                {
+                                    <span style="color:var(--text-faint);font-size:12px;">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(c.Address))
+                                {
+                                    <div style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@c.Address">@c.Address</div>
+                                }
+                                <div style="font-size:11.5px;color:var(--text-dim);">@(c.State ?? "Sindh"), @(c.Country ?? "Pakistan")</div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(c.Prefix))
+                                {
+                                    <span class="badge badge-gray" style="font-family:monospace;font-size:11px;">@c.Prefix</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-faint);font-size:12px;">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (isActive)
+                                {
+                                    <span class="badge badge-green">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-red">Inactive</span>
+                                }
+                            </td>
+                            <td style="text-align:right;">
+                                <div class="row-actions" style="justify-content:flex-end;gap:6px;">
+                                    <!-- Edit Action -->
+                                    <button type="button" title="Edit Company" class="btn ghost" style="padding:5px 8px;" onclick="loadCompanyForEdit(@c.CompanyId)">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    </button>
+
+                                    <!-- Toggle Active Action -->
+                                    <form asp-controller="CompanyMaster" asp-action="ToggleStatus" asp-route-id="@c.CompanyId" method="post" style="display:inline;" onsubmit="return confirm('Change status for company \'@c.CompanyName\'?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost" style="padding:5px 8px;" title="@(isActive ? "Deactivate Company" : "Activate Company")">
+                                            @if (isActive)
+                                            {
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--brass-text)" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--green-text)" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+                                            }
+                                        </button>
+                                    </form>
+
+                                    <!-- Delete Action -->
+                                    <form asp-controller="CompanyMaster" asp-action="Delete" asp-route-id="@c.CompanyId" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete company \'@c.CompanyName\'?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost" style="padding:5px 8px;color:var(--red-text);" title="Delete Company">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="emptyTableRow">
+                        <td colspan="8" style="text-align:center;padding:36px 16px;color:var(--text-dim);">
+                            <div style="font-size:15px;font-weight:500;margin-bottom:6px;">No companies found</div>
+                            <div style="font-size:12.5px;color:var(--text-faint);">Click "Add New Company" above to create the first company profile.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Live Client Filter
+    function filterCompanyTable() {
+        const searchVal = (document.getElementById('companySearchInput').value || '').toLowerCase().trim();
+        const statusVal = (document.getElementById('statusFilter').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#companyTable tbody tr[id^="row-company-"]');
+
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            const rowActive = row.getAttribute('data-active') === 'true' ? 'active' : 'inactive';
+
+            const matchesSearch = !searchVal || rowText.includes(searchVal);
+            const matchesStatus = !statusVal || rowActive === statusVal;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Toggle Form visibility
+    function toggleCompanyForm() {
+        const formCard = document.getElementById('companyFormCard');
+        if (formCard.style.display === 'none' || formCard.style.display === '') {
+            formCard.style.display = 'block';
+            formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('formCompanyName').focus();
+        } else {
+            resetCompanyForm();
+        }
+    }
+
+    // Load Company for Editing
+    function loadCompanyForEdit(companyId) {
+        const row = document.getElementById('row-company-' + companyId);
+        if (!row) return;
+
+        const id = row.getAttribute('data-id');
+        const name = row.getAttribute('data-name');
+        const code = row.getAttribute('data-code');
+        const prefix = row.getAttribute('data-prefix');
+        const parentId = row.getAttribute('data-parentid');
+        const phone = row.getAttribute('data-phone');
+        const mobile = row.getAttribute('data-mobile');
+        const email = row.getAttribute('data-email');
+        const address = row.getAttribute('data-address');
+        const country = row.getAttribute('data-country');
+        const state = row.getAttribute('data-state');
+        const active = row.getAttribute('data-active');
+
+        // Populate Form Fields
+        document.getElementById('formCompanyId').value = id;
+        document.getElementById('formCompanyName').value = name;
+        document.getElementById('formCode').value = code;
+        document.getElementById('formPrefix').value = prefix;
+        document.getElementById('formParentId').value = (parentId && parentId !== '0') ? parentId : '';
+        document.getElementById('formPhone').value = phone;
+        document.getElementById('formMobile').value = mobile;
+        document.getElementById('formEmailId').value = email;
+        document.getElementById('formAddress').value = address;
+        document.getElementById('formCountry').value = country || 'Pakistan';
+        document.getElementById('formState').value = state || 'Sindh';
+        document.getElementById('formActive').value = active;
+
+        // Switch UI Mode to Edit
+        document.getElementById('formTitle').innerText = 'Edit Company: ' + name;
+        document.getElementById('formSubTitle').innerText = 'Updating details for Company ID #' + id;
+        document.getElementById('btnSubmitText').innerText = 'Update Company';
+        document.getElementById('btnAddBtnText').innerText = 'Edit Mode Active';
+
+        const formCard = document.getElementById('companyFormCard');
+        formCard.style.display = 'block';
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('formCompanyName').focus();
+    }
+
+    // Reset Form to Add Mode
+    function resetCompanyForm() {
+        document.getElementById('companyForm').reset();
+        document.getElementById('formCompanyId').value = '0';
+        document.getElementById('formCountry').value = 'Pakistan';
+        document.getElementById('formState').value = 'Sindh';
+        document.getElementById('formActive').value = 'true';
+
+        document.getElementById('formTitle').innerText = 'Add New Company';
+        document.getElementById('formSubTitle').innerText = 'Create a new master company profile or branch office.';
+        document.getElementById('btnSubmitText').innerText = 'Save Company';
+        document.getElementById('btnAddBtnText').innerText = 'Add New Company';
+
+        document.getElementById('companyFormCard').style.display = 'none';
+    }
+</script>
+}
+

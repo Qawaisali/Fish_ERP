@@ -1,0 +1,61 @@
+@model ERP_Core.Dtos.SettingsViewModel
+
+@{
+    ViewData["Title"] = "Settings";
+    ViewData["SubTitle"] = "System aur print preferences.";
+}
+
+<div class="section-title">Settings</div>
+<div class="section-desc">System aur print preferences.</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<div class="form-card">
+    <form asp-controller="Settings" asp-action="SaveSettings" method="post">
+        @Html.AntiForgeryToken()
+        <div class="form-grid c2">
+            <div class="field">
+                <label>Bill Print Format</label>
+                <select asp-for="BillPrintFormat">
+                    <option value="Thermal (3 inch)">Thermal (3 inch)</option>
+                    <option value="A5">A5</option>
+                    <option value="A4">A4</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Currency</label>
+                <select asp-for="Currency">
+                    <option value="PKR (Rs)">PKR (Rs)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Default Commission %</label>
+                <input type="number" step="0.5" asp-for="DefaultCommissionPercent" required />
+            </div>
+            <div class="field">
+                <label>Financial Year Start</label>
+                <input type="date" asp-for="FinancialYearStart" required />
+            </div>
+            <div class="field">
+                <label>Backup Frequency</label>
+                <select asp-for="BackupFrequency">
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Low Stock Alert (Kg)</label>
+                <input type="number" asp-for="LowStockAlertKg" required />
+            </div>
+        </div>
+        <div class="form-actions">
+            <a asp-controller="Home" asp-action="Index" class="btn ghost">Reset</a>
+            <button type="submit" class="btn brass">Save settings</button>
+        </div>
+    </form>
+</div>

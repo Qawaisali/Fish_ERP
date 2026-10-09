@@ -1,0 +1,890 @@
+@model ERP_Core.Dtos.CustomerReceivableViewModel
+
+@{
+    ViewData["Title"] = "Supplier Receivable";
+    ViewData["SubTitle"] = "Supplier wise bikri (sales), wasooli (receipts) aur baqaya balance report.";
+}
+
+@section Styles {
+    <!-- TomSelect CSS for Searchable Customer Dropdown -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+    <style>
+        .receivable-filter-card {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+        }
+
+        .receivable-filter-grid {
+            display: grid;
+            grid-template-columns: 180px 180px minmax(280px, 1fr) auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 992px) {
+            .receivable-filter-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .receivable-filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Subtabs switcher */
+        .cr-subtabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--border, #2C4740);
+            padding-bottom: 2px;
+        }
+
+        .cr-subtab-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim, #9FB6AF);
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 8px 18px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+            bottom: -1px;
+        }
+
+        .cr-subtab-btn:hover {
+            color: var(--text, #EAF1EE);
+        }
+
+        .cr-subtab-btn.active {
+            color: var(--brass-text, #E3AE66);
+            border-bottom-color: var(--brass, #C68A3E);
+        }
+
+        .stat-grid-receivable {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        @@media (max-width: 992px) {
+            .stat-grid-receivable {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .stat-grid-receivable {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box-modern {
+            background: linear-gradient(135deg, var(--surface, #132420) 0%, var(--surface2, #1A2F2A) 100%);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-box-modern:hover {
+            transform: translateY(-2px);
+            border-color: var(--brass, #C68A3E);
+        }
+
+        .stat-box-modern .stat-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-dim, #9FB6AF);
+            margin-bottom: 6px;
+        }
+
+        .stat-box-modern .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text, #EAF1EE);
+            line-height: 1.1;
+        }
+
+        .stat-box-modern .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-faint, #5E7873);
+            margin-top: 4px;
+        }
+
+        .stat-glow-green .stat-num { color: var(--green-text, #6FE0A0); }
+        .stat-glow-red .stat-num { color: var(--red-text, #FF8A7A); }
+        .stat-glow-brass .stat-num { color: var(--brass-text, #E3AE66); }
+
+        /* Party Header Banner when single customer is selected */
+        .party-banner {
+            background: rgba(198, 138, 62, 0.08);
+            border: 1px solid rgba(198, 138, 62, 0.35);
+            border-radius: var(--radius, 10px);
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Outstanding Box at bottom of report */
+        .outstanding-box {
+            background: linear-gradient(135deg, rgba(198, 138, 62, 0.12) 0%, rgba(198, 138, 62, 0.04) 100%);
+            border: 1px solid var(--brass, #C68A3E);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        /* TomSelect Dark Dropdown overrides */
+        .ts-wrapper .ts-control {
+            background-color: var(--surface2, #1A2F2A) !important;
+            border: 1px solid var(--border, #2C4740) !important;
+            color: var(--text, #EAF1EE) !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            padding: 7px 12px !important;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-wrapper .ts-control .item {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-dropdown {
+            background-color: #0E1A17 !important;
+            border: 1px solid rgba(198, 138, 62, 0.4) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+            color: #EAF1EE !important;
+            z-index: 999999 !important;
+        }
+
+        .ts-dropdown .option {
+            color: #EAF1EE !important;
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .ts-dropdown .option.active, .ts-dropdown .option:hover {
+            background-color: #1B302B !important;
+            color: #E3AE66 !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #2F6F5E !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+    </style>
+}
+
+<div class="toolbar" style="margin-bottom:14px;">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Supplier Receivable</div>
+        <div class="section-desc" style="margin-bottom:0;">
+            Supplier wise bikri (sales), wasooli (receipts) aur baqaya balance report.
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- SUBTABS: RECEIVABLES SUMMARY vs Supplier LEDGER REPORT                     -->
+<!-- ========================================================================= -->
+<div class="cr-subtabs">
+    <button type="button" class="cr-subtab-btn @(Model.IsSingleCustomerView ? "" : "active")" id="tabBtnSummary" onclick="switchCrTab('summary')">
+        Receivables Summary
+    </button>
+    <button type="button" class="cr-subtab-btn @(Model.IsSingleCustomerView ? "active" : "")" id="tabBtnReport" onclick="switchCrTab('report')">
+        Supplier Ledger Report
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- THREE-FIELD FILTER FORM (From Date, To Date, Customer Dropdown)           -->
+<!-- ========================================================================= -->
+<div class="receivable-filter-card">
+    <form method="get" asp-controller="CustomerReceivable" asp-action="Index" id="custFilterForm">
+        <div class="receivable-filter-grid">
+            <!-- Field 1: From Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                <input type="date" name="fromDate" id="filterFromDate" value="@Model.FromDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 2: To Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                <input type="date" name="toDate" id="filterToDate" value="@Model.ToDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 3: Customer Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Supplier (Buyer)</label>
+                <select name="customerId" id="filterCustomerSelect" class="searchable-select">
+                    <option value="">-- All Suppliers (Summary) --</option>
+                    @foreach (var c in Model.CustomersList)
+                    {
+                        <option value="@c.Id" selected="@(Model.SelectedCustomerId == c.Id)">
+                            @c.DisplayText
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn brass" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    Filter Report
+                </button>
+                <a href="/CustomerReceivable" class="btn ghost" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;">
+                    Reset
+                </a>
+                <button type="button" class="btn brass" id="btnCustPrintReport" onclick="handleCustomerPrint()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                    Print
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STAT CARDS (OPENING BAL, BILLED, WASOOLI, OUTSTANDING BALANCE)             -->
+<!-- ========================================================================= -->
+<div class="stat-grid-receivable">
+    <div class="stat-box-modern">
+        <div class="stat-lbl">
+            @(Model.IsSingleCustomerView ? "OPENING BALANCE" : "TOTAL Suppliers")
+        </div>
+        <div class="stat-num tnum">
+            @(Model.IsSingleCustomerView ? $"Rs {Model.OpeningBalance:N0}" : $"{Model.TotalCustomersCount} Buyers")
+        </div>
+        <div class="stat-sub">
+            @(Model.IsSingleCustomerView ? $"Before {DateTime.Parse(Model.FromDate):dd-MMM-yyyy}" : "Active Registered Accounts")
+        </div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-red">
+        <div class="stat-lbl">TOTAL BILLED / SALES (DEBIT)</div>
+        <div class="stat-num tnum">Rs @Model.TotalBilled.ToString("N0")</div>
+        <div class="stat-sub">Fish Sales During Period</div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-green">
+        <div class="stat-lbl">TOTAL WASOOLI / PAID (CREDIT)</div>
+        <div class="stat-num tnum">Rs @Model.TotalReceived.ToString("N0")</div>
+        <div class="stat-sub">Payments Received</div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-brass">
+        <div class="stat-lbl">OUTSTANDING BALANCE</div>
+        <div class="stat-num tnum font-weight-bold" style="color:var(--brass-text);">
+            Rs @Model.TotalReceivableSum.ToString("N0")
+        </div>
+        <div class="stat-sub">Final Net Receivable Due</div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 1: ALL CUSTOMERS RECEIVABLES SUMMARY                               -->
+<!-- ========================================================================= -->
+<div id="crSummaryView" style="display:@(Model.IsSingleCustomerView ? "none" : "block");">
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div>
+                <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);">All Supplier Receivables Summary</h3>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Period: @DateTime.Parse(Model.FromDate).ToString("dd-MMM") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")</div>
+            </div>
+            <button type="button" class="btn brass btn-sm" onclick="printCustomerSummaryReportModal()" style="height:32px;padding:0 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                Print Summary Report
+            </button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="dynamic-table" id="allCustomersTable">
+                <thead>
+                    <tr>
+                        <th style="width:45px;text-align:center;">#</th>
+                        <th>Supplier Name</th>
+                        <th>City / Area</th>
+                        <th>Phone</th>
+                        <th style="text-align:right;">Opening Bal</th>
+                        <th style="text-align:right;">Total Billed (Dr)</th>
+                        <th style="text-align:right;">Wasooli / Paid (Cr)</th>
+                        <th style="text-align:right;">Net Receivable</th>
+                        <th style="text-align:center;">Status</th>
+                        <th class="no-sort" style="width:110px;text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Receivables != null && Model.Receivables.Any())
+                    {
+                        int idx = 1;
+                        foreach (var c in Model.Receivables)
+                        {
+                            <tr>
+                                <td style="text-align:center;color:var(--text-dim);font-weight:600;">@idx</td>
+                                <td>
+                                    <strong>@c.CustomerName</strong>
+                                    @if (!string.IsNullOrEmpty(c.AccountCode))
+                                    {
+                                        <div style="font-size:11px;color:var(--brass-text);">@c.AccountCode</div>
+                                    }
+                                </td>
+                                <td>@c.City</td>
+                                <td>@c.Phone</td>
+                                <td class="tnum" style="text-align:right;color:var(--text-dim);">Rs @c.OpeningBalance.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">Rs @c.TotalPurchased.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">Rs @c.TotalReceived.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:@(c.ReceivableBalance > 0 ? "var(--red-text)" : (c.ReceivableBalance < 0 ? "var(--green-text)" : "var(--text-dim)"));">
+                                    Rs @c.ReceivableBalance.ToString("N0")
+                                </td>
+                                <td style="text-align:center;">
+                                    @if (c.Status == "Due" || c.Status == "Receivable")
+                                    {
+                                        <span class="badge badge-amber" style="font-size:11px;">Due</span>
+                                    }
+                                    else if (c.Status == "Advance")
+                                    {
+                                        <span class="badge badge-green" style="font-size:11px;">Advance</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-gray" style="font-size:11px;">Clear</span>
+                                    }
+                                </td>
+                                <td style="text-align:center;">
+                                    <a href="/CustomerReceivable?customerId=@c.CustomerId&fromDate=@Model.FromDate&toDate=@Model.ToDate"
+                                       class="btn ghost btn-sm" style="padding:4px 10px;font-size:11.5px;" title="View Supplier Ledger Report">
+                                        View Ledger
+                                    </a>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    }
+                </tbody>
+                <tfoot>
+                    @{
+                        var sumOpening = Model.Receivables?.Sum(r => r.OpeningBalance) ?? 0;
+                        var sumBilled = Model.Receivables?.Sum(r => r.TotalPurchased) ?? 0;
+                        var sumReceived = Model.Receivables?.Sum(r => r.TotalReceived) ?? 0;
+                        var sumReceivable = Model.Receivables?.Sum(r => r.ReceivableBalance) ?? 0;
+                    }
+                    <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                        <th style="padding:12px 14px !important;text-align:center;"></th>
+                        <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;">Total Summary</th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">Rs @sumOpening.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">Rs @sumBilled.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @sumReceived.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text);padding:12px 14px !important;">Rs @sumReceivable.ToString("N0")</th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th style="padding:12px 14px !important;"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 2: CUSTOMER LEDGER REPORT (DETAILED STATEMENT VIEW)                -->
+<!-- ========================================================================= -->
+<div id="crReportView" style="display:@(Model.IsSingleCustomerView ? "block" : "none");">
+    <div class="card">
+        @if (Model.IsSingleCustomerView)
+        {
+            <!-- Party Banner -->
+            <div class="party-banner">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:var(--brass-text);margin:0;">
+                        @Model.SelectedCustomerName
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                        City/Area: <strong>@Model.SelectedCustomerCity</strong> &nbsp;|&nbsp;
+                        Phone: <strong>@Model.SelectedCustomerPhone</strong> &nbsp;|&nbsp;
+                        COA Code: <span class="tcode">@Model.SelectedCustomerAccountCode</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11.5px;color:var(--text-dim);">Statement Period:</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">
+                        @DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Ledger Statement Table -->
+            <div class="table-wrap">
+                <table class="dynamic-table" id="customerStatementTable">
+                    <thead>
+                        <tr>
+                            <th style="width:110px;">Date</th>
+                            <th style="width:120px;">Voucher / Ref #</th>
+                            <th style="width:100px;">Invoice #</th>
+                            <th>Description / Particulars</th>
+                            <th style="width:130px;text-align:right;">Billed / Sale (Dr)</th>
+                            <th style="width:130px;text-align:right;">Wasooli / Paid (Cr)</th>
+                            <th style="width:140px;text-align:right;">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Opening Balance Line -->
+                        <tr style="background:rgba(255,255,255,0.02);font-weight:600;">
+                            <td>@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")</td>
+                            <td><span class="badge badge-gray">OPENING</span></td>
+                            <td>-</td>
+                            <td>Opening Balance Brought Forward</td>
+                            <td style="text-align:right;">-</td>
+                            <td style="text-align:right;">-</td>
+                            <td class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);">
+                                Rs @Model.OpeningBalance.ToString("N2")
+                            </td>
+                        </tr>
+
+                        @if (Model.StatementTransactions != null && Model.StatementTransactions.Any())
+                        {
+                            foreach (var tx in Model.StatementTransactions)
+                            {
+                                <tr>
+                                    <td>@tx.DateFormatted</td>
+                                    <td>
+                                        <span class="tcode" style="font-weight:600;color:var(--brass-text);">@(tx.VoucherCode ?? tx.RefNo)</span>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(tx.InvoiceNo) ? "-" : tx.InvoiceNo)</td>
+                                    <td style="white-space:normal;word-break:break-word;line-height:1.4;">@tx.Description</td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">
+                                        @(tx.Debit > 0 ? $"Rs {tx.Debit:N2}" : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">
+                                        @(tx.Credit > 0 ? $"Rs {tx.Credit:N2}" : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:@(tx.Balance > 0 ? "var(--red-text)" : (tx.Balance < 0 ? "var(--green-text)" : "var(--text-dim)"));">
+                                        Rs @tx.Balance.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                            <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;">Totals</th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">Period Totals &amp; Closing Balance:</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">Rs @Model.TotalBilled.ToString("N2")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @Model.TotalReceived.ToString("N2")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);font-size:13.5px;padding:12px 14px !important;">Rs @Model.TotalReceivableSum.ToString("N2")</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Outstanding Balance Highlight Banner at the End of Report -->
+            <div class="outstanding-box">
+                <div>
+                    <div style="font-size:13px;color:var(--text);font-weight:600;">
+                        Statement Summary: @Model.SelectedCustomerName
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px;">
+                        Period: @DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") to @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")
+                    </div>
+                </div>
+                <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:600;display:block;">Gross Sales (Billed):</span>
+                        <strong style="color:var(--red-text);font-size:14px;" class="tnum">Rs @Model.TotalBilled.ToString("N2")</strong>
+                    </div>
+                    <div>
+                        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:600;display:block;">Total Wasooli (Received):</span>
+                        <strong style="color:var(--green-text);font-size:14px;" class="tnum">Rs @Model.TotalReceived.ToString("N2")</strong>
+                    </div>
+                    <div style="padding:8px 16px;background:rgba(198,138,62,0.18);border:1px solid var(--brass);border-radius:8px;text-align:right;">
+                        <span style="font-size:11px;color:var(--brass-text);font-weight:700;text-transform:uppercase;display:block;letter-spacing:0.5px;">Outstanding Balance:</span>
+                        <strong style="font-size:18px;color:var(--brass-text);" class="tnum">Rs @Model.TotalReceivableSum.ToString("N2")</strong>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- No Customer Selected Prompt -->
+            <div style="text-align:center;padding:48px 24px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(198,138,62,0.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid rgba(198,138,62,0.3);">
+                    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brass-text);">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">Koi Supplier Select Nahi Hai</h3>
+                <p style="font-size:13px;color:var(--text-dim);max-width:440px;margin:0 auto 18px;">
+                    Upar diye gaye dropdown se koi <strong>Supplier (Buyer)</strong> select karein aur <strong>Filter Report</strong> par click karein, ya <em>Receivables Summary</em> tab me kisi bhi Supplier ke aage <em>View Ledger</em> dabayein.
+                </p>
+                <button type="button" class="btn brass" onclick="switchCrTab('summary')">
+                    Go to Receivables Summary
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <!-- TomSelect JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize TomSelect for searchable customer dropdown
+            const customerSelect = document.getElementById('filterCustomerSelect');
+            if (customerSelect && typeof TomSelect !== 'undefined') {
+                const ts = new TomSelect(customerSelect, {
+                    create: false,
+                    allowEmptyOption: true,
+                    placeholder: '-- All Customers (Summary) --',
+                    sortField: { field: 'text', direction: 'asc' }
+                });
+            }
+        });
+
+        // Tab Switcher between Summary and Detailed Ledger Report
+        function switchCrTab(tab) {
+            const summaryView = document.getElementById('crSummaryView');
+            const reportView = document.getElementById('crReportView');
+            const tabBtnSummary = document.getElementById('tabBtnSummary');
+            const tabBtnReport = document.getElementById('tabBtnReport');
+
+            if (tab === 'summary') {
+                if (summaryView) summaryView.style.display = 'block';
+                if (reportView) reportView.style.display = 'none';
+                if (tabBtnSummary) tabBtnSummary.classList.add('active');
+                if (tabBtnReport) tabBtnReport.classList.remove('active');
+            } else {
+                if (summaryView) summaryView.style.display = 'none';
+                if (reportView) reportView.style.display = 'block';
+                if (tabBtnSummary) tabBtnSummary.classList.remove('active');
+                if (tabBtnReport) tabBtnReport.classList.add('active');
+            }
+        }
+
+        // Dispatcher for Print Button in Filter Bar
+        function handleCustomerPrint() {
+            const isSingle = @(Model.IsSingleCustomerView ? "true" : "false");
+            const reportView = document.getElementById('crReportView');
+            const isReportTab = reportView && reportView.style.display !== 'none';
+
+            if (isSingle && isReportTab) {
+                printCustomerReport();
+            } else {
+                printCustomerSummaryReportModal();
+            }
+        }
+
+        // Print All Customers Summary Report (Excluding Zero Balance Accounts)
+        function printCustomerSummaryReportModal() {
+            const fromDate = '@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")';
+            const toDate = '@DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")';
+            const compName = '@(Model.CompanyName ?? "ZAHID HUSSAIN & SONS")';
+
+            let rowsHtml = '';
+            @{
+                var nonZeroReceivables = Model.Receivables?.Where(r => r.ReceivableBalance != 0).ToList() ?? new List<ERP_Core.Dtos.CustomerReceivableItemDto>();
+                var sumCustOpening = nonZeroReceivables.Sum(r => r.OpeningBalance);
+                var sumCustBilled = nonZeroReceivables.Sum(r => r.TotalPurchased);
+                var sumCustReceived = nonZeroReceivables.Sum(r => r.TotalReceived);
+                var sumCustReceivable = nonZeroReceivables.Sum(r => r.ReceivableBalance);
+            }
+
+            @if (nonZeroReceivables.Any())
+            {
+                int cIdx = 1;
+                foreach (var c in nonZeroReceivables)
+                {
+                    var statusBadge = c.Status == "Due" || c.Status == "Receivable" ? "Due" : (c.Status == "Advance" ? "Advance" : "Clear");
+                    <text>
+                    rowsHtml += `
+                        <tr>
+                            <td class="cust-center" style="font-size:10px;padding:6px 2px;">@cIdx</td>
+                            <td class="cust-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;font-weight:600;">@c.CustomerName.Replace("'", "\\'")</div>
+                                @if (!string.IsNullOrEmpty(c.AccountCode))
+                                {
+                                    <div style="font-size:9.5px;color:#8a5a1e;font-family:monospace;">@c.AccountCode</div>
+                                }
+                            </td>
+                            <td class="cust-name" style="font-size:10px;padding:6px 4px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.25;">@(string.IsNullOrWhiteSpace(c.City) ? "-" : c.City.Replace("'", "\\'"))</div>
+                            </td>
+                            <td class="cust-center" style="font-size:10px;padding:6px 2px;">@(string.IsNullOrWhiteSpace(c.Phone) || c.Phone == "0" ? "-" : c.Phone)</td>
+                            <td class="cust-num" style="font-size:10px;padding:6px 4px;color:#555;">Rs @c.OpeningBalance.ToString("N0")</td>
+                            <td class="cust-num" style="font-size:10.5px;padding:6px 4px;font-weight:600;color:#0f5132;">Rs @c.TotalPurchased.ToString("N0")</td>
+                            <td class="cust-num" style="font-size:10.5px;padding:6px 4px;font-weight:600;color:#842029;">Rs @c.TotalReceived.ToString("N0")</td>
+                            <td class="cust-num" style="font-size:10.5px;padding:6px 4px;font-weight:700;color:@(c.ReceivableBalance > 0 ? "#842029" : (c.ReceivableBalance < 0 ? "#0f5132" : "#333"));">
+                                Rs @c.ReceivableBalance.ToString("N0")
+                            </td>
+                            <td class="cust-center" style="font-size:10px;padding:6px 2px;">
+                                <span style="font-size:9.5px;padding:2px 5px;border-radius:4px;border:1px solid #ccc;font-weight:600;">@statusBadge</span>
+                            </td>
+                        </tr>
+                    `;
+                    </text>
+                    cIdx++;
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .cust-summary-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .cust-summary-tbl th,
+                    .cust-summary-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .cust-summary-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: normal !important;
+                    }
+                    .cust-summary-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .cust-summary-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                        line-height: 1.25 !important;
+                    }
+                    .cust-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .cust-center {
+                        text-align: center !important;
+                    }
+                    .cust-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.3 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ${compName}
+                        <div class="sub">Fish Commission Agents · Karachi Fish Harbour</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>Supplier RECEIVABLES SUMMARY</h2>
+                        <div class="sub">Outstanding Balances · Zero Balance Accounts Excluded</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Report Scope:</span>
+                        <strong style="font-size:14px;color:#153229;">All Active Receivables (@nonZeroReceivables.Count Buyers)</strong>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Statement Period:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                    </div>
+                </div>
+
+                <table class="cust-summary-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:4%;">#</th>
+                            <th style="width:23%;text-align:left;padding-left:6px !important;">Supplier Name</th>
+                            <th style="width:13%;text-align:left;padding-left:5px !important;">City / Area</th>
+                            <th style="width:10%;">Phone</th>
+                            <th style="width:10%;text-align:right;padding-right:5px !important;">Opening Bal</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Total Billed (Dr)</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Wasooli (Cr)</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Net Receivable</th>
+                            <th style="width:7%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="9" style="text-align:center;padding:16px;">No Supplier records found with outstanding balance in this period.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:left;font-weight:700;padding-left:6px !important;">Total Summary (@nonZeroReceivables.Count Suppliers):</td>
+                            <td class="cust-num" style="font-weight:700;">Rs @sumCustOpening.ToString("N0")</td>
+                            <td class="cust-num" style="font-weight:700;color:#0f5132;">Rs @sumCustBilled.ToString("N0")</td>
+                            <td class="cust-num" style="font-weight:700;color:#842029;">Rs @sumCustReceived.ToString("N0")</td>
+                            <td class="cust-num" style="font-weight:800;color:#8a5a1e;">Rs @sumCustReceivable.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:18px;margin-bottom:24px;">
+                    <div style="background:#fff8ec;border:2px solid #c68a3e;border-radius:8px;padding:12px 24px;text-align:right;min-width:320px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;font-weight:800;color:#8a5a1e;letter-spacing:0.5px;">TOTAL OUTSTANDING RECEIVABLE:</span>
+                        <strong style="font-size:22px;color:#8a5a1e;margin-left:20px;">Rs @sumCustReceivable.ToString("N0")</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:35px;">
+                    <div>Prepared By</div>
+                    <div>Verified By</div>
+                    <div>Accountant</div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Print Supplier Receivables Summary", content);
+            } else {
+                window.print();
+            }
+        }
+
+        // Print Statement / Ledger Engine
+        function printCustomerReport() {
+            var isSingle = @(Model.IsSingleCustomerView ? "true" : "false");
+            if (isSingle) {
+                var customerName = '@(Model.SelectedCustomerName?.Replace("'", "\\'") ?? "Customer")';
+                var fromDate = '@Model.FromDate';
+                var toDate = '@Model.ToDate';
+                var totalDebit = @Model.TotalBilled;
+                var totalCredit = @Model.TotalReceived;
+                var closingBal = @Model.TotalReceivableSum;
+
+                var entries = [];
+
+                // Include Opening Balance Row
+                entries.push({
+                    date: '@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")',
+                    ref: 'OPENING',
+                    desc: 'Opening Balance Brought Forward',
+                    debit: 0,
+                    credit: 0,
+                    balance: @Model.OpeningBalance
+                });
+
+                @if (Model.StatementTransactions != null)
+                {
+                    foreach (var tx in Model.StatementTransactions)
+                    {
+                        <text>
+                        entries.push({
+                            date: '@tx.DateFormatted',
+                            ref: '@(tx.VoucherCode ?? tx.RefNo)',
+                            desc: '@(tx.Description.Replace("'", "\\'"))@(string.IsNullOrWhiteSpace(tx.InvoiceNo) ? "" : $" (Inv: {tx.InvoiceNo})")',
+                            debit: @tx.Debit,
+                            credit: @tx.Credit,
+                            balance: @tx.Balance
+                        });
+                        </text>
+                    }
+                }
+
+                if (window.AarhatApp && window.AarhatApp.printLedgerStatement) {
+                    window.AarhatApp.printLedgerStatement(customerName + ' (Customer)', fromDate, toDate, totalDebit, totalCredit, closingBal, entries);
+                } else {
+                    window.print();
+                }
+            } else {
+                printCustomerSummaryReportModal();
+            }
+        }
+    </script>
+}

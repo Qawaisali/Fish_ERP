@@ -1,0 +1,195 @@
+@model ERP_Core.Models.Company
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Company Setup";
+    ViewData["BreadcrumbPrefix"] = "SYSTEM";
+    ViewData["BreadcrumbCurrent"] = "Company Setup";
+    ViewData["ActivePage"] = "CompanySetup";
+
+    var parentCompanies = ViewBag.ParentCompanies as List<ERP_Core.Models.Company> ?? new List<ERP_Core.Models.Company>();
+}
+
+<div class="company-setup-container">
+
+    <form asp-controller="CompanySetup" asp-action="Save" method="post" id="companySetupForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="CompanyId" value="@Model?.CompanyId" />
+
+        <!-- ================================================================ -->
+        <!-- Header Section with Action Buttons                                -->
+        <!-- ================================================================ -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <div class="small fw-bold text-uppercase mb-1" style="color: var(--teal); letter-spacing: 0.08em; font-size: 0.72rem;">
+                    SYSTEM
+                </div>
+                <h3 class="fw-bold text-dark mb-0" style="font-size: 1.55rem; letter-spacing: -0.3px;">Company</h3>
+                <p class="text-muted small mb-0" style="font-size: 0.86rem;">Master company profile</p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Reset Button -->
+                <button type="reset" class="btn btn-outline-secondary px-3 py-2 fw-semibold" style="border-radius: 9px; font-size: 0.88rem;">
+                    Reset
+                </button>
+
+                <!-- Save Button -->
+                <button type="submit" class="btn btn-dark px-4 py-2 fw-semibold" style="border-radius: 9px; font-size: 0.88rem; background-color: var(--ink);">
+                    Save
+                </button>
+            </div>
+        </div>
+
+        <!-- Alert Messages -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 py-2 px-3 mb-3 small" role="alert">
+                <i class="fa fa-check-circle me-1"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 py-2 px-3 mb-3 small" role="alert">
+                <i class="fa fa-exclamation-circle me-1"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <!-- ================================================================ -->
+        <!-- Main Form Card                                                    -->
+        <!-- ================================================================ -->
+        <div class="card shadow-sm border-0 p-4" style="border-radius: 16px; background-color: #FFFFFF; border: 1px solid #EAEFF4 !important;">
+
+            <!-- Section Banner Ribbon -->
+            <div class="mb-4" style="background-color: #EBF3F0; color: #2B6153; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.06em; padding: 10px 16px; border-radius: 8px; text-transform: uppercase;">
+                COMPANY DETAIL
+            </div>
+
+            <!-- Form Inputs Grid -->
+            <div class="row g-4 mb-3">
+                
+                <!-- Row 1: Code & Company Name -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Code <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="Code" class="form-control font-monospace" style="background-color: #F4F6F9;" value="@(Model?.Code ?? "00")" readonly />
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Company Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="CompanyName" class="form-control text-uppercase" placeholder="e.g. ICT SYSTEMS PVT LTD" value="@(Model?.CompanyName ?? "ICT SYSTEMS PVT LTD")" required maxlength="150" />
+                </div>
+
+                <!-- Row 2: Parent Company & Mailing Name -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Parent Company
+                    </label>
+                    <select name="ParentId" class="form-select searchable-select">
+                        <option value="">Select Parent Company</option>
+                        @foreach (var parent in parentCompanies)
+                        {
+                            <option value="@parent.CompanyId" selected="@(Model?.ParentId == parent.CompanyId ? "selected" : null)">
+                                @parent.CompanyName
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Mailing Name
+                    </label>
+                    <input type="text" name="MailingName" class="form-control" placeholder="Mailing Name" value="@(Model?.CompanyName ?? "ICT SYSTEMS PVT LTD")" maxlength="150" />
+                </div>
+
+                <!-- Row 3: Phone No & Email -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Phone No
+                    </label>
+                    <input type="text" name="Phone" class="form-control" placeholder="e.g. 03313223528" value="@(Model?.Phone ?? "03313223528")" maxlength="50" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Email
+                    </label>
+                    <input type="email" name="EmailId" class="form-control" placeholder="e.g. info@ictsystems.com.pk" value="@(Model?.EmailId ?? "info@ictsystems.com.pk")" maxlength="100" />
+                </div>
+
+                <!-- Row 4: Mobile & Website -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Mobile
+                    </label>
+                    <input type="text" name="Mobile" class="form-control" placeholder="e.g. 03313223528" value="@(Model?.Mobile ?? "03313223528")" maxlength="50" />
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Website
+                    </label>
+                    <input type="url" name="Website" class="form-control" placeholder="e.g. https://www.ictsystems.com.pk/" value="https://www.ictsystems.com.pk/" maxlength="150" />
+                </div>
+
+                <!-- Row 5: Country & State -->
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Country <span class="text-danger">*</span>
+                    </label>
+                    <select name="Country" class="form-select searchable-select" required>
+                        @{
+                            var currentCountry = Model?.Country ?? "Pakistan";
+                            var countries = new[] { "Pakistan", "United Arab Emirates", "Saudi Arabia", "United States", "United Kingdom", "Canada", "Australia", "Germany" };
+                        }
+                        @foreach (var c in countries)
+                        {
+                            <option value="@c" selected="@(string.Equals(currentCountry, c, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@c</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        State <span class="text-danger">*</span>
+                    </label>
+                    <select name="State" class="form-select searchable-select" required>
+                        <option value="">Select a State</option>
+                        @{
+                            var currentState = Model?.State ?? "Sindh";
+                            var states = new[] { "Sindh", "Punjab", "Khyber Pakhtunkhwa", "Balochistan", "Islamabad Capital Territory", "Gilgit-Baltistan", "Azad Kashmir" };
+                        }
+                        @foreach (var s in states)
+                        {
+                            <option value="@s" selected="@(string.Equals(currentState, s, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@s</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Row 6: Address & Prefix -->
+                <div class="col-12 col-md-8">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Address
+                    </label>
+                    <input type="text" name="Address" class="form-control" placeholder="Company Office Address" value="@Model?.Address" maxlength="250" />
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label small fw-semibold text-dark mb-1" style="font-size: 0.82rem;">
+                        Company Prefix
+                    </label>
+                    <input type="text" name="Prefix" class="form-control text-uppercase" placeholder="e.g. ICT" value="@Model?.Prefix" maxlength="10" />
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>

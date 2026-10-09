@@ -1,0 +1,820 @@
+@model ERP_Core.Dtos.ExpenseVoucherViewModel
+
+@{
+    ViewData["Title"] = "Expense Voucher";
+    ViewData["SubTitle"] = "Rozana ke aam kharche darj karein — bill se alag.";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+    <style>
+        .filter-bar-modern {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-grid-unified {
+            display: grid;
+            grid-template-columns: 160px 160px minmax(280px, 1fr) auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 992px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="toolbar">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Daily Expense Voucher</div>
+        <div class="section-desc" style="margin-bottom:0;">Rozana ke aam kharche darj karein — bill se alag.</div>
+    </div>
+    <button type="button" class="btn brass" onclick="AarhatApp.toggleForm('expForm')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Voucher
+    </button>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Add/Edit Expense Voucher Form -->
+<div class="form-card" id="expForm" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <span id="expFormTitle" style="font-size:14px;font-weight:600;color:var(--text);">Add Expense Voucher</span>
+        <button type="button" class="btn ghost" onclick="resetExpForm()" style="padding:3px 10px;font-size:11.5px;">Reset Form</button>
+    </div>
+    <form asp-controller="ExpenseVoucher" asp-action="SaveVoucher" method="post" id="expVoucherForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="voucherId" id="voucherIdInput" value="0" />
+
+        <div class="form-grid c4">
+            <!-- Field 1: Voucher Code (In place of Date, Non-editable / locked, fetched from DB) -->
+            <div class="field">
+                <label style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Voucher #</span>
+                    <span style="font-size:11px;color:var(--brass);display:inline-flex;align-items:center;gap:3px;" title="Auto-generated from database and locked">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Locked
+                    </span>
+                </label>
+                <input type="text" id="voucherNoInput" name="voucherNo" value="@Model.NextVoucherNo" readonly 
+                       style="background:rgba(255,255,255,0.04);cursor:not-allowed;font-family:monospace;font-weight:700;color:var(--brass-light,#d4af37);letter-spacing:0.5px;" />
+            </div>
+
+            <!-- Field 2: Expense Account (Dropdown displaying only Expense accounts where Transable is true) -->
+            <div class="field">
+                <label>Expense Account <span style="color:var(--red-text);">*</span></label>
+                <select name="expenseAccountId" id="expenseAccountSelect" class="searchable-select" required>
+                    <option value="">-- Select Expense Account --</option>
+                    @foreach (var acc in Model.ExpenseAccounts)
+                    {
+                        <option value="@acc.Id">@acc.DisplayText</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Field 3: Amount (Rs) -->
+            <div class="field">
+                <label>Amount (Rs) <span style="color:var(--red-text);">*</span></label>
+                <input type="number" name="amount" id="amountInput" min="1" step="0.01" placeholder="0" required />
+            </div>
+
+            <!-- Field 4: Paid Via (Dropdown from Bank Master) -->
+            <div class="field">
+                <label>Paid Via (Bank Master) <span style="color:var(--red-text);">*</span></label>
+                <select name="bankMasterId" id="bankMasterSelect" class="searchable-select" onchange="onBankMasterChanged()" required>
+                    @foreach (var bm in Model.BankMasters)
+                    {
+                        <option value="@bm.Id" data-iscash="@bm.IsCash.ToString().ToLower()" data-isbank="@bm.IsBank.ToString().ToLower()">
+                            @bm.DisplayText
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Row 2: Description, Cheque # & Date -->
+            <div class="field" style="grid-column:span 2;">
+                <label>Description / Particulars <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="description" id="descriptionInput" placeholder="e.g. Mazdoor mazdoori — 6 labourers" required />
+            </div>
+            <div class="field" style="grid-column:span 1;">
+                <label>Cheque / Ref # <span style="font-size:10.5px;color:var(--muted);">(Optional)</span></label>
+                <input type="text" name="chequeNo" id="chequeNoInput" placeholder="e.g. CHQ-8821" />
+            </div>
+            <div class="field" style="grid-column:span 1;">
+                <label>Date <span style="color:var(--red-text);">*</span></label>
+                <input type="date" name="date" id="dateInput" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn ghost" onclick="AarhatApp.toggleForm('expForm')">Cancel</button>
+            <button type="submit" id="btnSaveExpVoucher" class="btn brass">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save voucher
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Subtabs (Voucher List vs Expense Report) -->
+<div class="subtabs no-print" style="margin-bottom:16px;">
+    <button type="button" class="subtab-btn @(Model.ActiveTab == "report" ? "" : "active")" id="expTabEntryBtn" onclick="switchExpenseTab('entry')">Voucher List</button>
+    <button type="button" class="subtab-btn @(Model.ActiveTab == "report" ? "active" : "")" id="expTabReportBtn" onclick="switchExpenseTab('report')">Expense Report</button>
+</div>
+
+<!-- 1. Voucher List View -->
+<div id="expEntryView">
+    <div class="card">
+        <div class="table-wrap">
+            <table class="dynamic-table">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Expense Account</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Paid Via</th>
+                        <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Vouchers)
+                    {
+                        <tr>
+                            <td><span class="tcode">@v.VoucherNo</span></td>
+                            <td>@v.Date</td>
+                            <td><span class="badge badge-gray">@v.ExpenseAccount</span></td>
+                            <td>@v.Description</td>
+                            <td class="tnum font-weight-bold" style="color:var(--red-text);">Rs @v.Amount.ToString("N0")</td>
+                            <td><span class="badge badge-brass">@v.PaidVia</span></td>
+                            <td style="text-align:center;">
+                                <div class="row-actions" style="justify-content:center;gap:6px;">
+                                    <button type="button" title="Print Voucher" onclick="AarhatApp.printExpenseVoucher('@v.VoucherNo', '@v.Date', '@v.ExpenseAccount', '@v.Description.Replace("'", "\\'")', @v.Amount, '@v.PaidVia', '@(v.ChequeNo?.Replace("'", "\\'"))')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                                    </button>
+                                    <button type="button" title="Edit Voucher" onclick="editExpenseVoucher(@v.VoucherId, '@v.VoucherNo', '@v.RawDate', '@v.ExpenseAccountId', @v.Amount, '@v.BankMasterId', '@v.Description.Replace("'", "\\'")', '@(v.ChequeNo?.Replace("'", "\\'"))')">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </button>
+                                    <button type="button" title="Delete Voucher" style="color:var(--red-text);" onclick="deleteExpenseVoucher(@v.VoucherId, '@v.VoucherNo')">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Expense Report View -->
+<div id="expReportView" style="@(Model.ActiveTab == "report" ? "" : "display:none;")">
+    <!-- Filter Bar (matching Sales Report) -->
+    <div class="filter-bar-modern no-print">
+        <form method="get" asp-controller="ExpenseVoucher" asp-action="Index" id="expenseFilterForm">
+            <input type="hidden" name="tab" value="report" />
+            <div class="filter-grid-unified">
+                <!-- Field 1: From Date -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                    <input type="date" name="fromDate" id="reportFromDateFilter" value="@Model.FromDate" required
+                           style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+                </div>
+
+                <!-- Field 2: To Date -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                    <input type="date" name="toDate" id="reportToDateFilter" value="@Model.ToDate" required
+                           style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+                </div>
+
+                <!-- Field 3: Expense Account Dropdown (exact accounts that appear in Create Expense Voucher) -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Expense Account</label>
+                    <select name="expenseAccountId" id="reportExpenseAccountFilter" class="searchable-select">
+                        <option value="">-- All Expense Accounts --</option>
+                        @foreach (var acc in Model.ExpenseAccounts)
+                        {
+                            <option value="@acc.Id" data-name="@acc.AccountName" selected="@(Model.SelectedExpenseAccountId == acc.Id)">
+                                @acc.DisplayText
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;gap:8px;align-items:flex-end;">
+                    <button type="button" class="btn brass" onclick="applyExpenseFilter()" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        Filter Report
+                    </button>
+                    <button type="button" class="btn ghost" onclick="resetExpenseFilters()" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;gap:5px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        Reset
+                    </button>
+                    <button type="button" class="btn brass" onclick="printUnifiedExpenseReport()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @{
+        var totalCount = Model.Vouchers.Count;
+        var totalSum = Model.Vouchers.Sum(v => v.Amount);
+        var bankSum = Model.Vouchers.Where(v => v.IsBankPayment || (v.PaidVia != null && v.PaidVia.Contains("Bank", StringComparison.OrdinalIgnoreCase))).Sum(v => v.Amount);
+        var cashSum = totalSum - bankSum;
+    }
+    <div class="report-stat-row">
+        <div class="report-stat"><div class="lbl">TOTAL VOUCHERS</div><div class="val tnum" id="statReportTotalVouchers">@totalCount</div></div>
+        <div class="report-stat"><div class="lbl">TOTAL AMOUNT</div><div class="val tnum" id="statReportTotalAmount" style="color:var(--red-text);">Rs @totalSum.ToString("N0")</div></div>
+        <div class="report-stat"><div class="lbl">CASH PAID</div><div class="val tnum" id="statReportCashPaid">Rs @cashSum.ToString("N0")</div></div>
+        <div class="report-stat"><div class="lbl">BANK PAID</div><div class="val tnum" id="statReportBankPaid">Rs @bankSum.ToString("N0")</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
+            <h3>Expense Report</h3>
+            <span id="reportPeriodSummaryBadge" class="badge badge-brass" style="font-size:11px;">All Dates</span>
+        </div>
+        <div class="table-wrap">
+            <table class="dynamic-table" id="expenseReportTable">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Expense Account</th>
+                        <th style="line-height:1.25;">Particulars /<br/>Description</th>
+                        <th>Amount</th>
+                        <th>Paid Via</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Vouchers)
+                    {
+                        <tr data-rawdate="@v.RawDate"
+                            data-month="@(v.RawDate?.Length >= 7 ? v.RawDate.Substring(0, 7) : "")"
+                            data-accid="@(v.ExpenseAccountId ?? 0)"
+                            data-account="@v.ExpenseAccount"
+                            data-amount="@v.Amount"
+                            data-type="@v.VoucherType"
+                            data-isbank="@(v.IsBankPayment || (v.PaidVia != null && v.PaidVia.Contains("Bank", StringComparison.OrdinalIgnoreCase)) ? "true" : "false")"
+                            data-paidvia="@v.PaidVia"
+                            data-voucherno="@v.VoucherNo"
+                            data-date="@v.Date"
+                            data-desc="@v.Description">
+                            <td><span class="tcode">@v.VoucherNo</span></td>
+                            <td>@v.Date</td>
+                            <td>@v.ExpenseAccount</td>
+                            <td>@v.Description</td>
+                            <td class="tnum font-weight-bold" style="color:var(--red-text);white-space:nowrap;">Rs @v.Amount.ToString("N0")</td>
+                            <td>@v.PaidVia</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for secure POST Delete -->
+<form id="deleteVoucherForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+<script>
+    function switchExpenseTab(tab) {
+        const entryView = document.getElementById('expEntryView');
+        const reportView = document.getElementById('expReportView');
+
+        const entryBtn = document.getElementById('expTabEntryBtn');
+        const reportBtn = document.getElementById('expTabReportBtn');
+
+        if (entryView) entryView.style.display = (tab === 'entry') ? 'block' : 'none';
+        if (reportView) reportView.style.display = (tab === 'report') ? 'block' : 'none';
+
+        if (entryBtn) entryBtn.classList.toggle('active', tab === 'entry');
+        if (reportBtn) reportBtn.classList.toggle('active', tab === 'report');
+
+        if (tab === 'report') {
+            onSwitchToReportTab();
+        }
+    }
+
+    function onBankMasterChanged() {
+        const vId = document.getElementById('voucherIdInput')?.value;
+        if (vId && vId !== '0') {
+            // During edit, retain existing voucher number
+            return;
+        }
+
+        const select = document.getElementById('bankMasterSelect');
+        if (!select || !select.value) return;
+        const bankMasterId = select.value;
+        const vInput = document.getElementById('voucherNoInput');
+
+        fetch('@Url.Action("GetNextVoucherCode", "ExpenseVoucher")?bankMasterId=' + encodeURIComponent(bankMasterId))
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.success && data.voucherNo) {
+                    if (vInput) vInput.value = data.voucherNo;
+                }
+            })
+            .catch(err => console.error('Error updating voucher code:', err));
+    }
+
+    function editExpenseVoucher(id, voucherNo, rawDate, expenseAccountId, amount, bankMasterId, description, chequeNo) {
+        document.getElementById('voucherIdInput').value = id || '0';
+        document.getElementById('voucherNoInput').value = voucherNo || '';
+        if (rawDate) {
+            document.getElementById('dateInput').value = rawDate;
+        }
+
+        // Set Expense Account in standard select and TomSelect instance
+        if (expenseAccountId && expenseAccountId !== 'null' && expenseAccountId !== '' && expenseAccountId !== '0') {
+            const expSelect = document.getElementById('expenseAccountSelect');
+            if (expSelect) {
+                expSelect.value = expenseAccountId;
+                if (expSelect.tomselect) {
+                    expSelect.tomselect.setValue(expenseAccountId);
+                } else {
+                    setTimeout(() => {
+                        if (expSelect.tomselect) expSelect.tomselect.setValue(expenseAccountId);
+                    }, 100);
+                }
+            }
+        }
+
+        document.getElementById('amountInput').value = amount || 0;
+
+        // Set Bank Master in standard select and TomSelect instance
+        if (bankMasterId && bankMasterId !== 'null' && bankMasterId !== '' && bankMasterId !== '0') {
+            const bmSelect = document.getElementById('bankMasterSelect');
+            if (bmSelect) {
+                bmSelect.value = bankMasterId;
+                if (bmSelect.tomselect) {
+                    bmSelect.tomselect.setValue(bankMasterId);
+                } else {
+                    setTimeout(() => {
+                        if (bmSelect.tomselect) bmSelect.tomselect.setValue(bankMasterId);
+                    }, 100);
+                }
+            }
+        }
+
+        document.getElementById('descriptionInput').value = description || '';
+        document.getElementById('chequeNoInput').value = chequeNo || '';
+
+        document.getElementById('expFormTitle').innerText = 'Edit Expense Voucher — ' + (voucherNo || '');
+        document.getElementById('btnSaveExpVoucher').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Update voucher';
+
+        const form = document.getElementById('expForm');
+        form.style.display = 'block';
+        window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+    }
+
+    function resetExpForm() {
+        document.getElementById('voucherIdInput').value = '0';
+        document.getElementById('voucherNoInput').value = '@Model.NextVoucherNo';
+        document.getElementById('dateInput').value = '@DateTime.Now.ToString("yyyy-MM-dd")';
+
+        const expSelect = document.getElementById('expenseAccountSelect');
+        if (expSelect) {
+            expSelect.selectedIndex = 0;
+            if (expSelect.tomselect) {
+                expSelect.tomselect.clear();
+            }
+        }
+
+        document.getElementById('amountInput').value = '';
+
+        const bmSelect = document.getElementById('bankMasterSelect');
+        if (bmSelect) {
+            bmSelect.selectedIndex = 0;
+            if (bmSelect.tomselect) {
+                bmSelect.tomselect.clear();
+            }
+        }
+
+        document.getElementById('descriptionInput').value = '';
+        document.getElementById('chequeNoInput').value = '';
+
+        document.getElementById('expFormTitle').innerText = 'Add Expense Voucher';
+        document.getElementById('btnSaveExpVoucher').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save voucher';
+    }
+
+    function deleteExpenseVoucher(id, voucherNo) {
+        if (!id || id <= 0) {
+            alert('This demonstration voucher cannot be deleted.');
+            return;
+        }
+        if (confirm(`Are you sure you want to delete Expense Voucher '${voucherNo}'?\nThis will remove the voucher and its accounting ledger transactions.`)) {
+            const form = document.getElementById('deleteVoucherForm');
+            form.action = '@Url.Action("DeleteVoucher", "ExpenseVoucher")/' + id;
+            form.submit();
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // UNIFIED EXPENSE REPORT FILTERING & DYNAMIC STATS ENGINE (matching Sales Report)
+    // --------------------------------------------------------------------------
+    function parseDateStrToIso(dateStr) {
+        if (!dateStr) return '';
+        dateStr = dateStr.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        var parts = dateStr.split('-');
+        if (parts.length === 3) {
+            var months = {
+                'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'may': '05', 'jun': '06',
+                'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+            };
+            var d = parts[0].padStart(2, '0');
+            var m = months[parts[1].toLowerCase()] || '01';
+            var y = parts[2];
+            return y + '-' + m + '-' + d;
+        }
+        return '';
+    }
+
+    function getSelectFilterValue(selectId) {
+        var el = document.getElementById(selectId);
+        if (!el) return '';
+        if (el.tomselect && typeof el.tomselect.getValue === 'function') {
+            return (el.tomselect.getValue() || '').trim();
+        }
+        return (el.value || '').trim();
+    }
+
+    function ensureRowMetadata(settings, index, searchData) {
+        if (!settings || !settings.aoData || !settings.aoData[index]) return null;
+        var rowItem = settings.aoData[index];
+        if (rowItem._rowData && rowItem._rowData.rawDate) return rowItem._rowData;
+
+        var tr = rowItem.nTr;
+        var aData = searchData || rowItem._aData || [];
+        var dateCellText = aData[1] ? String(aData[1]).trim() : '';
+        var rawDate = (tr ? tr.getAttribute('data-rawdate') : '') || parseDateStrToIso(dateCellText) || '';
+        var month = (tr ? tr.getAttribute('data-month') : '') || (rawDate.length >= 7 ? rawDate.substring(0, 7) : '');
+        var account = (tr ? tr.getAttribute('data-account') : '') || (aData[2] ? String(aData[2]).replace(/<[^>]*>/g, '').trim() : '');
+        var accId = (tr ? tr.getAttribute('data-accid') : '') || '';
+        var desc = (tr ? tr.getAttribute('data-desc') : '') || (aData[3] ? String(aData[3]).replace(/<[^>]*>/g, '').trim() : '');
+        var amount = parseFloat(tr ? tr.getAttribute('data-amount') : '0') || (aData[4] ? parseFloat(String(aData[4]).replace(/[^0-9.-]/g, '')) || 0 : 0);
+        var type = (tr ? tr.getAttribute('data-type') : '') || '';
+        var paidVia = (tr ? tr.getAttribute('data-paidvia') : '') || (aData[5] ? String(aData[5]).replace(/<[^>]*>/g, '').trim() : '');
+        var voucherNo = (tr ? tr.getAttribute('data-voucherno') : '') || (aData[0] ? String(aData[0]).replace(/<[^>]*>/g, '').trim() : '');
+        var date = (tr ? tr.getAttribute('data-date') : '') || dateCellText || '';
+        var isBank = (tr ? tr.getAttribute('data-isbank') === 'true' : false) || (paidVia && paidVia.toLowerCase().includes('bank')) || type === 'BP';
+
+        rowItem._rowData = {
+            rawDate: rawDate,
+            month: month,
+            account: account,
+            accId: accId,
+            desc: desc,
+            amount: amount,
+            type: type,
+            isBank: isBank,
+            paidVia: paidVia,
+            voucherNo: voucherNo,
+            date: date
+        };
+        return rowItem._rowData;
+    }
+
+    // Register custom DataTable search filter for Unified Expense Report Table
+    if (window.jQuery && jQuery.fn && jQuery.fn.dataTable) {
+        jQuery.fn.dataTable.ext.search.push(function (settings, searchData, index, rowData, counter) {
+            if (settings.nTable && settings.nTable.id === 'expenseReportTable') {
+                var fromFilter = document.getElementById('reportFromDateFilter')?.value?.trim() || '';
+                var toFilter = document.getElementById('reportToDateFilter')?.value?.trim() || '';
+                var accFilter = getSelectFilterValue('reportExpenseAccountFilter');
+
+                var data = ensureRowMetadata(settings, index, searchData);
+                if (!data) return true;
+
+                // Date Range comparison
+                if (fromFilter && data.rawDate && data.rawDate < fromFilter) {
+                    return false;
+                }
+                if (toFilter && data.rawDate && data.rawDate > toFilter) {
+                    return false;
+                }
+
+                // Expense Account Filter comparison
+                if (accFilter) {
+                    var accNorm = (data.account || '').trim().toLowerCase();
+                    var filterNorm = accFilter.trim().toLowerCase();
+                    var isMatch = (String(data.accId) === filterNorm) ||
+                                  (accNorm === filterNorm) ||
+                                  accNorm.includes(filterNorm) ||
+                                  filterNorm.includes(accNorm);
+                    if (!isMatch) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return true;
+        });
+    }
+
+    function updateReportStats() {
+        var count = 0;
+        var totalAmount = 0;
+        var cashPaid = 0;
+        var bankPaid = 0;
+
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#expenseReportTable')) {
+            var dt = jQuery('#expenseReportTable').DataTable();
+            var dtSettings = dt.settings()[0];
+            var indexes = dt.rows({ search: 'applied' }).indexes();
+            count = indexes.length;
+
+            for (var i = 0; i < indexes.length; i++) {
+                var idx = indexes[i];
+                var rowItem = dtSettings ? dtSettings.aoData[idx] : null;
+                var rowData = rowItem ? (rowItem._rowData || ensureRowMetadata(dtSettings, idx)) : null;
+                if (!rowData) continue;
+
+                totalAmount += rowData.amount;
+                var isBank = rowData.isBank === true || rowData.isBank === 'true' || (rowData.paidVia && rowData.paidVia.toLowerCase().includes('bank')) || rowData.type === 'BP';
+                if (isBank) {
+                    bankPaid += rowData.amount;
+                } else {
+                    cashPaid += rowData.amount;
+                }
+            }
+        } else {
+            var fromFilter = document.getElementById('reportFromDateFilter')?.value?.trim() || '';
+            var toFilter = document.getElementById('reportToDateFilter')?.value?.trim() || '';
+            var accFilter = getSelectFilterValue('reportExpenseAccountFilter');
+            var rows = document.querySelectorAll('#expenseReportTable tbody tr');
+            rows.forEach(function (r) {
+                if (r.style.display !== 'none') {
+                    count++;
+                    var amt = parseFloat(r.getAttribute('data-amount')) || 0;
+                    var type = (r.getAttribute('data-type') || '').toUpperCase();
+                    var paidVia = (r.getAttribute('data-paidvia') || '').toLowerCase();
+                    var isBank = (r.getAttribute('data-isbank') === 'true') || paidVia.includes('bank') || type === 'BP';
+
+                    totalAmount += amt;
+                    if (isBank) {
+                        bankPaid += amt;
+                    } else {
+                        cashPaid += amt;
+                    }
+                }
+            });
+        }
+
+        var elCount = document.getElementById('statReportTotalVouchers');
+        var elTotal = document.getElementById('statReportTotalAmount');
+        var elCash = document.getElementById('statReportCashPaid');
+        var elBank = document.getElementById('statReportBankPaid');
+
+        if (elCount) elCount.textContent = count;
+        if (elTotal) elTotal.textContent = 'Rs ' + Math.round(totalAmount).toLocaleString('en-PK');
+        if (elCash) elCash.textContent = 'Rs ' + Math.round(cashPaid).toLocaleString('en-PK');
+        if (elBank) elBank.textContent = 'Rs ' + Math.round(bankPaid).toLocaleString('en-PK');
+
+        // Update badge text
+        var badge = document.getElementById('reportPeriodSummaryBadge');
+        if (badge) {
+            var fromVal = document.getElementById('reportFromDateFilter')?.value || '';
+            var toVal = document.getElementById('reportToDateFilter')?.value || '';
+            var accSelect = document.getElementById('reportExpenseAccountFilter');
+            var accText = '';
+            if (accSelect && accSelect.selectedOptions && accSelect.selectedOptions[0]) {
+                accText = accSelect.selectedOptions[0].text;
+            }
+            if (accText.includes('-- All')) accText = '';
+            var periodTxt = (fromVal && toVal) ? (fromVal + ' to ' + toVal) : (fromVal || toVal || 'All Dates');
+            badge.textContent = accText ? (periodTxt + ' · ' + accText) : periodTxt;
+        }
+    }
+
+    function filterExpenseReport() {
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#expenseReportTable')) {
+            var dt = jQuery('#expenseReportTable').DataTable();
+            dt.draw();
+        } else {
+            var fromFilter = document.getElementById('reportFromDateFilter')?.value?.trim() || '';
+            var toFilter = document.getElementById('reportToDateFilter')?.value?.trim() || '';
+            var accFilter = getSelectFilterValue('reportExpenseAccountFilter');
+            var rows = document.querySelectorAll('#expenseReportTable tbody tr');
+            rows.forEach(function (r) {
+                var d = r.getAttribute('data-rawdate') || '';
+                var a = (r.getAttribute('data-account') || '').toLowerCase();
+                var aid = r.getAttribute('data-accid') || '';
+                var matchFrom = !fromFilter || d >= fromFilter;
+                var matchTo = !toFilter || d <= toFilter;
+                var matchAcc = true;
+                if (accFilter) {
+                    var filterNorm = accFilter.trim().toLowerCase();
+                    matchAcc = (aid === filterNorm) || (a === filterNorm) || a.includes(filterNorm) || filterNorm.includes(a);
+                }
+                r.style.display = (matchFrom && matchTo && matchAcc) ? '' : 'none';
+            });
+        }
+        updateReportStats();
+    }
+
+    function onSwitchToReportTab() {
+        setTimeout(function () {
+            if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#expenseReportTable')) {
+                var dt = jQuery('#expenseReportTable').DataTable();
+                dt.columns.adjust().draw();
+            }
+            filterExpenseReport();
+        }, 50);
+    }
+
+    function applyExpenseFilter() {
+        filterExpenseReport();
+        var form = document.getElementById('expenseFilterForm');
+        if (form) {
+            form.submit();
+        }
+    }
+
+    function resetExpenseFilters() {
+        var fromInput = document.getElementById('reportFromDateFilter');
+        var toInput = document.getElementById('reportToDateFilter');
+        if (fromInput) fromInput.value = '@DateTime.Now.ToString("yyyy-MM-01")';
+        if (toInput) toInput.value = '@DateTime.Now.ToString("yyyy-MM-dd")';
+
+        var accSelect = document.getElementById('reportExpenseAccountFilter');
+        if (accSelect) {
+            accSelect.value = '';
+            if (accSelect.tomselect) {
+                accSelect.tomselect.clear();
+            }
+        }
+        filterExpenseReport();
+        window.location.href = '@Url.Action("Index", "ExpenseVoucher")?tab=report';
+    }
+
+    function printUnifiedExpenseReport() {
+        var fromVal = document.getElementById('reportFromDateFilter')?.value || '';
+        var toVal = document.getElementById('reportToDateFilter')?.value || '';
+        var periodTitle = (fromVal && toVal) ? (fromVal + ' to ' + toVal) : (fromVal || toVal || 'All Dates');
+
+        var accSelect = document.getElementById('reportExpenseAccountFilter');
+        var accountTitle = 'All Accounts';
+        if (accSelect && accSelect.value) {
+            if (accSelect.selectedOptions && accSelect.selectedOptions[0]) {
+                accountTitle = accSelect.selectedOptions[0].text.replace(/\[.*?\]/g, '').trim();
+            }
+        }
+
+        var entries = [];
+        var totalAmount = 0;
+        var cashPaid = 0;
+        var bankPaid = 0;
+
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#expenseReportTable')) {
+            var dt = jQuery('#expenseReportTable').DataTable();
+            var dtSettings = dt.settings()[0];
+            var indexes = dt.rows({ search: 'applied' }).indexes();
+
+            for (var i = 0; i < indexes.length; i++) {
+                var idx = indexes[i];
+                var rowItem = dtSettings ? dtSettings.aoData[idx] : null;
+                var row = rowItem ? (rowItem._rowData || ensureRowMetadata(dtSettings, idx)) : null;
+                if (!row) continue;
+
+                totalAmount += row.amount;
+                var isBank = row.isBank === true || row.isBank === 'true' || (row.paidVia && row.paidVia.toLowerCase().includes('bank')) || row.type === 'BP';
+                if (isBank) {
+                    bankPaid += row.amount;
+                } else {
+                    cashPaid += row.amount;
+                }
+
+                entries.push({
+                    voucherNo: row.voucherNo,
+                    date: row.date,
+                    account: row.account,
+                    desc: row.desc,
+                    paidVia: row.paidVia,
+                    amount: row.amount
+                });
+            }
+        } else {
+            var rowElements = Array.from(document.querySelectorAll('#expenseReportTable tbody tr')).filter(function (r) {
+                return r.style.display !== 'none';
+            });
+
+            rowElements.forEach(function (r) {
+                var vNo = r.getAttribute('data-voucherno') || '';
+                var date = r.getAttribute('data-date') || '';
+                var acc = r.getAttribute('data-account') || '';
+                var desc = r.getAttribute('data-desc') || '';
+                var amt = parseFloat(r.getAttribute('data-amount')) || 0;
+                var paidVia = r.getAttribute('data-paidvia') || '';
+                var type = (r.getAttribute('data-type') || '').toUpperCase();
+                var isBank = (r.getAttribute('data-isbank') === 'true') || paidVia.toLowerCase().includes('bank') || type === 'BP';
+
+                totalAmount += amt;
+                if (isBank) {
+                    bankPaid += amt;
+                } else {
+                    cashPaid += amt;
+                }
+
+                entries.push({
+                    voucherNo: vNo,
+                    date: date,
+                    account: acc,
+                    desc: desc,
+                    paidVia: paidVia,
+                    amount: amt
+                });
+            });
+        }
+
+        if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.printExpenseReport === 'function') {
+            AarhatApp.printExpenseReport('Expense Report', periodTitle, accountTitle, entries, entries.length, cashPaid, bankPaid, totalAmount);
+        } else if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.printLedgerStatement === 'function') {
+            AarhatApp.printLedgerStatement('Expenses — ' + accountTitle, fromVal, toVal, totalAmount, 0, totalAmount, entries.map(function(e) {
+                return { date: e.date, ref: e.voucherNo, desc: e.account + ' — ' + e.desc, debit: e.amount, credit: 0, balance: e.amount };
+            }));
+        }
+    }
+
+    // Auto-bind event listeners when page is ready and poll for TomSelect initialization
+    $(document).ready(function () {
+        var fromInput = document.getElementById('reportFromDateFilter');
+        var toInput = document.getElementById('reportToDateFilter');
+        var accSelect = document.getElementById('reportExpenseAccountFilter');
+
+        if (fromInput) {
+            $(fromInput).on('change input blur keyup', filterExpenseReport);
+        }
+        if (toInput) {
+            $(toInput).on('change input blur keyup', filterExpenseReport);
+        }
+        if (accSelect) {
+            $(accSelect).on('change input', filterExpenseReport);
+        }
+
+        // Attach to TomSelect instance as soon as ready
+        function bindTomSelectListeners() {
+            if (accSelect && accSelect.tomselect) {
+                accSelect.tomselect.on('change', function () {
+                    filterExpenseReport();
+                });
+            }
+        }
+
+        setTimeout(bindTomSelectListeners, 150);
+        setTimeout(bindTomSelectListeners, 500);
+        setTimeout(bindTomSelectListeners, 1000);
+
+        // Run initial filters
+        setTimeout(function () {
+            filterExpenseReport();
+        }, 100);
+
+        @if (Model.ActiveTab == "report")
+        {
+            <text>
+            switchExpenseTab('report');
+            </text>
+        }
+    });
+</script>
+}

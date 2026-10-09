@@ -1,0 +1,690 @@
+@model ERP_Core.Dtos.ProductCategoryViewModel
+
+@{
+    ViewData["Title"] = "Product Category Master";
+    ViewData["SubTitle"] = "Define item categories and link default financial posting accounts (Transable COA).";
+}
+
+@section Styles {
+    <style>
+        /* High-Visibility Status Toggle Button in Table */
+        .status-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px 5px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .status-toggle-btn.active {
+            background: rgba(79, 174, 122, 0.16);
+            border-color: rgba(79, 174, 122, 0.45);
+            color: #6FE0A0;
+        }
+
+        .status-toggle-btn.active:hover {
+            background: rgba(79, 174, 122, 0.28);
+            border-color: #6FE0A0;
+            box-shadow: 0 0 10px rgba(111, 224, 160, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .status-toggle-btn.inactive {
+            background: rgba(217, 88, 75, 0.16);
+            border-color: rgba(217, 88, 75, 0.45);
+            color: #FF8A7A;
+        }
+
+        .status-toggle-btn.inactive:hover {
+            background: rgba(217, 88, 75, 0.28);
+            border-color: #FF8A7A;
+            box-shadow: 0 0 10px rgba(255, 138, 122, 0.25);
+            transform: translateY(-1px);
+        }
+
+        /* Toggle Switch Track & Thumb */
+        .switch-track {
+            width: 32px;
+            height: 18px;
+            border-radius: 12px;
+            position: relative;
+            display: inline-block;
+            transition: background-color 0.25s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .status-toggle-btn.active .switch-track {
+            background: #2EA063;
+        }
+
+        .status-toggle-btn.inactive .switch-track {
+            background: #4A2825;
+        }
+
+        .switch-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-toggle-btn.active .switch-thumb {
+            transform: translateX(14px);
+        }
+
+        .status-toggle-btn.inactive .switch-thumb {
+            transform: translateX(0);
+        }
+
+        /* Form Switch Container */
+        .form-switch-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: border-color 0.2s;
+        }
+
+        .form-switch-box:hover {
+            border-color: var(--border-soft);
+        }
+
+        .form-switch-ui {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .form-switch-ui input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .form-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #364943;
+            transition: 0.3s;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        .form-switch-ui input:checked + .form-slider {
+            background-color: var(--green);
+        }
+
+        .form-switch-ui input:checked + .form-slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+}
+
+<!-- Summary Statistics KPI Cards -->
+<div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="lbl">TOTAL CATEGORIES</div>
+        <div class="val tnum">@Model.TotalCategories</div>
+        <div class="sub">Registered product categories</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">ACTIVE CATEGORIES</div>
+        <div class="val tnum" style="color:var(--green-text);">@Model.ActiveCategories</div>
+        <div class="sub">Active for fish billing &amp; inventory</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">INACTIVE CATEGORIES</div>
+        <div class="val tnum" style="color:var(--red-text);">@Model.InactiveCategories</div>
+        <div class="sub">Archived or disabled categories</div>
+    </div>
+    <div class="stat-card">
+        <div class="lbl">TRANSABLE ACCOUNTS</div>
+        <div class="val tnum" style="color:var(--brass-text);">@Model.AvailableTransableAccounts.Count</div>
+        <div class="sub">Available for GL Account linking</div>
+    </div>
+</div>
+
+<!-- Alert Notifications -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:18px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>@TempData["ErrorMessage"]</span>
+    </div>
+}
+
+<!-- Toolbar: Search, Filters & Action Button -->
+<div class="toolbar" style="margin-bottom:18px;">
+    <div style="display:flex;gap:12px;align-items:center;flex:1;max-width:750px;flex-wrap:wrap;">
+        <div class="search" style="flex:1;min-width:240px;">
+            <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="categorySearchInput" placeholder="Search by code, category name, or linked A/c..." onkeyup="filterCategoryTable()" />
+        </div>
+
+        <select id="statusFilter" class="form-select" onchange="filterCategoryTable()" style="width:150px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+            <option value="">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+        </select>
+    </div>
+
+    <button type="button" class="btn brass" id="btnToggleCategoryForm" onclick="toggleCategoryForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span id="btnAddBtnText">Add Product Category</span>
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- ADD / EDIT PRODUCT CATEGORY FORM CARD                                     -->
+<!-- ========================================================================= -->
+<div class="form-card" id="categoryFormCard" style="display:none;margin-bottom:24px;border:1px solid var(--brass);background:var(--surface);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(212,163,89,0.15);display:flex;align-items:center;justify-content:center;color:var(--brass);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <div>
+                <h3 id="formTitle" style="font-size:16px;font-weight:600;margin:0;color:var(--brass-text);">Add New Product Category</h3>
+                <p id="formSubTitle" style="font-size:12px;color:var(--text-dim);margin:2px 0 0 0;">Configure category details and link GL transable accounts for automated accounting entries.</p>
+            </div>
+        </div>
+        <button type="button" class="btn ghost" onclick="resetCategoryForm()" style="padding:6px 12px;font-size:12.5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            Cancel / Close
+        </button>
+    </div>
+
+    <!-- Tab navigation styling for Category / Account Setup -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+        <button type="button" id="tabBtnCategory" onclick="switchFormTab('category')" style="background:var(--surface2);border:1px solid var(--border);color:var(--brass-text);padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Category Info
+        </button>
+        <button type="button" id="tabBtnAccountSetup" onclick="switchFormTab('accounts')" style="background:transparent;border:1px solid transparent;color:var(--text-dim);padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+            Account Setup (Transable A/c)
+        </button>
+    </div>
+
+    <form id="categoryForm" asp-controller="ProductCategory" asp-action="Save" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" id="formId" value="0" />
+
+        <!-- Tab 1: Category Info -->
+        <div id="tabContentCategory">
+            <div class="form-grid c2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <!-- Category Code -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Category Code</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" name="Code" id="formCode" placeholder="e.g. CTG-0001 (Auto-generated)" style="flex:1;" />
+                        <button type="button" class="btn ghost" title="Generate Next Code" onclick="generateNextCategoryCode()" style="padding:8px 12px;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Name -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Category Name <span style="color:var(--red-text);">*</span></label>
+                    <input type="text" name="Name" id="formName" placeholder="e.g. Fresh Sea Fish, River Fish, Prawns" required />
+                </div>
+            </div>
+
+            <!-- Prominent Active Status Switch -->
+            <div class="form-switch-box" style="margin-bottom:16px;">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;">
+                        <span>Category Active Status</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">
+                        Enable to make this category selectable in lot auctions and sales invoices.
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span id="formActiveStatusText" style="font-size:13px;font-weight:600;color:var(--green-text);">Active</span>
+                    <label class="form-switch-ui">
+                        <input type="hidden" name="Active" value="false" />
+                        <input type="checkbox" name="Active" id="formActive" value="true" checked onchange="handleFormStatusToggle(this)" />
+                        <span class="form-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Account Setup (Transable Accounts) -->
+        <div id="tabContentAccounts" style="display:none;">
+            <div style="margin-bottom:14px;background:rgba(212,163,89,0.08);border:1px solid rgba(212,163,89,0.25);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--brass)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span style="font-size:12.5px;color:var(--text-dim);">Only <strong>Transable Accounts</strong> from the Chart of Accounts are available for linking below.</span>
+            </div>
+
+            <div class="form-grid c2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <!-- Purchase Account -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Local Purchase A/c :</label>
+                    <select name="PurchaseAccountId" id="formPurchaseAccountId" class="form-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+                        <option value="">-- None / Select Purchase Account --</option>
+                        @foreach (var acc in Model.AvailableTransableAccounts)
+                        {
+                            <option value="@acc.Id">@acc.DisplayName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Sale Account -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Local Sales A/c :</label>
+                    <select name="SaleAccountId" id="formSaleAccountId" class="form-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+                        <option value="">-- None / Select Sales Account --</option>
+                        @foreach (var acc in Model.AvailableTransableAccounts)
+                        {
+                            <option value="@acc.Id">@acc.DisplayName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Purchase Return Account -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Purchase Return A/c :</label>
+                    <select name="PurchaseReturnAccountId" id="formPurchaseReturnAccountId" class="form-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+                        <option value="">-- None / Select Purchase Return Account --</option>
+                        @foreach (var acc in Model.AvailableTransableAccounts)
+                        {
+                            <option value="@acc.Id">@acc.DisplayName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Sale Return Account -->
+                <div class="field">
+                    <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block;">Sales Return A/c :</label>
+                    <select name="SaleReturnAccountId" id="formSaleReturnAccountId" class="form-select" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;">
+                        <option value="">-- None / Select Sales Return Account --</option>
+                        @foreach (var acc in Model.AvailableTransableAccounts)
+                        {
+                            <option value="@acc.Id">@acc.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border);">
+            <button type="button" class="btn ghost" onclick="resetCategoryForm()">Cancel</button>
+            <button type="submit" class="btn brass" id="btnSubmitCategory">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                <span id="btnSubmitText">Save Product Category</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- PRODUCT CATEGORY DATA TABLE                                               -->
+<!-- ========================================================================= -->
+<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border);">
+    <div style="padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--brass)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span style="font-weight:600;font-size:13.5px;color:var(--text);">Product Category List</span>
+            <span class="badge gray" style="margin-left:6px;" id="recordCountBadge">@Model.Categories.Count records</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);">
+            Click <strong>Status Toggle Switch</strong> to activate/deactivate, or <strong>Edit</strong> for GL accounts.
+        </div>
+    </div>
+
+    <div class="table-wrap" style="overflow-x:auto;">
+        <table class="data-table" id="categoryTable" style="width:100%;">
+            <thead>
+                <tr>
+                    <th style="width:110px;">CODE</th>
+                    <th style="min-width:180px;">CATEGORY NAME</th>
+                    <th style="min-width:160px;">LOCAL PURCHASE A/C</th>
+                    <th style="min-width:160px;">LOCAL SALES A/C</th>
+                    <th style="min-width:160px;">PURCHASE RETURN A/C</th>
+                    <th style="min-width:160px;">SALES RETURN A/C</th>
+                    <th style="width:140px;text-align:center;">STATUS</th>
+                    <th style="width:110px;text-align:right;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Categories != null && Model.Categories.Any())
+                {
+                    @foreach (var item in Model.Categories)
+                    {
+                        var isActive = item.Active == true;
+                        <tr data-id="@item.Id"
+                            data-code="@(item.Code?.ToLower() ?? "")"
+                            data-name="@(item.Name.ToLower())"
+                            data-purchase="@(item.PurchaseAccountName?.ToLower() ?? "")"
+                            data-sale="@(item.SaleAccountName?.ToLower() ?? "")"
+                            data-status="@(isActive ? "active" : "inactive")">
+                            
+                            <!-- Code -->
+                            <td>
+                                <span class="badge brass" style="font-family:monospace;font-weight:600;">@item.Code</span>
+                            </td>
+
+                            <!-- Name -->
+                            <td>
+                                <div style="font-weight:600;color:var(--text);font-size:13.5px;">@item.Name</div>
+                            </td>
+
+                            <!-- Purchase Account -->
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.PurchaseAccountName))
+                                {
+                                    <div style="font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:6px;">
+                                        <span class="badge gray" style="font-family:monospace;font-size:11px;">@item.PurchaseAccountCode</span>
+                                        <span>@item.PurchaseAccountName</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;font-style:italic;">None</span>
+                                }
+                            </td>
+
+                            <!-- Sale Account -->
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.SaleAccountName))
+                                {
+                                    <div style="font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:6px;">
+                                        <span class="badge gray" style="font-family:monospace;font-size:11px;">@item.SaleAccountCode</span>
+                                        <span>@item.SaleAccountName</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;font-style:italic;">None</span>
+                                }
+                            </td>
+
+                            <!-- Purchase Return Account -->
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.PurchaseReturnAccountName))
+                                {
+                                    <div style="font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:6px;">
+                                        <span class="badge gray" style="font-family:monospace;font-size:11px;">@item.PurchaseReturnAccountCode</span>
+                                        <span>@item.PurchaseReturnAccountName</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;font-style:italic;">None</span>
+                                }
+                            </td>
+
+                            <!-- Sale Return Account -->
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.SaleReturnAccountName))
+                                {
+                                    <div style="font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:6px;">
+                                        <span class="badge gray" style="font-family:monospace;font-size:11px;">@item.SaleReturnAccountCode</span>
+                                        <span>@item.SaleReturnAccountName</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-dim);font-size:12px;font-style:italic;">None</span>
+                                }
+                            </td>
+
+                            <!-- Status Toggle (High Visibility Switch Button) -->
+                            <td style="text-align:center;">
+                                <form asp-controller="ProductCategory" asp-action="ToggleStatus" asp-route-id="@item.Id" method="post" style="display:inline-block;margin:0;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="status-toggle-btn @(isActive ? "active" : "inactive")" title="Click to @(isActive ? "Deactivate" : "Activate") category">
+                                        <span class="switch-track">
+                                            <span class="switch-thumb"></span>
+                                        </span>
+                                        <span class="status-label">@(isActive ? "Active" : "Inactive")</span>
+                                    </button>
+                                </form>
+                            </td>
+
+                            <!-- Actions -->
+                            <td style="text-align:right;white-space:nowrap;">
+                                <div style="display:flex;justify-content:flex-end;gap:6px;">
+                                    <button type="button" class="btn ghost icon-only" title="Edit Category" onclick="editCategory(@item.Id)" style="padding:5px 8px;">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    </button>
+
+                                    <form asp-controller="ProductCategory" asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirmDeleteCategory('@item.Name')" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn ghost icon-only" title="Delete Category" style="padding:5px 8px;color:var(--red-text);">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="noDataRow">
+                        <td colspan="8" style="text-align:center;padding:36px;color:var(--text-dim);">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--border)" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span style="font-size:14px;">No product categories found.</span>
+                                <button type="button" class="btn brass" onclick="toggleCategoryForm()" style="margin-top:6px;">Add First Category</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleCategoryForm() {
+            var card = document.getElementById('categoryFormCard');
+            if (card.style.display === 'none' || card.style.display === '') {
+                card.style.display = 'block';
+                document.getElementById('btnAddBtnText').textContent = 'Close Form';
+                if (document.getElementById('formId').value === "0" && !document.getElementById('formCode').value) {
+                    generateNextCategoryCode();
+                }
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                resetCategoryForm();
+            }
+        }
+
+        function switchFormTab(tabName) {
+            var catBtn = document.getElementById('tabBtnCategory');
+            var accBtn = document.getElementById('tabBtnAccountSetup');
+            var catContent = document.getElementById('tabContentCategory');
+            var accContent = document.getElementById('tabContentAccounts');
+
+            if (tabName === 'category') {
+                catBtn.style.background = 'var(--surface2)';
+                catBtn.style.color = 'var(--brass-text)';
+                catBtn.style.borderColor = 'var(--border)';
+
+                accBtn.style.background = 'transparent';
+                accBtn.style.color = 'var(--text-dim)';
+                accBtn.style.borderColor = 'transparent';
+
+                catContent.style.display = 'block';
+                accContent.style.display = 'none';
+            } else {
+                accBtn.style.background = 'var(--surface2)';
+                accBtn.style.color = 'var(--brass-text)';
+                accBtn.style.borderColor = 'var(--border)';
+
+                catBtn.style.background = 'transparent';
+                catBtn.style.color = 'var(--text-dim)';
+                catBtn.style.borderColor = 'transparent';
+
+                catContent.style.display = 'none';
+                accContent.style.display = 'block';
+            }
+        }
+
+        function handleFormStatusToggle(chk) {
+            var txt = document.getElementById('formActiveStatusText');
+            if (chk.checked) {
+                txt.textContent = 'Active';
+                txt.style.color = 'var(--green-text)';
+            } else {
+                txt.textContent = 'Inactive';
+                txt.style.color = 'var(--red-text)';
+            }
+        }
+
+        function resetCategoryForm() {
+            var card = document.getElementById('categoryFormCard');
+            card.style.display = 'none';
+            document.getElementById('btnAddBtnText').textContent = 'Add Product Category';
+            document.getElementById('formId').value = "0";
+            document.getElementById('formCode').value = "";
+            document.getElementById('formName').value = "";
+            document.getElementById('formPurchaseAccountId').value = "";
+            document.getElementById('formSaleAccountId').value = "";
+            document.getElementById('formPurchaseReturnAccountId').value = "";
+            document.getElementById('formSaleReturnAccountId').value = "";
+            
+            var chk = document.getElementById('formActive');
+            chk.checked = true;
+            handleFormStatusToggle(chk);
+
+            document.getElementById('formTitle').textContent = "Add New Product Category";
+            document.getElementById('formSubTitle').textContent = "Configure category details and link GL transable accounts for automated accounting entries.";
+            document.getElementById('btnSubmitText').textContent = "Save Product Category";
+            switchFormTab('category');
+        }
+
+        function generateNextCategoryCode() {
+            fetch('/ProductCategory/GetNextCode')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success && data.nextCode) {
+                        document.getElementById('formCode').value = data.nextCode;
+                    }
+                })
+                .catch(err => console.error('Error fetching next code:', err));
+        }
+
+        function editCategory(id) {
+            fetch('/ProductCategory/GetById/' + id)
+                .then(response => response.json())
+                .then(res => {
+                    if (res && res.success && res.data) {
+                        var d = res.data;
+                        document.getElementById('formId').value = d.id;
+                        document.getElementById('formCode').value = d.code || '';
+                        document.getElementById('formName').value = d.name || '';
+                        
+                        var chk = document.getElementById('formActive');
+                        chk.checked = d.active !== false;
+                        handleFormStatusToggle(chk);
+
+                        document.getElementById('formPurchaseAccountId').value = d.purchaseAccountId || '';
+                        document.getElementById('formSaleAccountId').value = d.saleAccountId || '';
+                        document.getElementById('formPurchaseReturnAccountId').value = d.purchaseReturnAccountId || '';
+                        document.getElementById('formSaleReturnAccountId').value = d.saleReturnAccountId || '';
+
+                        document.getElementById('formTitle').textContent = "Edit Product Category: " + d.name;
+                        document.getElementById('formSubTitle').textContent = "Modify category details and linked financial accounts.";
+                        document.getElementById('btnSubmitText').textContent = "Update Product Category";
+
+                        var card = document.getElementById('categoryFormCard');
+                        card.style.display = 'block';
+                        document.getElementById('btnAddBtnText').textContent = 'Close Form';
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        alert(res.message || 'Failed to load category details.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching category:', err);
+                    alert('Error loading category details.');
+                });
+        }
+
+        function confirmDeleteCategory(name) {
+            return confirm("Are you sure you want to delete Product Category '" + name + "'?\nThis action cannot be undone.");
+        }
+
+        function filterCategoryTable() {
+            var search = (document.getElementById('categorySearchInput').value || '').toLowerCase().trim();
+            var statusFilter = (document.getElementById('statusFilter').value || '').toLowerCase().trim();
+
+            var rows = document.querySelectorAll('#categoryTable tbody tr:not(#noDataRow)');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var code = row.getAttribute('data-code') || '';
+                var name = row.getAttribute('data-name') || '';
+                var purchase = row.getAttribute('data-purchase') || '';
+                var sale = row.getAttribute('data-sale') || '';
+                var status = row.getAttribute('data-status') || '';
+
+                var matchesSearch = !search ||
+                    code.includes(search) ||
+                    name.includes(search) ||
+                    purchase.includes(search) ||
+                    sale.includes(search);
+
+                var matchesStatus = !statusFilter || status === statusFilter;
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            var badge = document.getElementById('recordCountBadge');
+            if (badge) {
+                badge.textContent = visibleCount + " records";
+            }
+        }
+    </script>
+}

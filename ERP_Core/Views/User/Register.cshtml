@@ -1,0 +1,340 @@
+@model ERP_Core.Dtos.RegisterViewModel
+@{
+    ViewData["Title"] = "Register Employee";
+    ViewData["BreadcrumbPrefix"] = "USER MANAGEMENT";
+    ViewData["BreadcrumbCurrent"] = "Register Employee";
+    ViewData["ActivePage"] = "RegisterEmployee";
+}
+
+<div class="container-fluid px-0">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge rounded-pill px-3 py-1" style="background-color: rgba(47, 111, 94, 0.12); color: var(--teal); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.04em;">
+                    HR &bull; EMPLOYEE ONBOARDING
+                </span>
+            </div>
+            <h3 class="fw-bold text-dark mb-1">Register New Employee</h3>
+            <p class="text-muted small mb-0">Create ERP employee profile, assign company role, and provision system access.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2" style="border-radius: 8px;">
+                <i class="fa fa-arrow-left"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Notifications -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-3 mb-4 p-3" role="alert" style="border-radius: 12px; background: #ECFDF5; border-left: 4px solid var(--teal) !important;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 36px; height: 36px; background-color: var(--teal);">
+                <i class="fa fa-check"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold text-dark" style="font-size: 0.92rem;">Registration Successful!</div>
+                <div class="small text-muted">@TempData["SuccessMessage"]</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4 p-3" role="alert" style="border-radius: 12px; background: #FEF2F2; border-left: 4px solid #EF4444 !important;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa fa-circle-exclamation text-danger"></i>
+                <strong class="text-danger" style="font-size: 0.92rem;">Please correct the following errors:</strong>
+            </div>
+            <div class="small text-danger ps-4">
+                @Html.ValidationSummary(false, "")
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Main Registration Form Card -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px; border: 1px solid #EAEFF4 !important; background: #FFFFFF;">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: rgba(47, 111, 94, 0.1); color: var(--teal);">
+                    <i class="fa fa-user-plus" style="font-size: 0.85rem;"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-0">Employee Registration Form</h6>
+            </div>
+            <span class="text-muted small"><span class="text-danger">*</span> Required Fields</span>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            <form asp-controller="User" asp-action="Register" method="post" id="registerEmployeeForm" autocomplete="off">
+                @Html.AntiForgeryToken()
+
+                <!-- ============================================================== -->
+                <!-- 1. PERSONAL INFORMATION                                         -->
+                <!-- ============================================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                        <span class="badge rounded-circle bg-light text-dark border d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; font-weight: 700;">1</span>
+                        <h6 class="fw-bold text-dark mb-0 text-uppercase" style="letter-spacing: 0.05em; font-size: 0.82rem;">Personal & Profile Information</h6>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-3">
+                            <label asp-for="Form.EmpId" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                EMPLOYEE ID <span class="text-muted fw-normal">(Auto-suggested)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-id-badge"></i></span>
+                                <input asp-for="Form.EmpId" type="number" class="form-control font-monospace fw-semibold" placeholder="e.g. 1001" style="border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="Form.EmpId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-5">
+                            <label asp-for="Form.Name" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                FULL NAME <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-user"></i></span>
+                                <input asp-for="Form.Name" class="form-control" placeholder="e.g. Muhammad Ali" required autofocus style="border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="Form.Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label asp-for="Form.UserName" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                USERNAME (LOGIN ID) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-at"></i></span>
+                                <input asp-for="Form.UserName" class="form-control font-monospace" placeholder="e.g. mali" required style="border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="Form.UserName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.Email" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                OFFICIAL EMAIL ADDRESS <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-envelope"></i></span>
+                                <input asp-for="Form.Email" type="email" class="form-control" placeholder="e.g. mali@company.com" required style="border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="Form.Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.PhoneNumber" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                CONTACT PHONE NUMBER
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-phone"></i></span>
+                                <input asp-for="Form.PhoneNumber" class="form-control" placeholder="e.g. +92 300 1234567" style="border-radius: 0 8px 8px 0;" />
+                            </div>
+                            <span asp-validation-for="Form.PhoneNumber" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- 2. ORGANIZATION & ROLE ASSIGNMENT                               -->
+                <!-- ============================================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                        <span class="badge rounded-circle bg-light text-dark border d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; font-weight: 700;">2</span>
+                        <h6 class="fw-bold text-dark mb-0 text-uppercase" style="letter-spacing: 0.05em; font-size: 0.82rem;">Organization, Role & Designation</h6>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.CompanyId" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                COMPANY WORKSPACE <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-building"></i></span>
+                                <select asp-for="Form.CompanyId" class="form-select" required style="border-radius: 0 8px 8px 0;">
+                                    @if (Model.Companies != null && Model.Companies.Any())
+                                    {
+                                        @foreach (var comp in Model.Companies)
+                                        {
+                                            <option value="@comp.Id">@comp.Name</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="1">Default Company</option>
+                                    }
+                                </select>
+                            </div>
+                            <span asp-validation-for="Form.CompanyId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.RoleId" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                SYSTEM ROLE <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-shield-halved"></i></span>
+                                <select asp-for="Form.RoleId" class="form-select" required style="border-radius: 0 8px 8px 0;">
+                                    @if (Model.Roles != null && Model.Roles.Any())
+                                    {
+                                        @foreach (var role in Model.Roles)
+                                        {
+                                            <option value="@role.Id">@role.RoleName</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="2">Employee</option>
+                                        <option value="1">Admin</option>
+                                    }
+                                </select>
+                            </div>
+                            <span asp-validation-for="Form.RoleId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.DepartmenId" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                DEPARTMENT <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-sitemap"></i></span>
+                                <select asp-for="Form.DepartmenId" class="form-select" style="border-radius: 0 8px 8px 0;">
+                                    @if (Model.Departments != null && Model.Departments.Any())
+                                    {
+                                        @foreach (var dept in Model.Departments)
+                                        {
+                                            <option value="@dept.Id">@dept.Name</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="1">General / Operations</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.DesignationId" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                DESIGNATION / JOB TITLE <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-briefcase"></i></span>
+                                <select asp-for="Form.DesignationId" class="form-select" style="border-radius: 0 8px 8px 0;">
+                                    @if (Model.Designations != null && Model.Designations.Any())
+                                    {
+                                        @foreach (var desig in Model.Designations)
+                                        {
+                                            <option value="@desig.Id">@desig.Name</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="1">Software Engineer</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- 3. SECURITY CREDENTIALS & STATUS                               -->
+                <!-- ============================================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-2 pb-2 mb-3 border-bottom">
+                        <span class="badge rounded-circle bg-light text-dark border d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.75rem; font-weight: 700;">3</span>
+                        <h6 class="fw-bold text-dark mb-0 text-uppercase" style="letter-spacing: 0.05em; font-size: 0.82rem;">Security Credentials & Account Activation</h6>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.Password" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                PASSWORD <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-lock"></i></span>
+                                <input asp-for="Form.Password" type="password" id="regPassword" class="form-control" placeholder="Minimum 6 characters" required style="border-radius: 0;" />
+                                <button type="button" class="btn btn-outline-secondary toggle-pwd-btn border-start-0" data-target="regPassword" title="Toggle password visibility" style="border-radius: 0 8px 8px 0;">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Form.Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Form.ConfirmPassword" class="form-label small fw-bold text-muted mb-1" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                                CONFIRM PASSWORD <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0" style="border-radius: 8px 0 0 8px;"><i class="fa fa-lock"></i></span>
+                                <input asp-for="Form.ConfirmPassword" type="password" id="regConfirmPassword" class="form-control" placeholder="Re-enter password" required style="border-radius: 0;" />
+                                <button type="button" class="btn btn-outline-secondary toggle-pwd-btn border-start-0" data-target="regConfirmPassword" title="Toggle password visibility" style="border-radius: 0 8px 8px 0;">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Form.ConfirmPassword" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <div class="p-3 rounded-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                    <input asp-for="Form.Active" class="form-check-input ms-0 me-2" type="checkbox" id="activeAccountCheck" checked style="width: 2.2em; height: 1.2em;" />
+                                    <div>
+                                        <label class="form-check-label fw-bold text-dark small d-block mb-0" for="activeAccountCheck">
+                                            Activate Account Immediately
+                                        </label>
+                                        <span class="text-muted" style="font-size: 0.78rem;">When enabled, the employee will immediately be able to sign in and be assigned tasks & tickets.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                    <div class="text-muted small">
+                        <i class="fa fa-info-circle text-primary me-1"></i> New accounts are provisioned under company permissions.
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="reset" class="btn btn-outline-secondary px-4 py-2 fw-semibold" style="border-radius: 8px; font-size: 0.88rem;">
+                            <i class="fa fa-rotate-left me-1"></i> Reset
+                        </button>
+                        <button type="submit" class="btn btn-teal px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2" style="border-radius: 8px; font-size: 0.88rem;">
+                            <i class="fa fa-user-check"></i>
+                            <span>Register Employee</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // Password Show/Hide Toggle
+            $('.toggle-pwd-btn').on('click', function () {
+                const targetId = $(this).data('target');
+                const input = document.getElementById(targetId);
+                const icon = $(this).find('i');
+
+                if (input) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                    }
+                }
+            });
+        });
+    </script>
+}

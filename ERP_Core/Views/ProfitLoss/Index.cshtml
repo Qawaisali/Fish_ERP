@@ -1,0 +1,91 @@
+@model ERP_Core.Dtos.ProfitLossViewModel
+
+@{
+    ViewData["Title"] = "Profit & Loss";
+    ViewData["SubTitle"] = "Mandi karobaar ka nafa aur nuqsaan statement.";
+}
+
+<div class="section-title" style="margin-bottom:4px;">Profit &amp; Loss</div>
+<div class="section-desc" id="plPeriodDesc">Period: @DateTime.Parse(Model.PeriodFrom).ToString("dd MMM yyyy") – @DateTime.Parse(Model.PeriodTo).ToString("dd MMM yyyy")</div>
+
+<div class="filter-bar">
+    <form method="get" class="d-flex align-items-end gap-3 flex-wrap w-100" asp-controller="ProfitLoss" asp-action="Index">
+        <div class="field">
+            <label>From</label>
+            <input type="date" name="from" value="@Model.PeriodFrom" />
+        </div>
+        <div class="field">
+            <label>To</label>
+            <input type="date" name="to" value="@Model.PeriodTo" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v18M16 3v18"/></svg>
+                Apply period
+            </button>
+            <button type="button" class="btn brass" onclick="AarhatApp.printLedgerStatement('Profit &amp; Loss Statement', '@Model.PeriodFrom', '@Model.PeriodTo', @Model.TotalIncome, @Model.TotalExpenses, @Model.NetProfit, [
+                {date:'August 2026', ref:'INC-01', desc:'Commission Earned (5% Avg)', debit:@Model.CommissionEarned, credit:0, balance:@Model.CommissionEarned},
+                {date:'August 2026', ref:'INC-02', desc:'Expense Recovery from Suppliers', debit:@Model.ExpenseRecovery, credit:0, balance:@Model.TotalIncome},
+                {date:'August 2026', ref:'EXP-01', desc:'Labour / Tulai Expenses', debit:0, credit:@Model.LabourExpense, balance:@(Model.TotalIncome - Model.LabourExpense)},
+                {date:'August 2026', ref:'EXP-02', desc:'Transport & Loading', debit:0, credit:@Model.TransportExpense, balance:@(Model.TotalIncome - Model.LabourExpense - Model.TransportExpense)},
+                {date:'August 2026', ref:'EXP-03', desc:'Ice & Packing', debit:0, credit:@Model.IcePackingExpense, balance:@(Model.TotalIncome - Model.LabourExpense - Model.TransportExpense - Model.IcePackingExpense)},
+                {date:'August 2026', ref:'EXP-04', desc:'Rent & Utilities', debit:0, credit:@Model.RentUtilitiesExpense, balance:@Model.NetProfit}
+            ])">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                Print P&amp;L
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="pl-grid">
+    <!-- Income Card -->
+    <div class="card">
+        <div class="card-head"><h3>Income</h3></div>
+        <div class="pl-line">
+            <span>Commission Earned</span>
+            <span class="amt tnum green">Rs @Model.CommissionEarned.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Expense Recovery from Suppliers</span>
+            <span class="amt tnum green">Rs @Model.ExpenseRecovery.ToString("N0")</span>
+        </div>
+        <div class="pl-line total">
+            <span>Total Income</span>
+            <span class="amt tnum green">Rs @Model.TotalIncome.ToString("N0")</span>
+        </div>
+    </div>
+
+    <!-- Expenses Card -->
+    <div class="card">
+        <div class="card-head"><h3>Expenses</h3></div>
+        <div class="pl-line">
+            <span>Labour / Tulai</span>
+            <span class="amt tnum red">Rs @Model.LabourExpense.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Loading / Transport</span>
+            <span class="amt tnum red">Rs @Model.TransportExpense.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Ice &amp; Packing</span>
+            <span class="amt tnum red">Rs @Model.IcePackingExpense.ToString("N0")</span>
+        </div>
+        <div class="pl-line">
+            <span>Rent &amp; Utilities</span>
+            <span class="amt tnum red">Rs @Model.RentUtilitiesExpense.ToString("N0")</span>
+        </div>
+        <div class="pl-line total">
+            <span>Total Expenses</span>
+            <span class="amt tnum red">Rs @Model.TotalExpenses.ToString("N0")</span>
+        </div>
+    </div>
+</div>
+
+<!-- Net Profit Card -->
+<div class="card" style="margin-top:16px;">
+    <div class="pl-line total" style="border-top:none;">
+        <span>Net Profit (@DateTime.Parse(Model.PeriodTo).ToString("MMMM yyyy"))</span>
+        <span class="amt tnum" style="color:var(--brass-text);font-size:22px;">Rs @Model.NetProfit.ToString("N0")</span>
+    </div>
+</div>

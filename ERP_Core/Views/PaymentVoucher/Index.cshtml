@@ -1,0 +1,777 @@
+@model ERP_Core.Dtos.PaymentVoucherViewModel
+
+@{
+    ViewData["Title"] = "Payment Voucher";
+    ViewData["SubTitle"] = "Cash ya Bank ke zariye adaigi darj karein — baqaida double-entry voucher.";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+    <style>
+        .filter-bar-modern {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-grid-unified {
+            display: grid;
+            grid-template-columns: 160px 160px minmax(280px, 1fr) auto;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 992px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .filter-grid-unified {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="toolbar">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Daily Payment Voucher</div>
+        <div class="section-desc" style="margin-bottom:0;">Cash ya Bank ke zariye adaigi darj karein — baqaida double-entry voucher.</div>
+    </div>
+    <button type="button" class="btn brass" onclick="AarhatApp.toggleForm('payForm')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New Voucher
+    </button>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Add/Edit Payment Voucher Form -->
+<div class="form-card" id="payForm" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <span id="payFormTitle" style="font-size:14px;font-weight:600;color:var(--text);">Add Payment Voucher</span>
+        <button type="button" class="btn ghost" onclick="resetPayForm()" style="padding:3px 10px;font-size:11.5px;">Reset Form</button>
+    </div>
+    <form asp-controller="PaymentVoucher" asp-action="SaveVoucher" method="post" id="payVoucherForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="voucherId" id="voucherIdInput" value="0" />
+
+        <div class="form-grid c4">
+            <!-- Field 1: Voucher Code -->
+            <div class="field">
+                <label style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Voucher #</span>
+                    <span style="font-size:11px;color:var(--brass);display:inline-flex;align-items:center;gap:3px;" title="Auto-generated from database and locked">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Locked
+                    </span>
+                </label>
+                <input type="text" id="voucherNoInput" name="voucherNo" value="@Model.NextVoucherNo" readonly 
+                       style="background:rgba(255,255,255,0.04);cursor:not-allowed;font-family:monospace;font-weight:700;color:var(--brass-light,#d4af37);letter-spacing:0.5px;" />
+            </div>
+
+            <!-- Field 2: To Account (All Transable Chart of Accounts) -->
+            <div class="field">
+                <label>Paid To (Party / Account) <span style="color:var(--red-text);">*</span></label>
+                <select name="toAccountId" id="toAccountSelect" class="searchable-select" data-placeholder="-- Search & Select Party / Chart of Account --" required>
+                    <option value="">-- Select Party / Chart of Account --</option>
+                    @foreach (var acc in Model.PaymentAccounts)
+                    {
+                        <option value="@acc.Id">@acc.DisplayText</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Field 3: Payment Type (Martey, Advance, Loan, Expense, etc.) -->
+            <div class="field">
+                <label>Payment Type <span style="color:var(--red-text);">*</span></label>
+                <select name="paymentType" id="paymentTypeSelect" required>
+                    <option value="General Payment" selected>General Payment (عام ادائیگی)</option>
+                    <option value="Martey">Martey / Deposit (مارتی)</option>
+                    <option value="Advance">Advance (پیشگی)</option>
+                    <option value="Loan">Loan (قرضہ)</option>
+                    <option value="Expense">Expense (خرچہ)</option>
+                    <option value="Supplier Payment">Supplier Payment (مال کی ادائیگی)</option>
+                    <option value="Other">Other (دیگر)</option>
+                </select>
+            </div>
+
+            <!-- Field 4: Amount Paid (Rs) -->
+            <div class="field">
+                <label>Amount Paid (Rs) <span style="color:var(--red-text);">*</span></label>
+                <input type="number" name="amount" id="amountInput" min="1" step="0.01" placeholder="0" required />
+            </div>
+
+            <!-- Field 5: Paid Via (Bank Master) -->
+            <div class="field">
+                <label>Paid Via (Cash / Bank) <span style="color:var(--red-text);">*</span></label>
+                <select name="bankMasterId" id="bankMasterSelect" onchange="onBankMasterChanged()" required>
+                    @foreach (var bm in Model.BankMasters)
+                    {
+                        <option value="@bm.Id" data-iscash="@bm.IsCash.ToString().ToLower()" data-isbank="@bm.IsBank.ToString().ToLower()">
+                            @bm.DisplayText
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Field 6: Cheque / Ref # -->
+            <div class="field">
+                <label>Cheque / Ref # <span style="font-size:10.5px;color:var(--muted);">(Optional)</span></label>
+                <input type="text" name="chequeNo" id="chequeNoInput" placeholder="e.g. CHQ-4410 / Online Ref" />
+            </div>
+
+            <!-- Field 7: Date -->
+            <div class="field">
+                <label>Date <span style="color:var(--red-text);">*</span></label>
+                <input type="date" name="date" id="dateInput" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+            </div>
+
+            <!-- Field 8: Description -->
+            <div class="field">
+                <label>Description / Particulars <span style="color:var(--red-text);">*</span></label>
+                <input type="text" name="description" id="descriptionInput" placeholder="e.g. Paid to boat supplier / Advance / Martey" required />
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn ghost" onclick="AarhatApp.toggleForm('payForm')">Cancel</button>
+            <button type="submit" id="btnSavePayVoucher" class="btn brass">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save voucher
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Subtabs (Payment List vs Payment Report) -->
+<div class="subtabs no-print" style="margin-bottom:16px;">
+    <button type="button" class="subtab-btn @(Model.ActiveTab == "report" ? "" : "active")" id="payTabEntryBtn" onclick="switchPaymentTab('entry')">Payment List</button>
+    <button type="button" class="subtab-btn @(Model.ActiveTab == "report" ? "active" : "")" id="payTabReportBtn" onclick="switchPaymentTab('report')">Payment Report</button>
+</div>
+
+<!-- 1. Voucher List View -->
+<div id="payEntryView" style="@(Model.ActiveTab == "report" ? "display:none;" : "")">
+    <div class="card">
+        <div class="table-wrap">
+            <table class="dynamic-table">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Paid To</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Channel</th>
+                        <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Vouchers)
+                    {
+                        <tr>
+                            <td><span class="tcode">@v.VoucherNo</span></td>
+                            <td>@v.Date</td>
+                            <td><span class="badge badge-gray">@v.ToAccount</span></td>
+                            <td>
+                                @if (v.PaymentType == "Martey")
+                                {
+                                    <span class="badge" style="background:rgba(168,85,247,0.18);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-weight:600;">Martey (مارتی)</span>
+                                }
+                                else if (v.PaymentType == "Advance")
+                                {
+                                    <span class="badge" style="background:rgba(59,130,246,0.18);color:#60a5fa;border:1px solid rgba(59,130,246,0.35);font-weight:600;">Advance (پیشگی)</span>
+                                }
+                                else if (v.PaymentType == "Loan")
+                                {
+                                    <span class="badge" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);font-weight:600;">Loan (قرضہ)</span>
+                                }
+                                else if (v.PaymentType == "Expense")
+                                {
+                                    <span class="badge badge-red" style="font-weight:600;">Expense</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-brass" style="font-weight:600;">@(string.IsNullOrEmpty(v.PaymentType) ? "General Payment" : v.PaymentType)</span>
+                                }
+                            </td>
+                            <td>@v.Description</td>
+                            <td class="tnum font-weight-bold" style="color:var(--red-text,#ef4444);">Rs @v.Amount.ToString("N0")</td>
+                            <td><span class="badge badge-brass">@v.PaidVia</span></td>
+                            <td style="text-align:center;">
+                                <div class="row-actions" style="justify-content:center;gap:6px;">
+                                    <button type="button" title="Print Payment" onclick="AarhatApp.printPaymentVoucher('@v.VoucherNo', '@v.Date', '@v.ToAccount.Replace("'", "\\'")', '@v.Description.Replace("'", "\\'")', @v.Amount, '@v.PaidVia.Replace("'", "\\'")', '@(v.ChequeNo?.Replace("'", "\\'"))', '@(v.PaymentType?.Replace("'", "\\'"))')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                                    </button>
+                                    <button type="button" title="Edit Voucher" onclick="editPaymentVoucher(@v.VoucherId, '@v.VoucherNo', '@v.RawDate', '@(v.ToAccountId ?? 0)', @v.Amount, '@(v.BankMasterId ?? 0)', '@v.Description.Replace("'", "\\'")', '@(v.ChequeNo?.Replace("'", "\\'"))', '@(v.PaymentType?.Replace("'", "\\'"))')">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    </button>
+                                    <button type="button" title="Delete Voucher" style="color:var(--red-text);" onclick="deletePaymentVoucher(@v.VoucherId, '@v.VoucherNo')">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Payment Report View -->
+<div id="payReportView" style="@(Model.ActiveTab == "report" ? "" : "display:none;")">
+    <!-- Filter Bar (matching Sales Report & Expense Report) -->
+    <div class="filter-bar-modern no-print">
+        <form method="get" asp-controller="PaymentVoucher" asp-action="Index" id="paymentFilterForm">
+            <input type="hidden" name="tab" value="report" />
+            <div class="filter-grid-unified">
+                <!-- Field 1: From Date -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                    <input type="date" name="fromDate" id="reportFromDateFilter" value="@Model.FromDate" required
+                           style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+                </div>
+
+                <!-- Field 2: To Date -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                    <input type="date" name="toDate" id="reportToDateFilter" value="@Model.ToDate" required
+                           style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+                </div>
+
+                <!-- Field 3: Paid To Account Dropdown (exact accounts that appear in Create Payment Voucher) -->
+                <div class="field" style="margin:0;">
+                    <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Paid To Account</label>
+                    <select name="paymentAccountId" id="reportPaymentAccountFilter" class="searchable-select">
+                        <option value="">-- All Accounts --</option>
+                        @foreach (var acc in Model.PaymentAccounts)
+                        {
+                            <option value="@acc.Id" data-name="@acc.AccountName" selected="@(Model.SelectedPaymentAccountId == acc.Id)">
+                                @acc.DisplayText
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;gap:8px;align-items:flex-end;">
+                    <button type="button" class="btn brass" onclick="applyPaymentFilter()" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        Filter Report
+                    </button>
+                    <button type="button" class="btn ghost" onclick="resetPaymentFilters()" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;gap:5px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                        Reset
+                    </button>
+                    <button type="button" class="btn brass" onclick="printUnifiedPaymentReport()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @{
+        var totalCount = Model.Vouchers.Count;
+        var totalSum = Model.Vouchers.Sum(v => v.Amount);
+        var cashSum = Model.Vouchers.Where(v => !v.IsBankPayment && (v.VoucherType == "CP" || (v.PaidVia != null && v.PaidVia.Contains("Cash", StringComparison.OrdinalIgnoreCase)))).Sum(v => v.Amount);
+        var bankSum = totalSum - cashSum;
+    }
+    <div class="report-stat-row">
+        <div class="report-stat"><div class="lbl">TOTAL VOUCHERS</div><div class="val tnum" id="statTotalVouchers">@totalCount</div></div>
+        <div class="report-stat"><div class="lbl">TOTAL PAID</div><div class="val tnum" id="statTotalAmount" style="color:var(--red-text,#ef4444);">Rs @totalSum.ToString("N0")</div></div>
+        <div class="report-stat"><div class="lbl">CASH PAID</div><div class="val tnum" id="statCashPaid">Rs @cashSum.ToString("N0")</div></div>
+        <div class="report-stat"><div class="lbl">BANK PAID</div><div class="val tnum" id="statBankPaid">Rs @bankSum.ToString("N0")</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;">
+            <h3>Payment Report</h3>
+        </div>
+        <div class="table-wrap">
+            <table class="dynamic-table" id="paymentReportTable">
+                <thead>
+                    <tr>
+                        <th>Voucher #</th>
+                        <th>Date</th>
+                        <th>Paid To</th>
+                        <th>Type</th>
+                        <th style="line-height:1.25;">Particulars /<br/>Description</th>
+                        <th>Amount</th>
+                        <th>Channel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model.Vouchers)
+                    {
+                        <tr data-date-raw="@v.RawDate"
+                            data-account-id="@(v.ToAccountId?.ToString() ?? "")"
+                            data-account="@v.ToAccount"
+                            data-amount="@v.Amount"
+                            data-type="@v.VoucherType"
+                            data-paymenttype="@v.PaymentType"
+                            data-paidvia="@v.PaidVia"
+                            data-isbank="@(v.IsBankPayment ? "true" : "false")"
+                            data-voucherno="@v.VoucherNo"
+                            data-date="@v.Date"
+                            data-desc="@v.Description">
+                            <td><span class="tcode">@v.VoucherNo</span></td>
+                            <td>@v.Date</td>
+                            <td>@v.ToAccount</td>
+                            <td>@(string.IsNullOrEmpty(v.PaymentType) ? "General Payment" : v.PaymentType)</td>
+                            <td>@v.Description</td>
+                            <td class="tnum font-weight-bold" style="color:var(--red-text,#ef4444);white-space:nowrap;">Rs @v.Amount.ToString("N0")</td>
+                            <td>@v.PaidVia</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr style="background:var(--surface2);font-weight:700;">
+                        <td colspan="5" style="text-align:right;">Visible Total:</td>
+                        <td class="tnum" id="reportFooterTotal" style="color:var(--red-text,#ef4444);">Rs @totalSum.ToString("N0")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for secure POST Delete -->
+<form id="deleteVoucherForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    function setSelectValue(selectId, val) {
+        const el = document.getElementById(selectId);
+        if (!el) return;
+        const strVal = (val && val !== 'null' && val !== '0' && val !== 0) ? val.toString() : '';
+        el.value = strVal;
+        if (el.tomselect) {
+            if (strVal) {
+                el.tomselect.setValue(strVal, true);
+            } else {
+                el.tomselect.clear(true);
+            }
+        }
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function setPaymentTypeValue(val) {
+        const el = document.getElementById('paymentTypeSelect');
+        if (!el) return;
+        let targetVal = (val && val !== 'null') ? val.trim() : 'General Payment';
+        if (!targetVal) targetVal = 'General Payment';
+
+        let matchedOption = Array.from(el.options).find(o => o.value.toLowerCase() === targetVal.toLowerCase());
+        if (matchedOption) {
+            targetVal = matchedOption.value;
+        } else {
+            const opt = new Option(targetVal, targetVal, true, true);
+            el.add(opt);
+            if (el.tomselect) {
+                el.tomselect.addOption({ value: targetVal, text: targetVal });
+            }
+        }
+
+        el.value = targetVal;
+        if (el.tomselect) {
+            el.tomselect.setValue(targetVal, true);
+        }
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function onBankMasterChanged() {
+        const vId = document.getElementById('voucherIdInput')?.value;
+        if (vId && vId !== '0') {
+            return;
+        }
+
+        const select = document.getElementById('bankMasterSelect');
+        if (!select || !select.value) return;
+        const bankMasterId = select.value;
+        const vInput = document.getElementById('voucherNoInput');
+
+        fetch('@Url.Action("GetNextVoucherCode", "PaymentVoucher")?bankMasterId=' + encodeURIComponent(bankMasterId))
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.success && data.voucherNo) {
+                    if (vInput) vInput.value = data.voucherNo;
+                }
+            })
+            .catch(err => console.error('Error updating payment voucher code:', err));
+    }
+
+    function editPaymentVoucher(id, voucherNo, rawDate, toAccountId, amount, bankMasterId, description, chequeNo, paymentType) {
+        document.getElementById('voucherIdInput').value = id || '0';
+        document.getElementById('voucherNoInput').value = voucherNo || '';
+        if (rawDate) {
+            document.getElementById('dateInput').value = rawDate;
+        }
+        document.getElementById('amountInput').value = amount || 0;
+        document.getElementById('descriptionInput').value = description || '';
+        document.getElementById('chequeNoInput').value = chequeNo || '';
+
+        // 1. Paid To Account
+        setSelectValue('toAccountSelect', toAccountId);
+
+        // 2. Payment Type (Martey, Advance, Loan, Expense, etc.)
+        setPaymentTypeValue(paymentType);
+
+        // 3. Paid Via (Bank Master)
+        setSelectValue('bankMasterSelect', bankMasterId);
+
+        document.getElementById('payFormTitle').innerText = 'Edit Payment Voucher — ' + (voucherNo || '');
+        document.getElementById('btnSavePayVoucher').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Update voucher';
+
+        const form = document.getElementById('payForm');
+        form.style.display = 'block';
+        window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+    }
+
+    function resetPayForm() {
+        document.getElementById('voucherIdInput').value = '0';
+        document.getElementById('voucherNoInput').value = '@Model.NextVoucherNo';
+        document.getElementById('dateInput').value = '@DateTime.Now.ToString("yyyy-MM-dd")';
+        setSelectValue('toAccountSelect', '');
+        setPaymentTypeValue('General Payment');
+        setSelectValue('bankMasterSelect', document.getElementById('bankMasterSelect')?.options[0]?.value || '');
+        document.getElementById('amountInput').value = '';
+        document.getElementById('descriptionInput').value = '';
+        document.getElementById('chequeNoInput').value = '';
+
+        document.getElementById('payFormTitle').innerText = 'Add Payment Voucher';
+        document.getElementById('btnSavePayVoucher').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save voucher';
+    }
+
+    function deletePaymentVoucher(id, voucherNo) {
+        if (!id || id <= 0) {
+            alert('This demonstration voucher cannot be deleted.');
+            return;
+        }
+        if (confirm(`Are you sure you want to delete Payment Voucher '${voucherNo}'?\nThis will remove the voucher and its accounting ledger transactions.`)) {
+            const form = document.getElementById('deleteVoucherForm');
+            form.action = '@Url.Action("DeleteVoucher", "PaymentVoucher")/' + id;
+            form.submit();
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // PAYMENT REPORT FILTERING, STATS & PRINT ENGINE
+    // --------------------------------------------------------------------------
+    function switchPaymentTab(tab) {
+        var entryView = document.getElementById('payEntryView');
+        var reportView = document.getElementById('payReportView');
+        var entryBtn = document.getElementById('payTabEntryBtn');
+        var reportBtn = document.getElementById('payTabReportBtn');
+
+        if (tab === 'report') {
+            if (entryView) entryView.style.display = 'none';
+            if (reportView) reportView.style.display = 'block';
+            if (entryBtn) entryBtn.classList.remove('active');
+            if (reportBtn) reportBtn.classList.add('active');
+
+            setTimeout(function () {
+                if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#paymentReportTable')) {
+                    var dt = jQuery('#paymentReportTable').DataTable();
+                    dt.columns.adjust().draw();
+                }
+                filterPaymentReport();
+            }, 60);
+        } else {
+            if (entryView) entryView.style.display = 'block';
+            if (reportView) reportView.style.display = 'none';
+            if (entryBtn) entryBtn.classList.add('active');
+            if (reportBtn) reportBtn.classList.remove('active');
+        }
+    }
+
+    function getSelectFilterValue(id) {
+        var el = document.getElementById(id);
+        if (!el) return '';
+        if (el.tomselect) {
+            return (el.tomselect.getValue() || '').trim();
+        }
+        return (el.value || '').trim();
+    }
+
+    function getSelectFilterText(id) {
+        var el = document.getElementById(id);
+        if (!el) return '';
+        if (el.tomselect) {
+            var val = el.tomselect.getValue();
+            var item = el.tomselect.getItem(val);
+            return item ? item.textContent.trim() : '';
+        }
+        return el.selectedIndex >= 0 ? el.options[el.selectedIndex].text.trim() : '';
+    }
+
+    // Custom DataTables filter for unified Payment Report
+    if (window.jQuery && jQuery.fn && jQuery.fn.dataTable) {
+        jQuery.fn.dataTable.ext.search.push(function (settings, searchData, index, rowData, counter) {
+            if (!settings.nTable || settings.nTable.id !== 'paymentReportTable') {
+                return true;
+            }
+
+            var fromDate = (document.getElementById('reportFromDateFilter')?.value || '').trim();
+            var toDate = (document.getElementById('reportToDateFilter')?.value || '').trim();
+            var accFilterId = getSelectFilterValue('reportPaymentAccountFilter');
+
+            var rowNode = settings.aoData && settings.aoData[index] ? settings.aoData[index].nTr : null;
+            if (!rowNode) return true;
+
+            var rawDate = rowNode.getAttribute('data-date-raw') || '';
+            var rowAccId = rowNode.getAttribute('data-account-id') || '';
+
+            if (fromDate && rawDate && rawDate < fromDate) return false;
+            if (toDate && rawDate && rawDate > toDate) return false;
+
+            if (accFilterId && accFilterId !== '' && rowAccId !== accFilterId) {
+                return false;
+            }
+
+            return true;
+        });
+    }
+
+    function updatePaymentReportStats() {
+        var count = 0;
+        var totalAmount = 0;
+        var cashPaid = 0;
+        var bankPaid = 0;
+
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#paymentReportTable')) {
+            var dt = jQuery('#paymentReportTable').DataTable();
+            var nodes = dt.rows({ search: 'applied' }).nodes();
+            count = nodes.length;
+            jQuery(nodes).each(function () {
+                var amt = parseFloat(this.getAttribute('data-amount')) || 0;
+                var type = (this.getAttribute('data-type') || '').toUpperCase();
+                var pVia = (this.getAttribute('data-paidvia') || '').toLowerCase();
+                var isBank = (this.getAttribute('data-isbank') === 'true') || pVia.includes('bank') || type === 'BP';
+
+                totalAmount += amt;
+                if (isBank) {
+                    bankPaid += amt;
+                } else {
+                    cashPaid += amt;
+                }
+            });
+        } else {
+            var fromDate = (document.getElementById('reportFromDateFilter')?.value || '').trim();
+            var toDate = (document.getElementById('reportToDateFilter')?.value || '').trim();
+            var accFilterId = getSelectFilterValue('reportPaymentAccountFilter');
+
+            var rows = document.querySelectorAll('#paymentReportTable tbody tr');
+            rows.forEach(function (r) {
+                var rawDate = r.getAttribute('data-date-raw') || '';
+                var rowAccId = r.getAttribute('data-account-id') || '';
+
+                var matchDate = true;
+                if (fromDate && rawDate && rawDate < fromDate) matchDate = false;
+                if (toDate && rawDate && rawDate > toDate) matchDate = false;
+
+                var matchAcc = !accFilterId || rowAccId === accFilterId;
+
+                if (matchDate && matchAcc) {
+                    count++;
+                    var amt = parseFloat(r.getAttribute('data-amount')) || 0;
+                    var type = (r.getAttribute('data-type') || '').toUpperCase();
+                    var pVia = (r.getAttribute('data-paidvia') || '').toLowerCase();
+                    var isBank = (r.getAttribute('data-isbank') === 'true') || pVia.includes('bank') || type === 'BP';
+
+                    totalAmount += amt;
+                    if (isBank) {
+                        bankPaid += amt;
+                    } else {
+                        cashPaid += amt;
+                    }
+                    r.style.display = '';
+                } else {
+                    r.style.display = 'none';
+                }
+            });
+        }
+
+        var elCount = document.getElementById('statTotalVouchers');
+        var elTotal = document.getElementById('statTotalAmount');
+        var elCash = document.getElementById('statCashPaid');
+        var elBank = document.getElementById('statBankPaid');
+        var elFooterTotal = document.getElementById('reportFooterTotal');
+
+        if (elCount) elCount.textContent = count;
+        if (elTotal) elTotal.textContent = 'Rs ' + Math.round(totalAmount).toLocaleString('en-PK');
+        if (elCash) elCash.textContent = 'Rs ' + Math.round(cashPaid).toLocaleString('en-PK');
+        if (elBank) elBank.textContent = 'Rs ' + Math.round(bankPaid).toLocaleString('en-PK');
+        if (elFooterTotal) elFooterTotal.textContent = 'Rs ' + Math.round(totalAmount).toLocaleString('en-PK');
+    }
+
+    function filterPaymentReport() {
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#paymentReportTable')) {
+            var dt = jQuery('#paymentReportTable').DataTable();
+            dt.draw();
+        }
+        updatePaymentReportStats();
+    }
+
+    function applyPaymentFilter() {
+        var form = document.getElementById('paymentFilterForm');
+        if (form) {
+            form.submit();
+        }
+    }
+
+    function resetPaymentFilters() {
+        var fromInput = document.getElementById('reportFromDateFilter');
+        var toInput = document.getElementById('reportToDateFilter');
+        var accSelect = document.getElementById('reportPaymentAccountFilter');
+
+        var d = new Date();
+        var yyyy = d.getFullYear();
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+
+        if (fromInput) fromInput.value = yyyy + '-' + mm + '-01';
+        if (toInput) toInput.value = yyyy + '-' + mm + '-' + dd;
+
+        if (accSelect) {
+            accSelect.value = '';
+            if (accSelect.tomselect) {
+                accSelect.tomselect.clear();
+            }
+        }
+
+        filterPaymentReport();
+    }
+
+    function printUnifiedPaymentReport() {
+        var fromVal = document.getElementById('reportFromDateFilter')?.value || '';
+        var toVal = document.getElementById('reportToDateFilter')?.value || '';
+        var accountTitle = getSelectFilterText('reportPaymentAccountFilter');
+        if (!accountTitle || accountTitle.includes('-- All')) {
+            accountTitle = 'All Accounts';
+        }
+
+        var periodTitle = 'All Dates';
+        if (fromVal && toVal) {
+            periodTitle = fromVal + ' to ' + toVal;
+        } else if (fromVal) {
+            periodTitle = 'From ' + fromVal;
+        } else if (toVal) {
+            periodTitle = 'Up to ' + toVal;
+        }
+
+        var entries = [];
+        var totalAmount = 0;
+        var cashPaid = 0;
+        var bankPaid = 0;
+
+        var rowElements = [];
+        if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable('#paymentReportTable')) {
+            var dt = jQuery('#paymentReportTable').DataTable();
+            rowElements = dt.rows({ search: 'applied' }).nodes().toArray();
+        } else {
+            rowElements = Array.from(document.querySelectorAll('#paymentReportTable tbody tr')).filter(function (r) {
+                return r.style.display !== 'none';
+            });
+        }
+
+        rowElements.forEach(function (r) {
+            var vNo = r.getAttribute('data-voucherno') || '';
+            var date = r.getAttribute('data-date') || '';
+            var acc = r.getAttribute('data-account') || '';
+            var pType = r.getAttribute('data-paymenttype') || 'General Payment';
+            var desc = r.getAttribute('data-desc') || '';
+            var amt = parseFloat(r.getAttribute('data-amount')) || 0;
+            var paidVia = r.getAttribute('data-paidvia') || '';
+            var type = (r.getAttribute('data-type') || '').toUpperCase();
+            var isBank = (r.getAttribute('data-isbank') === 'true') || paidVia.toLowerCase().includes('bank') || type === 'BP';
+
+            totalAmount += amt;
+            if (isBank) {
+                bankPaid += amt;
+            } else {
+                cashPaid += amt;
+            }
+
+            entries.push({
+                voucherNo: vNo,
+                date: date,
+                account: acc,
+                paymentType: pType,
+                desc: desc,
+                paidVia: paidVia,
+                amount: amt
+            });
+        });
+
+        if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.printPaymentReport === 'function') {
+            AarhatApp.printPaymentReport('Payment Report', periodTitle, accountTitle, entries, entries.length, cashPaid, bankPaid, totalAmount);
+        } else if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.printExpenseReport === 'function') {
+            AarhatApp.printExpenseReport('Payment Report', periodTitle, accountTitle, entries, entries.length, cashPaid, bankPaid, totalAmount);
+        } else if (typeof AarhatApp !== 'undefined' && typeof AarhatApp.printLedgerStatement === 'function') {
+            AarhatApp.printLedgerStatement('Payments — ' + accountTitle, fromVal, toVal, totalAmount, 0, totalAmount, entries.map(function(e) {
+                return { date: e.date, ref: e.voucherNo, desc: e.account + ' — ' + e.desc, debit: e.amount, credit: 0, balance: e.amount };
+            }));
+        }
+    }
+
+    $(document).ready(function () {
+        var fromInput = document.getElementById('reportFromDateFilter');
+        var toInput = document.getElementById('reportToDateFilter');
+        var accSelect = document.getElementById('reportPaymentAccountFilter');
+
+        if (fromInput) {
+            $(fromInput).on('change input blur keyup', filterPaymentReport);
+        }
+        if (toInput) {
+            $(toInput).on('change input blur keyup', filterPaymentReport);
+        }
+        if (accSelect) {
+            $(accSelect).on('change input', filterPaymentReport);
+        }
+
+        function bindTomSelectListeners() {
+            if (accSelect && accSelect.tomselect) {
+                accSelect.tomselect.on('change', function () {
+                    filterPaymentReport();
+                });
+            }
+        }
+
+        setTimeout(bindTomSelectListeners, 150);
+        setTimeout(bindTomSelectListeners, 500);
+        setTimeout(bindTomSelectListeners, 1000);
+
+        setTimeout(function () {
+            filterPaymentReport();
+        }, 100);
+
+        @if (Model.ActiveTab == "report")
+        {
+            <text>
+            switchPaymentTab('report');
+            </text>
+        }
+    });
+</script>

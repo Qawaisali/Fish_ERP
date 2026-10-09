@@ -1,0 +1,203 @@
+@model ERP_Core.Dtos.CustomerMasterViewModel
+
+@{
+    ViewData["Title"] = "Supplier Master";
+    ViewData["SubTitle"] = "Suppliers, hotels aur buyers manage karein.";
+}
+
+<div class="toolbar">
+    <div class="search">
+        <svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="custSearchInput" placeholder="Supplier dhoondein..." onkeyup="filterCustomerTable()" />
+    </div>
+    <button type="button" class="btn brass" onclick="openAddCustomerModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add Supplier
+    </button>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:var(--red-dim);color:var(--red-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Add / Edit Supplier Collapsible Form -->
+<div class="form-card" id="customerForm" style="display:none;">
+    <h4 id="custFormTitle" style="color:var(--brass);margin-bottom:14px;font-size:14px;font-weight:600;">Add Supplier</h4>
+    <form asp-controller="CustomerMaster" asp-action="SaveCustomer" method="post" id="mainCustomerForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="custFormId" value="0" />
+        <div class="form-grid">
+            <div class="field">
+                <label>Supplier Name</label>
+                <input type="text" name="name" id="custName" placeholder="e.g. Al-Bahar Hotel" required />
+            </div>
+            <div class="field">
+                <label>Phone</label>
+                <input type="tel" name="phone" id="custPhone" placeholder="0300-0000000" required />
+            </div>
+            <div class="field">
+                <label>City / Area</label>
+                <input type="text" name="city" id="custCity" placeholder="Karachi" required />
+            </div>
+            <div class="field">
+                <label>CNIC</label>
+                <input type="text" name="cnic" id="custCnic" placeholder="42101-0000000-0" />
+            </div>
+            <div class="field">
+                <label>Status</label>
+                <select name="status" id="custStatus" class="searchable-select">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn ghost" onclick="cancelCustomerForm()">Cancel</button>
+            <button type="submit" class="btn brass" id="btnSaveCustomer">Save Supplier</button>
+        </div>
+    </form>
+</div>
+
+<!-- Hidden Delete Form -->
+<form id="deleteCustomerForm" asp-controller="CustomerMaster" asp-action="DeleteCustomer" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteCustomerId" value="0" />
+</form>
+
+<!-- Customers Table Card -->
+<div class="card">
+    <div class="table-wrap">
+        <table id="customerTable" class="dynamic-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>City / Area</th>
+                    <th>Status</th>
+                    <th class="no-sort" style="width:110px;text-align:center;">Actions</th>
+                </tr>
+                <tr class="dt-col-filter">
+                    <th><input type="text" placeholder="Filter Name..." /></th>
+                    <th><input type="text" placeholder="Filter Phone..." /></th>
+                    <th><input type="text" placeholder="Filter City..." /></th>
+                    <th>
+                        <select>
+                            <option value="">All</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cust in Model.Customers)
+                {
+                    <tr>
+                        <td>
+                            <strong>@cust.Name</strong>
+                            @if (!string.IsNullOrEmpty(cust.AccountCode))
+                            {
+                                <div style="font-size:11px;color:var(--teal-text);margin-top:2px;">COA: @cust.AccountCode</div>
+                            }
+                        </td>
+                        <td>@cust.Phone</td>
+                        <td>@cust.City</td>
+                        <td>
+                            <span class="badge @(cust.Status == "Active" ? "badge-green" : "badge-red")">@cust.Status</span>
+                        </td>
+                        <td style="text-align:center;">
+                            <div class="row-actions" style="justify-content:center;">
+                                <a href="/CustomerReceivable?customerId=@cust.Id" title="View Receivable Statement">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+                                </a>
+                                <button type="button" title="Print Statement" onclick="AarhatApp.printLedgerStatement('@cust.Name.Replace("'", "\\'") (Customer)', '2026-08-01', '2026-08-31', @cust.ReceivableBalance, 0, @cust.ReceivableBalance, [])">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                                </button>
+                                <button type="button" title="Edit Supplier" onclick="editCustomer(@cust.Id, '@cust.Name.Replace("'", "\\'")', '@cust.Phone', '@cust.City.Replace("'", "\\'")', '@cust.Cnic', '@cust.Status')">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button type="button" title="Delete Supplier" style="color:var(--red-text);" onclick="deleteCustomer(@cust.Id, '@cust.Name.Replace("'", "\\'")')">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function filterCustomerTable() {
+    const input = document.getElementById('custSearchInput');
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll('#customerTable tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+
+function openAddCustomerModal() {
+    document.getElementById('custFormId').value = '0';
+    document.getElementById('custName').value = '';
+    document.getElementById('custPhone').value = '';
+    document.getElementById('custCity').value = '';
+    document.getElementById('custCnic').value = '';
+    document.getElementById('custFormTitle').innerText = 'Add Supplier';
+    document.getElementById('btnSaveCustomer').innerText = 'Save Supplier';
+
+    const statusSel = document.getElementById('custStatus');
+    if (statusSel) {
+        if (statusSel.tomselect) statusSel.tomselect.setValue('Active');
+        else statusSel.value = 'Active';
+    }
+
+    const form = document.getElementById('customerForm');
+    form.style.display = 'block';
+    window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+}
+
+function editCustomer(id, name, phone, city, cnic, status) {
+    document.getElementById('custFormId').value = id;
+    document.getElementById('custName').value = name || '';
+    document.getElementById('custPhone').value = (phone === '-' ? '' : phone);
+    document.getElementById('custCity').value = (city === '-' ? '' : city);
+    document.getElementById('custCnic').value = (cnic === '-' ? '' : cnic);
+    document.getElementById('custFormTitle').innerText = 'Edit Supplier';
+    document.getElementById('btnSaveCustomer').innerText = 'Update Supplier';
+
+    const statusSel = document.getElementById('custStatus');
+    if (statusSel) {
+        if (statusSel.tomselect) statusSel.tomselect.setValue(status || 'Active');
+        else statusSel.value = status || 'Active';
+    }
+
+    const form = document.getElementById('customerForm');
+    form.style.display = 'block';
+    window.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+}
+
+function cancelCustomerForm() {
+    document.getElementById('customerForm').style.display = 'none';
+}
+
+function deleteCustomer(id, name) {
+    if (confirm(`Are you sure you want to delete Supplier '${name}'? Linked Chart of Accounts head will also be removed.`)) {
+        document.getElementById('deleteCustomerId').value = id;
+        document.getElementById('deleteCustomerForm').submit();
+    }
+}
+</script>

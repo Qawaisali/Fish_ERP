@@ -1,0 +1,1422 @@
+@model ERP_Core.Dtos.SupplierPayableViewModel
+
+@{
+    ViewData["Title"] = "Farmer Payable";
+    ViewData["SubTitle"] = "Farmer aur boat wise khareedari (purchases), adaigi (payments) aur baqaya balance report.";
+}
+
+@section Styles {
+    <!-- TomSelect CSS for Searchable Dropdown -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+
+    <style>
+        .filter-bar-modern {
+            background: var(--surface, #132420);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-grid-payable {
+            display: grid;
+            grid-template-columns: 160px 160px minmax(220px, 1fr) 160px auto;
+            gap: 14px;
+            align-items: flex-end;
+        }
+
+        @@media (max-width: 992px) {
+            .filter-grid-payable {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .filter-grid-payable {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Stat Cards Matching Expense Voucher report-stat-row */
+        .stat-grid-payable {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        @@media (max-width: 992px) {
+            .stat-grid-payable {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .stat-grid-payable {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box-modern {
+            background: linear-gradient(135deg, var(--surface, #132420) 0%, var(--surface2, #1A2F2A) 100%);
+            border: 1px solid var(--border, #2C4740);
+            border-radius: var(--radius, 10px);
+            padding: 16px 18px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-box-modern:hover {
+            transform: translateY(-2px);
+            border-color: var(--brass, #C68A3E);
+        }
+
+        .stat-box-modern .stat-lbl {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-dim, #9FB6AF);
+            margin-bottom: 6px;
+        }
+
+        .stat-box-modern .stat-num {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text, #EAF1EE);
+            line-height: 1.1;
+        }
+
+        .stat-box-modern .stat-sub {
+            font-size: 11.5px;
+            color: var(--text-faint, #5E7873);
+            margin-top: 4px;
+        }
+
+        .stat-glow-green .stat-num { color: var(--green-text, #6FE0A0); }
+        .stat-glow-red .stat-num { color: var(--red-text, #FF8A7A); }
+        .stat-glow-brass .stat-num { color: var(--brass-text, #E3AE66); }
+
+        /* Party Header Banner */
+        .party-banner {
+            background: rgba(198, 138, 62, 0.08);
+            border: 1px solid rgba(198, 138, 62, 0.35);
+            border-radius: var(--radius, 10px);
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* Outstanding Balance Summary Box at bottom of Report */
+        .outstanding-box {
+            background: linear-gradient(135deg, rgba(198,138,62,0.12) 0%, rgba(198,138,62,0.04) 100%);
+            border: 1px solid rgba(198,138,62,0.45);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        /* TomSelect Dark Overrides */
+        .ts-wrapper .ts-control {
+            background-color: var(--surface2, #1A2F2A) !important;
+            border: 1px solid var(--border, #2C4740) !important;
+            color: var(--text, #EAF1EE) !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            min-height: 38px !important;
+            padding: 7px 12px !important;
+        }
+
+        .ts-wrapper.focus .ts-control {
+            border-color: var(--brass, #C68A3E) !important;
+            box-shadow: 0 0 0 2px rgba(198, 138, 62, 0.25) !important;
+        }
+
+        .ts-wrapper .ts-control input {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-wrapper .ts-control .item {
+            color: var(--text, #EAF1EE) !important;
+        }
+
+        .ts-dropdown {
+            background-color: #0E1A17 !important;
+            border: 1px solid rgba(198, 138, 62, 0.4) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+            color: #EAF1EE !important;
+            z-index: 999999 !important;
+        }
+
+        .ts-dropdown .option {
+            color: #EAF1EE !important;
+            padding: 9px 14px !important;
+            font-size: 13px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .ts-dropdown .option.active, .ts-dropdown .option:hover {
+            background-color: #1B302B !important;
+            color: #E3AE66 !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #2F6F5E !important;
+            color: #FFFFFF !important;
+            font-weight: 600 !important;
+        }
+
+        /* Accordion Sub-Farmer Styles */
+        .btn-supplier-accordion {
+            background: rgba(198, 138, 62, 0.15);
+            border: 1px solid rgba(198, 138, 62, 0.35);
+            color: var(--brass-text, #E3AE66);
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .btn-supplier-accordion:hover, .btn-supplier-accordion.active-accordion-btn {
+            background: var(--brass, #C68A3E) !important;
+            color: #0E1A17 !important;
+            border-color: var(--brass, #C68A3E) !important;
+        }
+        .btn-child-toggle {
+            background: rgba(198, 138, 62, 0.15) !important;
+            border: 1px solid rgba(198, 138, 62, 0.4) !important;
+            color: var(--brass-text, #E3AE66) !important;
+            border-radius: 6px !important;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-child-toggle:hover, .btn-child-toggle.active-child-btn {
+            background: var(--brass, #C68A3E) !important;
+            color: #0E1A17 !important;
+            border-color: var(--brass, #C68A3E) !important;
+        }
+        .accordion-arrow {
+            transition: transform 0.2s ease;
+        }
+        tr.shown-parent {
+            background: rgba(198, 138, 62, 0.05) !important;
+        }
+        tr.supplier-child-row > td {
+            padding: 0 !important;
+            border-top: none !important;
+            background: rgba(10, 20, 18, 0.75) !important;
+        }
+    </style>
+}
+
+<!-- Page Toolbar -->
+<div class="toolbar" style="margin-bottom:14px;">
+    <div>
+        <div class="section-title" style="margin-bottom:2px;">Farmer Payable</div>
+        <div class="section-desc" style="margin-bottom:0;">
+            Farmer aur boat wise khareedari (purchases), adaigi (payments) aur baqaya balance summary.
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div style="background:var(--green-dim);color:var(--green-text);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid var(--border);">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background:rgba(239,68,68,0.15);color:var(--red-text,#ef4444);padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:18px;border:1px solid rgba(239,68,68,0.3);">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<!-- Subtabs (Payables Summary vs Farmer Ledger Report) Matching Expense Voucher -->
+<div class="subtabs no-print" style="margin-bottom:16px;">
+    <button type="button" class="subtab-btn @(Model.IsSingleSupplierView ? "" : "active")" id="spTabSummaryBtn" onclick="switchSpTab('summary')">
+        Payables Summary
+    </button>
+    <button type="button" class="subtab-btn @(Model.IsSingleSupplierView ? "active" : "")" id="spTabReportBtn" onclick="switchSpTab('report')">
+        Farmer Ledger Report
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- FILTER BAR (From Date, To Date, Farmer Dropdown)                        -->
+<!-- ========================================================================= -->
+<div class="filter-bar-modern no-print">
+    <form method="get" asp-controller="SupplierPayable" asp-action="Index" id="supFilterForm">
+        <div class="filter-grid-payable">
+            <!-- Field 1: From Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">From Date</label>
+                <input type="date" name="fromDate" id="filterFromDate" value="@Model.FromDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 2: To Date -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">To Date</label>
+                <input type="date" name="toDate" id="filterToDate" value="@Model.ToDate" required
+                       style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;" />
+            </div>
+
+            <!-- Field 3: Supplier Dropdown -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Farmer (Boat / Farmer)</label>
+                <select name="supplierId" id="filterSupplierSelect" class="searchable-select">
+                    <option value="">-- All Farmers (Summary) --</option>
+                    @foreach (var s in Model.SuppliersList)
+                    {
+                        <option value="@s.Id" selected="@(Model.SelectedSupplierId == s.Id)">
+                            @s.DisplayText
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Field 4: Transaction Type Filter -->
+            <div class="field" style="margin:0;">
+                <label style="font-size:11.5px;color:var(--text-dim);font-weight:600;margin-bottom:4px;display:block;">Transaction Type</label>
+                <select name="type" id="filterTypeSelect" style="height:38px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;width:100%;">
+                    @foreach (var t in Model.AvailableTypes)
+                    {
+                        var isSel = (string.IsNullOrEmpty(Model.SelectedType) && (t == "All" || t == "-- All Types --")) ||
+                                    string.Equals(Model.SelectedType, t, StringComparison.OrdinalIgnoreCase);
+                        <option value="@(t == "All" ? "" : t)" selected="@isSel">
+                            @(t == "All" ? "-- All Types --" : t)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Filter Actions -->
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn brass" style="height:38px;padding:0 18px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    Filter Report
+                </button>
+                <a href="/SupplierPayable" class="btn ghost" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;">
+                    Reset
+                </a>
+                <a href="/SupplierDistribution" class="btn btn-outline-secondary" style="height:38px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center;gap:6px;border-color:var(--border);color:var(--brass);">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                    Child Distribution
+                </a>
+                <button type="button" class="btn brass" id="btnSupPrintReport" onclick="handleSupplierPrint()" style="height:38px;padding:0 16px;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                    Print
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STAT CARDS (OPENING BAL, PURCHASES, PAID, OUTSTANDING BALANCE)            -->
+<!-- ========================================================================= -->
+<div class="stat-grid-payable">
+    <div class="stat-box-modern">
+        <div class="stat-lbl">
+            @(Model.IsSingleSupplierView ? "OPENING BALANCE" : "TOTAL CUSTOMERS")
+        </div>
+        <div class="stat-num tnum">
+            @(Model.IsSingleSupplierView ? $"Rs {Model.OpeningBalance:N0}" : $"{Model.TotalSuppliersCount} Boats / Farms")
+        </div>
+        <div class="stat-sub">
+            @(Model.IsSingleSupplierView ? $"Before {DateTime.Parse(Model.FromDate):dd-MMM-yyyy}" : "Active Registered Accounts")
+        </div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-red">
+        <div class="stat-lbl">TOTAL PURCHASES (CREDIT)</div>
+        <div class="stat-num tnum">Rs @Model.TotalPurchased.ToString("N0")</div>
+        <div class="stat-sub">Fish Catch During Period</div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-green">
+        <div class="stat-lbl">TOTAL PAID (DEBIT)</div>
+        <div class="stat-num tnum">Rs @Model.TotalPaid.ToString("N0")</div>
+        <div class="stat-sub">Payments to Farmer</div>
+    </div>
+
+    <div class="stat-box-modern stat-glow-brass">
+        <div class="stat-lbl">OUTSTANDING BALANCE</div>
+        <div class="stat-num tnum font-weight-bold" style="color:var(--brass-text);">
+            Rs @Model.TotalPayableSum.ToString("N0")
+        </div>
+        <div class="stat-sub">Final Net Payable Due</div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 1: ALL FarmerS PAYABLES SUMMARY                                  -->
+<!-- ========================================================================= -->
+<div id="spSummaryView" style="display:@(Model.IsSingleSupplierView ? "none" : "block");">
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div>
+                <h3 style="font-size:15px;font-weight:600;margin:0;color:var(--text);">All Farmer Payables Summary</h3>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Period: @DateTime.Parse(Model.FromDate).ToString("dd-MMM") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")</div>
+            </div>
+            <button type="button" class="btn brass btn-sm" onclick="printSupplierSummaryReportModal()" style="height:32px;padding:0 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>
+                Print Summary Report
+            </button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="dynamic-table" id="allSuppliersTable">
+                <thead>
+                    <tr>
+                        <th style="width:45px;text-align:center;">#</th>
+                        <th>Farmer Name</th>
+                        <th>Jetty / Village</th>
+                        <th>Phone</th>
+                        <th style="text-align:right;">Opening Bal</th>
+                        <th style="text-align:right;">Gross Catch</th>
+                        <th style="text-align:right;">Paid (Adaigi)</th>
+                        <th style="text-align:right;">Net Payable</th>
+                        <th style="text-align:center;">Status</th>
+                        <th class="no-sort" style="min-width:170px;text-align:center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Payables != null && Model.Payables.Any())
+                    {
+                        int idx = 1;
+                        foreach (var s in Model.Payables)
+                        {
+                            <tr data-supplier-id="@s.SupplierId" class="@(s.HasChildren ? "has-children-row" : "")">
+                                <td style="text-align:center;color:var(--text-dim);font-weight:600;">@idx</td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        @if (s.HasChildren)
+                                        {
+                                            <button type="button" class="btn-supplier-accordion" onclick="toggleSupplierAccordion(this, @s.SupplierId)" title="Toggle @s.Children.Count Sub-Suppliers/Employees">
+                                                <svg class="accordion-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+                                            </button>
+                                        }
+                                        <div>
+                                            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;">
+                                                <strong>@s.SupplierName</strong>
+                                                @if (s.HasChildren)
+                                                {
+                                                    <span class="badge" style="background:rgba(198,138,62,0.18);color:var(--brass-text);border:1px solid rgba(198,138,62,0.35);font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600;cursor:pointer;" onclick="toggleSupplierAccordion(this.closest('tr').querySelector('.btn-supplier-accordion'), @s.SupplierId)">
+                                                        @s.Children.Count Child@(s.Children.Count > 1 ? "ren" : "")
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(s.AccountCode))
+                                            {
+                                                <div style="font-size:11px;color:var(--brass-text);">@s.AccountCode</div>
+                                            }
+                                            @if (s.HasChildren)
+                                            {
+                                                <!-- Searchable text for DataTables to find child records -->
+                                                <span style="display:none;">@string.Join(" ", s.Children.Select(c => c.SupplierName + " " + c.AccountCode + " " + c.Phone + " " + c.VillageOrJetty))</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    @if (s.HasChildren)
+                                    {
+                                        <!-- Hidden Accordion Child Template -->
+                                        <div id="child_tpl_@s.SupplierId" style="display:none;">
+                                            <div style="margin:8px 12px 12px 28px;background:rgba(14,26,23,0.95);border:1px solid rgba(198,138,62,0.35);border-left:3px solid var(--brass);border-radius:8px;padding:12px 14px;box-shadow:inset 0 1px 4px rgba(0,0,0,0.5);">
+                                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);flex-wrap:wrap;gap:6px;">
+                                                    <div style="font-size:12px;font-weight:700;color:var(--brass-text);display:flex;align-items:center;gap:6px;">
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                        Sub-Farmers / Partners under @s.SupplierName (@s.Children.Count)
+                                                    </div>
+                                                    <div style="display:flex;align-items:center;gap:10px;">
+                                                        <div style="font-size:11px;color:var(--text-dim);">
+                                                            Parent: <strong>@s.SupplierName</strong>
+                                                        </div>
+                                                        <button type="button" class="btn brass btn-sm" onclick="printParentChildSummary(@s.SupplierId)" style="padding:3px 10px;font-size:11px;display:inline-flex;align-items:center;gap:4px;border-radius:6px;font-weight:600;" title="Print Partner Summary">
+                                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                                            Print Partner Summary
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div style="overflow-x:auto;">
+                                                    <table class="table table-sm" style="margin:0;width:100%;font-size:11.5px;color:var(--text);">
+                                                        <thead>
+                                                            <tr style="color:var(--text-dim);border-bottom:1px solid rgba(255,255,255,0.08);font-size:10.5px;text-transform:uppercase;">
+                                                                <th style="width:30px;text-align:center;">#</th>
+                                                                <th>Sub-Farmer / Employee Name</th>
+                                                                <th>Jetty / Village</th>
+                                                                <th>Phone</th>
+                                                                <th style="text-align:right;">Opening Bal</th>
+                                                                <th style="text-align:right;">Gross Catch</th>
+                                                                <th style="text-align:right;">Paid (Adaigi)</th>
+                                                                <th style="text-align:right;">Net Payable</th>
+                                                                <th style="text-align:center;">Status</th>
+                                                                <th style="text-align:center;width:95px;">Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @for (int cIdx = 0; cIdx < s.Children.Count; cIdx++)
+                                                            {
+                                                                var c = s.Children[cIdx];
+                                                                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                                                                    <td style="text-align:center;color:var(--text-dim);">@(cIdx + 1)</td>
+                                                                    <td>
+                                                                        <div style="font-weight:600;color:var(--text);">↳ @c.SupplierName</div>
+                                                                        @if (!string.IsNullOrEmpty(c.AccountCode))
+                                                                        {
+                                                                            <div style="font-size:10px;color:var(--brass-text);font-family:monospace;">@c.AccountCode</div>
+                                                                        }
+                                                                    </td>
+                                                                    <td>@c.VillageOrJetty</td>
+                                                                    <td>@c.Phone</td>
+                                                                    <td class="tnum" style="text-align:right;color:var(--text-dim);">Rs @c.OpeningBalance.ToString("N0")</td>
+                                                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">Rs @c.TotalSold.ToString("N0")</td>
+                                                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">Rs @c.TotalPaid.ToString("N0")</td>
+                                                                    <td class="tnum font-weight-bold" style="text-align:right;color:@(c.PayableBalance > 0 ? "var(--red-text)" : (c.PayableBalance < 0 ? "var(--green-text)" : "var(--text-dim)"));">
+                                                                        Rs @c.PayableBalance.ToString("N0")
+                                                                    </td>
+                                                                    <td style="text-align:center;">
+                                                                        @if (c.Status == "Payable" || c.Status == "Due")
+                                                                        {
+                                                                            <span class="badge badge-amber" style="font-size:10px;padding:2px 5px;">Payable</span>
+                                                                        }
+                                                                        else if (c.Status == "Advance")
+                                                                        {
+                                                                            <span class="badge badge-green" style="font-size:10px;padding:2px 5px;">Advance</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge badge-gray" style="font-size:10px;padding:2px 5px;">Clear</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td style="text-align:center;">
+                                                                        <a href="/SupplierPayable?supplierId=@c.SupplierId&fromDate=@Model.FromDate&toDate=@Model.ToDate@(string.IsNullOrEmpty(Model.SelectedType) ? "" : $"&type={Model.SelectedType}")"
+                                                                           class="btn ghost btn-sm" style="padding:2px 8px;font-size:10.5px;" title="View Sub-Supplier Ledger">
+                                                                            View Ledger
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </td>
+                                <td>@s.VillageOrJetty</td>
+                                <td>@s.Phone</td>
+                                <td class="tnum" style="text-align:right;color:var(--text-dim);">Rs @s.OpeningBalance.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">Rs @s.TotalSold.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">Rs @s.TotalPaid.ToString("N0")</td>
+                                <td class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:@(s.PayableBalance > 0 ? "var(--red-text)" : (s.PayableBalance < 0 ? "var(--green-text)" : "var(--text-dim)"));">
+                                    Rs @s.PayableBalance.ToString("N0")
+                                </td>
+                                <td style="text-align:center;">
+                                    @if (s.Status == "Payable" || s.Status == "Due")
+                                    {
+                                        <span class="badge badge-amber" style="font-size:11px;">Payable</span>
+                                    }
+                                    else if (s.Status == "Advance")
+                                    {
+                                        <span class="badge badge-green" style="font-size:11px;">Advance</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-gray" style="font-size:11px;">Clear</span>
+                                    }
+                                </td>
+                                <td style="text-align:center;">
+                                    <div style="display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+                                        <a href="/SupplierPayable?supplierId=@s.SupplierId&fromDate=@Model.FromDate&toDate=@Model.ToDate@(string.IsNullOrEmpty(Model.SelectedType) ? "" : $"&type={Model.SelectedType}")"
+                                           class="btn ghost btn-sm" style="padding:4px 9px;font-size:11.5px;white-space:nowrap;" title="View Farmer Ledger Report">
+                                            View Ledger
+                                        </a>
+                                        @if (s.HasChildren)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-child-toggle" onclick="toggleSupplierAccordion(this, @s.SupplierId)" style="padding:4px 9px;font-size:11.5px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font-weight:600;" title="View Partner Balances (@s.Children.Count)">
+                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                <span>View Child Balances</span>
+                                            </button>
+                                            <button type="button" class="btn ghost btn-sm" onclick="printParentChildSummary(@s.SupplierId)" style="padding:4px 8px;font-size:11.5px;color:var(--brass-text);border:1px solid rgba(198,138,62,0.4);display:inline-flex;align-items:center;gap:4px;" title="Print Partner Summary">
+                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                                <span>Print</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    }
+                </tbody>
+                <tfoot>
+                    @{
+                        var allItemsFlat = new List<ERP_Core.Dtos.SupplierPayableItemDto>();
+                        if (Model.Payables != null)
+                        {
+                            foreach (var p in Model.Payables)
+                            {
+                                allItemsFlat.Add(p);
+                                if (p.Children != null && p.Children.Any())
+                                {
+                                    allItemsFlat.AddRange(p.Children);
+                                }
+                            }
+                        }
+                        var sumOpening = allItemsFlat.Sum(p => p.OpeningBalance);
+                        var sumPurchased = allItemsFlat.Sum(p => p.TotalSold);
+                        var sumPaid = allItemsFlat.Sum(p => p.TotalPaid);
+                        var sumBalance = allItemsFlat.Sum(p => p.PayableBalance);
+                    }
+                    <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                        <th style="padding:12px 14px !important;text-align:center;"></th>
+                        <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;">Total Summary</th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">Rs @sumOpening.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">Rs @sumPurchased.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @sumPaid.ToString("N0")</th>
+                        <th class="tnum font-weight-bold" style="text-align:right;font-size:13.5px;color:var(--brass-text);padding:12px 14px !important;">Rs @sumBalance.ToString("N0")</th>
+                        <th style="padding:12px 14px !important;"></th>
+                        <th style="padding:12px 14px !important;"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SUBTAB 2: Farmer LEDGER REPORT (DETAILED STATEMENT VIEW)                -->
+<!-- ========================================================================= -->
+<div id="spReportView" style="display:@(Model.IsSingleSupplierView ? "block" : "none");">
+    <div class="card">
+        @if (Model.IsSingleSupplierView)
+        {
+            <!-- Party Banner -->
+            <div class="party-banner">
+                <div>
+                    <h3 style="font-size:16px;font-weight:700;color:var(--brass-text);margin:0;">
+                        @Model.SelectedSupplierName
+                    </h3>
+                    <div style="font-size:12px;color:var(--text-dim);margin-top:3px;">
+                        Jetty/Village: <strong>@Model.SelectedSupplierVillage</strong> &nbsp;|&nbsp;
+                        Phone: <strong>@Model.SelectedSupplierPhone</strong> &nbsp;|&nbsp;
+                        COA Code: <span class="tcode">@Model.SelectedSupplierAccountCode</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11.5px;color:var(--text-dim);">Statement Period:</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">
+                        @DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") &mdash; @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Ledger Statement Table -->
+            <div class="table-wrap">
+                <table class="dynamic-table" id="supplierStatementTable">
+                    <thead>
+                        <tr>
+                            <th style="width:110px;">Date</th>
+                            <th style="width:120px;">Voucher / Ref #</th>
+                            <th style="width:100px;">Invoice #</th>
+                            <th>Description / Particulars</th>
+                            <th style="width:130px;text-align:right;">Paid / Adaigi (Dr)</th>
+                            <th style="width:130px;text-align:right;">Catch / Bill (Cr)</th>
+                            <th style="width:140px;text-align:right;">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Opening Balance Line -->
+                        <tr style="background:rgba(255,255,255,0.02);font-weight:600;">
+                            <td>@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")</td>
+                            <td><span class="badge badge-gray">OPENING</span></td>
+                            <td>-</td>
+                            <td>Opening Balance Brought Forward</td>
+                            <td style="text-align:right;">-</td>
+                            <td style="text-align:right;">-</td>
+                            <td class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);">
+                                Rs @Model.OpeningBalance.ToString("N2")
+                            </td>
+                        </tr>
+
+                        @if (Model.StatementTransactions != null && Model.StatementTransactions.Any())
+                        {
+                            foreach (var tx in Model.StatementTransactions)
+                            {
+                                <tr>
+                                    <td>@tx.DateFormatted</td>
+                                    <td>
+                                        <span class="tcode" style="font-weight:600;color:var(--brass-text);">@(tx.VoucherCode ?? tx.RefNo)</span>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(tx.InvoiceNo) ? "-" : tx.InvoiceNo)</td>
+                                    <td style="white-space:normal;word-break:break-word;line-height:1.4;">@tx.Description</td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);">
+                                        @(tx.Debit > 0 ? $"Rs {tx.Debit:N2}" : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);">
+                                        @(tx.Credit > 0 ? $"Rs {tx.Credit:N2}" : "-")
+                                    </td>
+                                    <td class="tnum font-weight-bold" style="text-align:right;color:@(tx.Balance > 0 ? "var(--red-text)" : (tx.Balance < 0 ? "var(--green-text)" : "var(--text-dim)"));">
+                                        Rs @tx.Balance.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr style="font-weight:700;background:var(--surface2);border-top:2px solid var(--border);">
+                            <th style="color:var(--text);font-weight:700;padding:12px 14px !important;text-align:left;">Totals</th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="padding:12px 14px !important;"></th>
+                            <th style="text-align:right;color:var(--text-dim);padding:12px 14px !important;">Period Totals &amp; Closing Balance:</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--green-text);padding:12px 14px !important;">Rs @Model.TotalPaid.ToString("N2")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--red-text);padding:12px 14px !important;">Rs @Model.TotalPurchased.ToString("N2")</th>
+                            <th class="tnum font-weight-bold" style="text-align:right;color:var(--brass-text);font-size:13.5px;padding:12px 14px !important;">Rs @Model.TotalPayableSum.ToString("N2")</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Outstanding Balance Highlight Banner at the End of Report -->
+            <div class="outstanding-box">
+                <div>
+                    <div style="font-size:13px;color:var(--text);font-weight:600;">
+                        Statement Summary: @Model.SelectedSupplierName
+                    </div>
+                    <div style="font-size:11.5px;color:var(--text-dim);margin-top:2px;">
+                        Period: @DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy") to @DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")
+                    </div>
+                </div>
+                <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:600;display:block;">Total Advance:</span>
+                        <strong style="color:var(--green-text);font-size:14px;" class="tnum">Rs @Model.TotalAdvance.ToString("N2")</strong>
+                    </div>
+                    <div>
+                        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:600;display:block;">Total Martey:</span>
+                        <strong style="color:#c084fc;font-size:14px;" class="tnum">Rs @Model.TotalMartey.ToString("N2")</strong>
+                    </div>
+                    <div>
+                        <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;font-weight:600;display:block;">Total Bill Amount:</span>
+                        <strong style="color:var(--red-text);font-size:14px;" class="tnum">Rs @Model.TotalBillAmount.ToString("N2")</strong>
+                    </div>
+                    <div style="padding:8px 16px;background:rgba(198,138,62,0.18);border:1px solid var(--brass);border-radius:8px;text-align:right;">
+                        <span style="font-size:11px;color:var(--brass-text);font-weight:700;text-transform:uppercase;display:block;letter-spacing:0.5px;">Outstanding Balance:</span>
+                        <strong style="font-size:18px;color:var(--brass-text);" class="tnum">Rs @Model.TotalPayableSum.ToString("N2")</strong>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- No Supplier Selected Prompt -->
+            <div style="text-align:center;padding:48px 24px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(198,138,62,0.1);display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid rgba(198,138,62,0.3);">
+                    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brass-text);">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <h3 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;">Koi Farmer Select Nahi Hai</h3>
+                <p style="font-size:13px;color:var(--text-dim);max-width:440px;margin:0 auto 18px;">
+                    Upar diye gaye dropdown se koi <strong>Farmer (Boat / Farmer)</strong> select karein aur <strong>Filter Report</strong> par click karein, ya <em>Payables Summary</em> tab me kisi bhi Farmer ke aage <em>View Ledger</em> dabayein.
+                </p>
+                <button type="button" class="btn brass" onclick="switchSpTab('summary')">
+                    Go to Payables Summary
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <!-- TomSelect JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        // Subtab Navigation
+        function switchSpTab(tab) {
+            const summaryView = document.getElementById('spSummaryView');
+            const reportView = document.getElementById('spReportView');
+            const btnSummary = document.getElementById('spTabSummaryBtn');
+            const btnReport = document.getElementById('spTabReportBtn');
+
+            if (tab === 'summary') {
+                if (summaryView) summaryView.style.display = 'block';
+                if (reportView) reportView.style.display = 'none';
+                if (btnSummary) btnSummary.classList.add('active');
+                if (btnReport) btnReport.classList.remove('active');
+            } else {
+                if (summaryView) summaryView.style.display = 'none';
+                if (reportView) reportView.style.display = 'block';
+                if (btnSummary) btnSummary.classList.remove('active');
+                if (btnReport) btnReport.classList.add('active');
+            }
+
+            // Adjust DataTables column alignments after tab switch
+            setTimeout(function () {
+                if (window.jQuery && jQuery.fn.DataTable) {
+                    jQuery('.dynamic-table').each(function () {
+                        if (jQuery.fn.DataTable.isDataTable(this)) {
+                            jQuery(this).DataTable().columns.adjust().draw();
+                        }
+                    });
+                }
+            }, 80);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Searchable Dropdown
+            const selectEl = document.getElementById('filterSupplierSelect');
+            if (selectEl && typeof TomSelect !== 'undefined') {
+                const ts = new TomSelect(selectEl, {
+                    placeholder: '-- All Suppliers (Summary) --',
+                    allowEmptyOption: true,
+                    create: false,
+                    maxItems: 1,
+                    plugins: ['dropdown_input']
+                });
+            }
+        });
+
+        // Dispatcher for Print Button in Filter Bar
+        function handleSupplierPrint() {
+            const isSingle = @(Model.IsSingleSupplierView ? "true" : "false");
+            const reportView = document.getElementById('spReportView');
+            const isReportTab = reportView && reportView.style.display !== 'none';
+
+            if (isSingle && isReportTab) {
+                printSupplierLedgerReport();
+            } else {
+                printSupplierSummaryReportModal();
+            }
+        }
+
+        // Accordion Toggle for Child Suppliers
+        function toggleSupplierAccordion(triggerEl, supplierId) {
+            const $trigger = $(triggerEl);
+            const $tr = $trigger.closest('tr');
+            const tableEl = $trigger.closest('table')[0];
+            const $arrowBtn = $tr.find('.btn-supplier-accordion');
+            const $actionChildBtn = $tr.find('.btn-child-toggle');
+
+            if (window.jQuery && jQuery.fn.DataTable && jQuery.fn.DataTable.isDataTable(tableEl)) {
+                const dt = jQuery(tableEl).DataTable();
+                const row = dt.row($tr);
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    $tr.removeClass('shown-parent');
+                    $arrowBtn.removeClass('active-accordion-btn').find('.accordion-arrow').css('transform', 'rotate(0deg)');
+                    $actionChildBtn.removeClass('active-child-btn');
+                } else {
+                    const tpl = document.getElementById('child_tpl_' + supplierId);
+                    if (tpl) {
+                        row.child(tpl.innerHTML, 'supplier-child-row').show();
+                        $tr.addClass('shown-parent');
+                        $arrowBtn.addClass('active-accordion-btn').find('.accordion-arrow').css('transform', 'rotate(180deg)');
+                        $actionChildBtn.addClass('active-child-btn');
+                    }
+                }
+            } else {
+                // Fallback for standard HTML table
+                let $next = $tr.next('.supplier-child-row');
+                if ($next.length) {
+                    $next.toggle();
+                    const isVisible = $next.is(':visible');
+                    $tr.toggleClass('shown-parent', isVisible);
+                    $arrowBtn.toggleClass('active-accordion-btn', isVisible).find('.accordion-arrow').css('transform', isVisible ? 'rotate(180deg)' : 'rotate(0deg)');
+                    $actionChildBtn.toggleClass('active-child-btn', isVisible);
+                } else {
+                    const tpl = document.getElementById('child_tpl_' + supplierId);
+                    if (tpl) {
+                        const childTr = jQuery(`<tr class="supplier-child-row"><td colspan="9" style="padding:0;border:none;">${tpl.innerHTML}</td></tr>`);
+                        $tr.after(childTr);
+                        $tr.addClass('shown-parent');
+                        $arrowBtn.addClass('active-accordion-btn').find('.accordion-arrow').css('transform', 'rotate(180deg)');
+                        $actionChildBtn.addClass('active-child-btn');
+                    }
+                }
+            }
+        }
+
+        // Parent Suppliers with Children Data Dictionary for Instant Print
+        const parentSuppliersMap = {
+            @if (Model.Payables != null)
+            {
+                foreach (var s in Model.Payables.Where(p => p.HasChildren))
+                {
+                    <text>
+                    "@s.SupplierId": {
+                        id: @s.SupplierId,
+                        name: "@s.SupplierName.Replace("'", "\\'")",
+                        code: "@s.AccountCode",
+                        phone: "@(string.IsNullOrWhiteSpace(s.Phone) || s.Phone == "0" ? "-" : s.Phone)",
+                        village: "@(string.IsNullOrWhiteSpace(s.VillageOrJetty) ? "-" : s.VillageOrJetty.Replace("'", "\\'"))",
+                        opening: @s.OpeningBalance,
+                        gross: @s.TotalSold,
+                        paid: @s.TotalPaid,
+                        payable: @s.PayableBalance,
+                        status: "@(s.Status == "Payable" || s.Status == "Due" ? "Payable" : (s.Status == "Advance" ? "Advance" : "Clear"))",
+                        children: [
+                            @foreach (var c in s.Children)
+                            {
+                                <text>
+                                {
+                                    id: @c.SupplierId,
+                                    name: "@c.SupplierName.Replace("'", "\\'")",
+                                    code: "@c.AccountCode",
+                                    phone: "@(string.IsNullOrWhiteSpace(c.Phone) || c.Phone == "0" ? "-" : c.Phone)",
+                                    village: "@(string.IsNullOrWhiteSpace(c.VillageOrJetty) ? "-" : c.VillageOrJetty.Replace("'", "\\'"))",
+                                    opening: @c.OpeningBalance,
+                                    gross: @c.TotalSold,
+                                    paid: @c.TotalPaid,
+                                    payable: @c.PayableBalance,
+                                    status: "@(c.Status == "Payable" || c.Status == "Due" ? "Payable" : (c.Status == "Advance" ? "Advance" : "Clear"))"
+                                },
+                                </text>
+                            }
+                        ]
+                    },
+                    </text>
+                }
+            }
+        };
+
+        // Print Specific Farmer's Partners Summary (Excludes Main Parent Row)
+        function printParentChildSummary(supplierId) {
+            const data = parentSuppliersMap[supplierId];
+            if (!data) {
+                alert("Partner summary data not found for this farmer.");
+                return;
+            }
+
+            const fromDate = '@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")';
+            const toDate = '@DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")';
+            const compName = '@(Model.CompanyName ?? "ZAHID HUSSAIN & SONS")';
+
+            let totalOpening = 0;
+            let totalGross = 0;
+            let totalPaid = 0;
+            let totalPayable = 0;
+
+            let rowsHtml = '';
+            (data.children || []).forEach((c, idx) => {
+                totalOpening += c.opening;
+                totalGross += c.gross;
+                totalPaid += c.paid;
+                totalPayable += c.payable;
+
+                rowsHtml += `
+                    <tr style="background:${idx % 2 === 0 ? '#fff' : '#f9faf9'};">
+                        <td class="sup-center" style="font-size:10px;padding:6px 2px;font-weight:600;">${idx + 1}</td>
+                        <td class="sup-name" style="font-size:10.5px;padding:6px 6px;">
+                            <div style="font-weight:600;color:#1e3d34;">${c.name} <span style="font-size:8.5px;color:#c68a3e;font-weight:700;">(Partner)</span></div>
+                            ${c.code ? `<div style="font-size:9px;color:#8a5a1e;font-family:monospace;">${c.code}</div>` : ''}
+                        </td>
+                        <td class="sup-name" style="font-size:9.5px;padding:6px 4px;color:#555;">${c.village || '-'}</td>
+                        <td class="sup-center" style="font-size:9.5px;padding:6px 2px;color:#555;">${c.phone || '-'}</td>
+                        <td class="sup-num" style="font-size:9.5px;padding:6px 4px;color:#555;">Rs ${Number(c.opening).toLocaleString('en-US')}</td>
+                        <td class="sup-num" style="font-size:10px;padding:6px 4px;font-weight:600;color:#842029;">Rs ${Number(c.gross).toLocaleString('en-US')}</td>
+                        <td class="sup-num" style="font-size:10px;padding:6px 4px;font-weight:600;color:#0f5132;">Rs ${Number(c.paid).toLocaleString('en-US')}</td>
+                        <td class="sup-num" style="font-size:10.5px;padding:6px 4px;font-weight:700;color:${c.payable > 0 ? '#842029' : (c.payable < 0 ? '#0f5132' : '#333')};">
+                            Rs ${Number(c.payable).toLocaleString('en-US')}
+                        </td>
+                        <td class="sup-center" style="font-size:9.5px;padding:6px 2px;">
+                            <span style="font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid #ddd;font-weight:600;">${c.status || 'Payable'}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sup-summary-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sup-summary-tbl th,
+                    .sup-summary-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sup-summary-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                    }
+                    .sup-summary-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sup-summary-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                        line-height: 1.25 !important;
+                    }
+                    .sup-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sup-center {
+                        text-align: center !important;
+                    }
+                    .sup-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.3 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ${compName}
+                        <div class="sub">Fish Commission Agents · Karachi Fish Harbour</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>PARTNER FARMERS SUMMARY</h2>
+                        <div class="sub">Sub-Accounts Balance Statement under <strong>${data.name}</strong></div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:stretch;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Parent Farmer (Kashti / Boat):</span>
+                        <strong style="font-size:14px;color:#153229;">${data.name} ${data.code ? `(${data.code})` : ''}</strong>
+                        <div style="font-size:11px;color:#555;margin-top:2px;">Jetty: <b>${data.village}</b> &bull; Phone: <b>${data.phone}</b></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Statement Period &amp; Partners:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                        <div style="font-size:11px;color:#8a5a1e;font-weight:700;margin-top:2px;">${(data.children || []).length} Partner Account(s)</div>
+                    </div>
+                </div>
+
+                <table class="sup-summary-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:5%;">#</th>
+                            <th style="width:25%;text-align:left;padding-left:6px !important;">Partner Farmer Name</th>
+                            <th style="width:13%;text-align:left;padding-left:5px !important;">Jetty / Village</th>
+                            <th style="width:11%;">Phone</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Opening Bal</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Gross Catch</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Paid (Adaigi)</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Net Payable</th>
+                            <th style="width:8%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="9" style="text-align:center;padding:16px;">No partner records found.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:left;font-weight:700;padding-left:6px !important;">Total Partners Summary (${(data.children || []).length} Accounts):</td>
+                            <td class="sup-num" style="font-weight:700;">Rs ${Number(totalOpening).toLocaleString('en-US')}</td>
+                            <td class="sup-num" style="font-weight:700;color:#842029;">Rs ${Number(totalGross).toLocaleString('en-US')}</td>
+                            <td class="sup-num" style="font-weight:700;color:#0f5132;">Rs ${Number(totalPaid).toLocaleString('en-US')}</td>
+                            <td class="sup-num" style="font-weight:800;color:#8a5a1e;">Rs ${Number(totalPayable).toLocaleString('en-US')}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:16px;margin-bottom:20px;">
+                    <div style="background:#fff8ec;border:2px solid #c68a3e;border-radius:8px;padding:12px 24px;text-align:right;min-width:320px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:12px;font-weight:800;color:#8a5a1e;letter-spacing:0.5px;">TOTAL PARTNERS NET PAYABLE:</span>
+                        <strong style="font-size:20px;color:#8a5a1e;margin-left:16px;">Rs ${Number(totalPayable).toLocaleString('en-US')}</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:35px;">
+                    <div>Parent Farmer Signature</div>
+                    <div>Verified By</div>
+                    <div>Munshi / Accountant</div>
+                </div>
+
+                <div class="pp-foot" style="margin-top:24px;font-size:10px;color:#777;border-top:1px solid #e2e2e2;padding-top:10px;text-align:center;">
+                    <div>Official computer-generated Aarhat Partner Statement · Zahid Hussain &amp; Sons · Karachi Fish Harbour.</div>
+                    <div style="margin-top:6px;font-size:10px;color:#666;border-top:1px dashed #dedede;padding-top:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px 12px;">
+                        <span>Software Design &amp; Develope: <strong style="color:#222;">ICT Systems PVT Ltd</strong></span>
+                        <span>Mob: <strong style="color:#222;">+92 3313223528</strong></span>
+                        <span>Email: <strong style="color:#222;">sales@ictsystems.com.pk</strong></span>
+                    </div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Partner Farmers Summary — " + data.name, content);
+            } else {
+                const modal = document.getElementById('printModal');
+                const tag = document.getElementById('printModalTag');
+                const body = document.getElementById('printModalBody');
+                if (tag) tag.textContent = "Partner Farmers Summary — " + data.name;
+                if (body) body.innerHTML = content;
+                if (modal) modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // Print All Suppliers Summary Report (Excluding Zero Balance Accounts)
+        function printSupplierSummaryReportModal() {
+            const fromDate = '@DateTime.Parse(Model.FromDate).ToString("dd-MMM-yyyy")';
+            const toDate = '@DateTime.Parse(Model.ToDate).ToString("dd-MMM-yyyy")';
+            const compName = '@(Model.CompanyName ?? "ZAHID HUSSAIN & SONS")';
+
+            let rowsHtml = '';
+            @{
+                var nonZeroPayables = Model.Payables?.Where(p => p.PayableBalance != 0 || (p.HasChildren && p.Children.Any(c => c.PayableBalance != 0))).ToList() ?? new List<ERP_Core.Dtos.SupplierPayableItemDto>();
+                var sumOpening = Model.TotalOpeningBalance;
+                var sumGross = Model.TotalPurchased;
+                var sumPaid = Model.TotalPaid;
+                var sumBalance = Model.TotalPayableSum;
+                int totalBoatsCount = Model.TotalSuppliersCount;
+            }
+
+            @if (nonZeroPayables.Any())
+            {
+                int pIdx = 1;
+                foreach (var s in nonZeroPayables)
+                {
+                    var statusBadge = s.Status == "Payable" || s.Status == "Due" ? "Payable" : (s.Status == "Advance" ? "Advance" : "Clear");
+                    <text>
+                    rowsHtml += `
+                        <tr style="@(s.HasChildren ? "background:#faf8f5;" : "")">
+                            <td class="sup-center" style="font-size:10px;padding:6px 2px;font-weight:600;">@pIdx</td>
+                            <td class="sup-name" style="font-size:10.5px;padding:6px 5px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;font-weight:600;">
+                                    @s.SupplierName.Replace("'", "\\'")
+                                    @if (s.HasChildren)
+                                    {
+                                        <span style="font-size:9px;color:#c68a3e;margin-left:4px;font-weight:700;">(@s.Children.Count Partner@(s.Children.Count > 1 ? "s" : ""))</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(s.AccountCode))
+                                {
+                                    <div style="font-size:9.5px;color:#8a5a1e;font-family:monospace;">@s.AccountCode</div>
+                                }
+                            </td>
+                            <td class="sup-name" style="font-size:10px;padding:6px 4px;">
+                                <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.25;">@(string.IsNullOrWhiteSpace(s.VillageOrJetty) ? "-" : s.VillageOrJetty.Replace("'", "\\'"))</div>
+                            </td>
+                            <td class="sup-center" style="font-size:10px;padding:6px 2px;">@(string.IsNullOrWhiteSpace(s.Phone) || s.Phone == "0" ? "-" : s.Phone)</td>
+                            <td class="sup-num" style="font-size:10px;padding:6px 4px;color:#555;">Rs @s.OpeningBalance.ToString("N0")</td>
+                            <td class="sup-num" style="font-size:10.5px;padding:6px 4px;font-weight:600;color:#842029;">Rs @s.TotalSold.ToString("N0")</td>
+                            <td class="sup-num" style="font-size:10.5px;padding:6px 4px;font-weight:600;color:#0f5132;">Rs @s.TotalPaid.ToString("N0")</td>
+                            <td class="sup-num" style="font-size:10.5px;padding:6px 4px;font-weight:700;color:@(s.PayableBalance > 0 ? "#842029" : (s.PayableBalance < 0 ? "#0f5132" : "#333"));">
+                                Rs @s.PayableBalance.ToString("N0")
+                            </td>
+                            <td class="sup-center" style="font-size:10px;padding:6px 2px;">
+                                <span style="font-size:9.5px;padding:2px 5px;border-radius:4px;border:1px solid #ccc;font-weight:600;">@statusBadge</span>
+                            </td>
+                        </tr>
+                    `;
+                    </text>
+                    if (s.HasChildren)
+                    {
+                        foreach (var c in s.Children)
+                        {
+                            var cStatus = c.Status == "Payable" || c.Status == "Due" ? "Payable" : (c.Status == "Advance" ? "Advance" : "Clear");
+                            <text>
+                            rowsHtml += `
+                                <tr style="background:#f6f9f8;">
+                                    <td class="sup-center" style="font-size:9px;color:#777;">↳</td>
+                                    <td class="sup-name" style="font-size:10px;padding:5px 5px 5px 18px;">
+                                        <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;color:#1e3d34;font-weight:600;">
+                                            ↳ @c.SupplierName.Replace("'", "\\'") <span style="font-size:8.5px;color:#c68a3e;font-weight:700;">(Partner)</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(c.AccountCode))
+                                        {
+                                            <div style="font-size:9px;color:#8a5a1e;font-family:monospace;">@c.AccountCode</div>
+                                        }
+                                    </td>
+                                    <td class="sup-name" style="font-size:9.5px;padding:5px 4px;color:#666;">
+                                        <div style="white-space:normal;word-break:break-word;overflow-wrap:anywhere;line-height:1.25;">@(string.IsNullOrWhiteSpace(c.VillageOrJetty) ? "-" : c.VillageOrJetty.Replace("'", "\\'"))</div>
+                                    </td>
+                                    <td class="sup-center" style="font-size:9.5px;padding:5px 2px;color:#666;">@(string.IsNullOrWhiteSpace(c.Phone) || c.Phone == "0" ? "-" : c.Phone)</td>
+                                    <td class="sup-num" style="font-size:9.5px;padding:5px 4px;color:#666;">Rs @c.OpeningBalance.ToString("N0")</td>
+                                    <td class="sup-num" style="font-size:10px;padding:5px 4px;font-weight:600;color:#842029;">Rs @c.TotalSold.ToString("N0")</td>
+                                    <td class="sup-num" style="font-size:10px;padding:5px 4px;font-weight:600;color:#0f5132;">Rs @c.TotalPaid.ToString("N0")</td>
+                                    <td class="sup-num" style="font-size:10px;padding:5px 4px;font-weight:700;color:@(c.PayableBalance > 0 ? "#842029" : (c.PayableBalance < 0 ? "#0f5132" : "#333"));">
+                                        Rs @c.PayableBalance.ToString("N0")
+                                    </td>
+                                    <td class="sup-center" style="font-size:9.5px;padding:5px 2px;">
+                                        <span style="font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid #ddd;">@cStatus</span>
+                                    </td>
+                                </tr>
+                            `;
+                            </text>
+                        }
+                    }
+                    pIdx++;
+                }
+            }
+
+            const content = `
+                <style>
+                    #printModal .print-paper {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                        padding: 8mm 10mm !important;
+                        box-sizing: border-box !important;
+                    }
+                    #printModal .print-modal-bar {
+                        width: 215mm !important;
+                        max-width: 96vw !important;
+                    }
+                    .sup-summary-tbl {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        box-sizing: border-box !important;
+                        margin-top: 14px;
+                    }
+                    .sup-summary-tbl th,
+                    .sup-summary-tbl td {
+                        box-sizing: border-box !important;
+                        vertical-align: middle !important;
+                    }
+                    .sup-summary-tbl th {
+                        background: #f4f6f5 !important;
+                        color: #153229 !important;
+                        font-weight: 700 !important;
+                        font-size: 10px !important;
+                        text-transform: uppercase !important;
+                        padding: 6px 3px !important;
+                        border: 1px solid #c5d6cf !important;
+                        line-height: 1.2 !important;
+                        text-align: center !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: normal !important;
+                    }
+                    .sup-summary-tbl td {
+                        padding: 6px 4px !important;
+                        font-size: 10.5px !important;
+                        border: 1px solid #dde5e2 !important;
+                        line-height: 1.3 !important;
+                    }
+                    .sup-summary-tbl tfoot td {
+                        background: #f4f8f6 !important;
+                        font-weight: 700 !important;
+                        border-top: 2px solid #153229 !important;
+                        font-size: 11px !important;
+                        padding: 8px 4px !important;
+                        line-height: 1.25 !important;
+                    }
+                    .sup-num {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                        font-variant-numeric: tabular-nums !important;
+                    }
+                    .sup-center {
+                        text-align: center !important;
+                    }
+                    .sup-name {
+                        text-align: left !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        line-height: 1.3 !important;
+                    }
+                    @@media print {
+                        @@page {
+                            size: A4 portrait;
+                            margin: 8mm;
+                        }
+                        body.printing .print-paper {
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            padding: 0 !important;
+                            box-shadow: none !important;
+                        }
+                    }
+                </style>
+
+                <div class="pp-head" style="margin-bottom:12px;padding-bottom:10px;">
+                    <div class="pp-brand">
+                        ${compName}
+                        <div class="sub">Fish Commission Agents · Karachi Fish Harbour</div>
+                    </div>
+                    <div class="pp-doc-title">
+                        <h2>Farmer PAYABLES SUMMARY</h2>
+                        <div class="sub">Outstanding Balances · Zero Balance Accounts Excluded</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#f8faf9;border:1px solid #cce0d8;border-radius:6px;padding:9px 14px;margin-bottom:14px;font-size:12px;">
+                    <div>
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Report Scope:</span>
+                        <strong style="font-size:14px;color:#153229;">All Active Payables (@totalBoatsCount Boats/Farmers)</strong>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:10px;text-transform:uppercase;color:#666;font-weight:700;display:block;">Statement Period:</span>
+                        <strong style="font-size:13px;color:#153229;">${fromDate} to ${toDate}</strong>
+                    </div>
+                </div>
+
+                <table class="sup-summary-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:4%;">#</th>
+                            <th style="width:23%;text-align:left;padding-left:6px !important;">Farmer Name</th>
+                            <th style="width:13%;text-align:left;padding-left:5px !important;">Jetty / Village</th>
+                            <th style="width:10%;">Phone</th>
+                            <th style="width:10%;text-align:right;padding-right:5px !important;">Opening Bal</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Gross Catch</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Paid (Adaigi)</th>
+                            <th style="width:11%;text-align:right;padding-right:5px !important;">Net Payable</th>
+                            <th style="width:7%;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml || `<tr><td colspan="9" style="text-align:center;padding:16px;">No payable records found with outstanding balance in this period.</td></tr>`}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:left;font-weight:700;padding-left:6px !important;">Total Summary (@totalBoatsCount Suppliers):</td>
+                            <td class="sup-num" style="font-weight:700;">Rs @sumOpening.ToString("N0")</td>
+                            <td class="sup-num" style="font-weight:700;color:#842029;">Rs @sumGross.ToString("N0")</td>
+                            <td class="sup-num" style="font-weight:700;color:#0f5132;">Rs @sumPaid.ToString("N0")</td>
+                            <td class="sup-num" style="font-weight:800;color:#8a5a1e;">Rs @sumBalance.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="display:flex;justify-content:flex-end;margin-top:18px;margin-bottom:24px;">
+                    <div style="background:#fff8ec;border:2px solid #c68a3e;border-radius:8px;padding:12px 24px;text-align:right;min-width:320px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;font-weight:800;color:#8a5a1e;letter-spacing:0.5px;">TOTAL NET PAYABLE:</span>
+                        <strong style="font-size:22px;color:#8a5a1e;margin-left:20px;">Rs @sumBalance.ToString("N0")</strong>
+                    </div>
+                </div>
+
+                <div class="pp-sign" style="margin-top:35px;">
+                    <div>Prepared By</div>
+                    <div>Verified By</div>
+                    <div>Accountant</div>
+                </div>
+            `;
+
+            if (window.AarhatApp && window.AarhatApp.openPrintModal) {
+                window.AarhatApp.openPrintModal("Print Farmer Payables Summary", content);
+            } else {
+                window.print();
+            }
+        }
+
+        // Print Farmer Ledger Report
+        function printSupplierLedgerReport() {
+            const isSingle = @(Model.IsSingleSupplierView ? "true" : "false");
+            const fromDate = '@Model.FromDate';
+            const toDate = '@Model.ToDate';
+            const supplierName = '@(Model.SelectedSupplierName ?? "Supplier")';
+            const totalCredit = @Model.TotalPurchased;
+            const totalDebit = @Model.TotalPaid;
+            const closingBal = @Model.TotalPayableSum;
+            const totalAdvance = @Model.TotalAdvance;
+            const totalMartey = @Model.TotalMartey;
+            const totalBillAmount = @Model.TotalBillAmount;
+
+            if (isSingle) {
+                const entries = [];
+                // Add opening balance line
+                entries.push({
+                    date: fromDate,
+                    ref: 'OPENING',
+                    desc: 'Opening Balance Brought Forward',
+                    debit: 0,
+                    credit: 0,
+                    balance: @Model.OpeningBalance
+                });
+
+                @if (Model.StatementTransactions != null)
+                {
+                    foreach (var tx in Model.StatementTransactions)
+                    {
+                        <text>
+                        entries.push({
+                            date: '@tx.DateFormatted',
+                            ref: '@(tx.VoucherCode ?? tx.RefNo)',
+                            desc: '@(tx.Description.Replace("'", "\\'"))@(string.IsNullOrWhiteSpace(tx.InvoiceNo) ? "" : $" (Inv: {tx.InvoiceNo})")',
+                            debit: @tx.Debit,
+                            credit: @tx.Credit,
+                            balance: @tx.Balance
+                        });
+                        </text>
+                    }
+                }
+
+                if (window.AarhatApp && window.AarhatApp.printLedgerStatement) {
+                    window.AarhatApp.printLedgerStatement(supplierName + ' (Supplier)', fromDate, toDate, totalDebit, totalCredit, closingBal, entries, totalAdvance, totalMartey, totalBillAmount);
+                } else {
+                    window.print();
+                }
+            } else {
+                printSupplierSummaryReportModal();
+            }
+        }
+    </script>
+}

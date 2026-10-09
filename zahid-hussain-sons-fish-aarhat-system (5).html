@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zahid Hussain &amp; Sons — Fish Aarhat Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C1917;
+  --surface:#132420;
+  --surface2:#1A2F2A;
+  --surface3:#233D37;
+  --border:#2C4740;
+  --border-soft:#1D332E;
+  --brass:#C68A3E;
+  --brass-dim:#3A2C15;
+  --brass-text:#E3AE66;
+  --teal:#2F9E8C;
+  --teal-dim:#123330;
+  --teal-text:#5FCFBD;
+  --red:#D9584B;
+  --red-dim:#3A1815;
+  --red-text:#FF8A7A;
+  --green:#4FAE7A;
+  --green-dim:#123322;
+  --green-text:#6FE0A0;
+  --text:#EAF1EE;
+  --text-dim:#9FB6AF;
+  --text-faint:#5E7873;
+  --radius:10px;
+  --font-head:'Fraunces',serif;
+  --font-body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+a{color:inherit;text-decoration:none;}
+button{font-family:var(--font-body);cursor:pointer;}
+input,select,textarea{font-family:var(--font-body);}
+svg{width:18px;height:18px;display:block;}
+.tnum{font-variant-numeric:tabular-nums;}
+
+/* ---------- Ledger stamp signature component ---------- */
+.stamp{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);}
+.stamp .ring{width:16px;height:16px;border-radius:50%;border:2px solid var(--text-faint);position:relative;flex:none;}
+.stamp .ring::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--text-faint);}
+.stamp.paid .ring,.stamp.paid .ring::after{border-color:var(--green);background:var(--green);}
+.stamp.paid .ring::after{background:var(--green);}
+.stamp.due .ring{border-color:var(--red);}
+.stamp.due .ring::after{background:var(--red);}
+.stamp.partial .ring{border-color:var(--brass);}
+.stamp.partial .ring::after{background:var(--brass);}
+.stamp span{font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--text-dim);}
+.stamp.paid span{color:var(--green-text);}
+.stamp.due span{color:var(--red-text);}
+.stamp.partial span{color:var(--brass-text);}
+
+/* ---------- Login ---------- */
+#loginScreen{min-height:100vh;display:flex;}
+.login-brand{
+  flex:1.1;background:
+    radial-gradient(circle at 12% 15%, rgba(198,138,62,.14), transparent 45%),
+    radial-gradient(circle at 88% 85%, rgba(47,158,140,.16), transparent 45%),
+    #0A1614;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:52px 58px;position:relative;overflow:hidden;border-right:1px solid var(--border-soft);
+}
+.net-pattern{position:absolute;inset:0;opacity:.5;pointer-events:none;}
+.brand-mark{display:flex;align-items:center;gap:12px;position:relative;z-index:1;}
+.fish-mark{width:38px;height:26px;position:relative;flex:none;}
+.fish-mark svg{width:38px;height:26px;color:var(--brass);}
+.brand-name{font-family:var(--font-head);font-weight:600;font-size:19px;letter-spacing:.01em;}
+.brand-name span{color:var(--brass-text);}
+.brand-tag{font-size:11px;color:var(--text-faint);letter-spacing:.06em;margin-top:2px;}
+.login-hero{position:relative;z-index:1;max-width:440px;}
+.login-hero .eyebrow{font-size:12.5px;color:var(--teal-text);font-weight:600;margin-bottom:14px;}
+.login-hero h1{font-family:var(--font-head);font-weight:600;font-size:36px;line-height:1.25;color:#fff;}
+.login-hero p{margin-top:16px;color:var(--text-dim);font-size:14.5px;line-height:1.7;}
+.hero-stats{display:flex;gap:32px;margin-top:40px;position:relative;z-index:1;}
+.hero-stats div b{display:block;font-family:var(--font-head);font-size:26px;color:#fff;}
+.hero-stats div span{font-size:12px;color:var(--text-faint);}
+.login-foot{font-size:12px;color:var(--text-faint);position:relative;z-index:1;}
+.login-panel{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;background:var(--bg);}
+.login-card{width:100%;max-width:380px;}
+.login-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:26px;}
+.login-tabs button{flex:1;background:none;border:none;color:var(--text-dim);font-size:13.5px;font-weight:600;padding:9px 0;border-radius:7px;transition:.15s;}
+.login-tabs button.active{background:var(--surface3);color:var(--text);}
+.login-card h2{font-family:var(--font-head);font-size:23px;font-weight:600;margin-bottom:6px;}
+.login-card .sub{color:var(--text-dim);font-size:13.5px;margin-bottom:26px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:6px;font-weight:500;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13.5px;outline:none;transition:.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brass);background:var(--surface3);}
+.field input::placeholder{color:var(--text-faint);}
+.row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.row-between label{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-dim);}
+.link-btn{background:none;border:none;color:var(--brass-text);font-size:12.5px;font-weight:500;}
+.btn-primary{width:100%;background:var(--brass);color:#241a09;border:none;padding:12px;border-radius:8px;font-weight:700;font-size:14px;transition:.15s;}
+.btn-primary:hover{background:#d99c50;}
+.login-demo{margin-top:18px;font-size:11.5px;color:var(--text-faint);text-align:center;line-height:1.7;}
+.login-demo b{color:var(--text-dim);}
+
+/* ---------- App shell ---------- */
+#appShell{display:none;height:100vh;overflow:hidden;}
+.shell{display:flex;height:100%;}
+.sidebar{width:250px;flex:none;background:#0A1614;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;height:100%;}
+.sidebar-brand{padding:20px 22px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-soft);}
+.sidebar-brand .fish-mark svg{width:30px;height:20px;}
+.sidebar-brand .brand-name{font-size:15.5px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:16px 12px;}
+.nav-section{font-size:10.5px;letter-spacing:.08em;color:var(--text-faint);font-weight:600;padding:14px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;color:var(--text-dim);font-size:13.5px;font-weight:500;margin-bottom:2px;transition:.12s;cursor:pointer;}
+.nav-item svg{width:17px;height:17px;flex:none;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--teal-dim);color:var(--teal-text);}
+.sidebar-foot{padding:14px 20px;border-top:1px solid var(--border-soft);font-size:11px;color:var(--text-faint);}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:66px;flex:none;border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:var(--bg);}
+.topbar h1{font-family:var(--font-head);font-size:19px;font-weight:600;display:flex;align-items:baseline;gap:12px;}
+#topbarSub{font-family:var(--font-body);font-size:12.5px;color:var(--text-faint);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.icon-btn{width:36px;height:36px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-dim);}
+.role-pill{font-size:11px;font-weight:600;color:var(--brass-text);background:var(--brass-dim);padding:5px 11px;border-radius:20px;}
+.user-chip{display:flex;align-items:center;gap:9px;padding-left:14px;border-left:1px solid var(--border-soft);cursor:pointer;}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:var(--brass-text);}
+.user-chip .who b{display:block;font-size:13px;}
+.user-chip .who span{font-size:11px;color:var(--text-faint);}
+.content{flex:1;overflow-y:auto;padding:26px;background:var(--bg);}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ---------- Cards / grids ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+.stat-card .lbl{font-size:11.5px;color:var(--text-faint);font-weight:600;margin-bottom:10px;}
+.stat-card .val{font-family:var(--font-head);font-size:23px;font-weight:600;}
+.stat-card .sub{font-size:11.5px;margin-top:6px;color:var(--text-dim);}
+.stat-card .sub.up{color:var(--green-text);}
+.stat-card .sub.down{color:var(--red-text);}
+.dash-row{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-head h3{font-family:var(--font-head);font-size:15.5px;font-weight:600;}
+.card-head .link-btn{color:var(--teal-text);}
+.bars{display:flex;align-items:flex-end;gap:10px;height:150px;padding-top:10px;}
+.bars .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;}
+.bars .bar-col .bar{width:100%;max-width:30px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--teal),var(--teal-dim));}
+.bars .bar-col span{font-size:10.5px;color:var(--text-faint);}
+.mini-list{display:flex;flex-direction:column;gap:0;}
+.mini-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row .who{font-size:13px;font-weight:600;}
+.mini-row .meta{font-size:11px;color:var(--text-faint);}
+.mini-row .amt{font-family:var(--font-head);font-size:14px;font-weight:600;}
+.mini-row .amt.red{color:var(--red-text);}
+.mini-row .amt.green{color:var(--green-text);}
+
+/* ---------- Tables ---------- */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;font-size:11px;letter-spacing:.04em;color:var(--text-faint);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody td{padding:12px 14px;border-bottom:1px solid var(--border-soft);white-space:nowrap;}
+tbody tr:hover{background:var(--surface2);}
+.tcode{font-family:var(--font-body);color:var(--text-dim);font-size:12px;}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-green{background:var(--green-dim);color:var(--green-text);}
+.badge-red{background:var(--red-dim);color:var(--red-text);}
+.badge-gray{background:var(--surface3);color:var(--text-dim);}
+.badge-brass{background:var(--brass-dim);color:var(--brass-text);}
+.row-actions{display:flex;gap:6px;}
+.row-actions button{width:30px;height:30px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;}
+.row-actions button:hover{color:var(--text);border-color:var(--brass);}
+.row-actions svg{width:14px;height:14px;}
+
+/* ---------- Toolbars / buttons ---------- */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:14px;}
+.toolbar .search{position:relative;flex:1;max-width:320px;}
+.toolbar .search input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px 9px 36px;border-radius:8px;font-size:13px;outline:none;}
+.toolbar .search svg{position:absolute;left:11px;top:9px;color:var(--text-faint);}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-size:13.5px;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--text);}
+.btn:hover{border-color:var(--brass);}
+.btn.brass{background:var(--brass);color:#241a09;border:none;}
+.btn.brass:hover{background:#d99c50;}
+.btn.teal{background:var(--teal);color:#04211d;border:none;}
+.btn.teal:hover{background:#3cb6a2;}
+.btn.ghost{background:none;}
+.btn svg{width:15px;height:15px;}
+.section-title{font-family:var(--font-head);font-size:20px;font-weight:600;margin-bottom:4px;}
+.section-desc{font-size:13px;color:var(--text-dim);margin-bottom:20px;}
+
+/* ---------- Forms ---------- */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:20px;}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.form-grid.c2{grid-template-columns:repeat(2,1fr);}
+.form-grid.c4{grid-template-columns:repeat(4,1fr);}
+.form-actions{display:flex;gap:10px;margin-top:6px;justify-content:flex-end;}
+.chip-toggle{display:flex;gap:8px;flex-wrap:wrap;}
+.chip-toggle button{padding:8px 14px;border-radius:20px;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);}
+.chip-toggle button.active{background:var(--teal-dim);border-color:var(--teal);color:var(--teal-text);}
+
+/* ---------- Permission matrix ---------- */
+.perm-table th,.perm-table td{text-align:center;}
+.perm-table td:first-child,.perm-table th:first-child{text-align:left;}
+.perm-table input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);}
+
+/* ---------- New Bill screen ---------- */
+.bill-head{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:16px;margin-bottom:18px;}
+.lot-table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow-x:auto;margin-bottom:18px;}
+.lot-table{width:100%;min-width:760px;border-collapse:collapse;font-size:13px;}
+.lot-table th{background:var(--surface2);text-align:left;font-size:11px;color:var(--text-faint);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border);}
+.lot-table td{padding:8px 10px;border-bottom:1px solid var(--border-soft);}
+.lot-table input,.lot-table select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12.5px;outline:none;}
+.lot-table input:focus,.lot-table select:focus{border-color:var(--brass);}
+.lot-table input.readonly{background:var(--surface);color:var(--text-dim);}
+.lot-table tfoot td{background:var(--surface2);font-weight:700;font-family:var(--font-head);}
+.lot-remove{width:26px;height:26px;border-radius:6px;background:var(--red-dim);border:1px solid var(--border);color:var(--red-text);display:flex;align-items:center;justify-content:center;}
+.box-row{display:grid;grid-template-columns:1fr 1.3fr 1.2fr;gap:16px;}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.box h4{font-family:var(--font-head);font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.box h4 i{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:none;}
+.box h4 i svg{width:13px;height:13px;}
+.box.commission h4 i{background:var(--brass-dim);color:var(--brass-text);}
+.box.expense h4 i{background:var(--red-dim);color:var(--red-text);}
+.box.settle h4 i{background:var(--teal-dim);color:var(--teal-text);}
+.box-line{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;}
+.box-line label{color:var(--text-dim);}
+.box-line input{width:90px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 9px;border-radius:6px;font-size:12.5px;text-align:right;outline:none;}
+.box-line input:focus{border-color:var(--brass);}
+.box-line.total{border-top:1px solid var(--border);margin-top:8px;padding-top:12px;font-weight:700;}
+.box-line.total .amt{font-family:var(--font-head);font-size:16px;}
+.box.settle .box-line.total .amt{color:var(--teal-text);}
+.box.settle .final{background:var(--surface2);border-radius:8px;padding:12px 14px;margin-top:10px;}
+.box.settle .final .amt{font-family:var(--font-head);font-size:21px;color:var(--brass-text);}
+
+/* ---------- Ledger ---------- */
+.ledger-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;gap:16px;}
+.ledger-bal{display:flex;gap:22px;}
+.ledger-bal div b{display:block;font-family:var(--font-head);font-size:19px;}
+.ledger-bal div span{font-size:11px;color:var(--text-faint);}
+
+/* ---------- Reports ---------- */
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.pl-line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-soft);font-size:13.5px;}
+.pl-line.total{border-top:2px solid var(--border);border-bottom:none;margin-top:6px;padding-top:14px;font-weight:700;font-family:var(--font-head);font-size:16px;}
+.pl-line .amt.green{color:var(--green-text);}
+.pl-line .amt.red{color:var(--red-text);}
+
+@media(max-width:1200px){
+  .stat-grid{grid-template-columns:repeat(3,1fr);}
+  .dash-row{grid-template-columns:1fr;}
+  .box-row{grid-template-columns:1fr;}
+  .bill-head{grid-template-columns:1fr;}
+  .pl-grid{grid-template-columns:1fr;}
+}
+.sidebar-overlay{display:none;}
+@media(max-width:900px){
+  #loginScreen{flex-direction:column;min-height:100vh;}
+  .login-brand{flex:none;padding:28px 24px;border-right:none;border-bottom:1px solid var(--border-soft);}
+  .login-hero h1{font-size:26px;}
+  .hero-stats{display:none;}
+  .login-hero{margin-top:24px !important;}
+  .login-foot{display:none;}
+  .login-panel{padding:28px 20px;}
+  #hamburgerBtn{display:flex !important;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s ease;box-shadow:0 0 40px rgba(0,0,0,.5);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;}
+  .sidebar-overlay.show{display:block;}
+  .form-grid,.form-grid.c2,.form-grid.c4{grid-template-columns:1fr 1fr;}
+  .content{padding:18px;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:520px){
+  .form-grid,.form-grid.c2,.form-grid.c4{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr;}
+  .topbar{padding:0 14px;}
+  .user-chip .who{display:none;}
+}
+
+/* ---------- Sub-tabs (Entry / Monthly Report) ---------- */
+.subtabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.subtab-btn{background:none;border:none;color:var(--text-dim);font-family:var(--font-body);font-size:13.5px;font-weight:600;padding:10px 16px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.subtab-btn:hover{color:var(--text);}
+.subtab-btn.active{color:var(--brass-text);border-bottom-color:var(--brass);}
+
+/* ---------- Report filter bar ---------- */
+.filter-bar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px;}
+.filter-bar .field{margin-bottom:0;min-width:150px;}
+.filter-bar .field.grow{flex:1;min-width:180px;}
+.filter-bar .filter-actions{display:flex;gap:10px;margin-left:auto;}
+.report-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.report-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.report-stat .lbl{font-size:10.5px;letter-spacing:.06em;color:var(--text-faint);font-weight:600;margin-bottom:6px;}
+.report-stat .val{font-family:var(--font-head);font-size:19px;font-weight:600;}
+@media(max-width:900px){.report-stat-row{grid-template-columns:1fr 1fr;}}
+
+/* ---------- Print preview modal ---------- */
+.print-modal{display:none;position:fixed;inset:0;background:rgba(4,10,9,.72);z-index:999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:34px 20px;}
+.print-modal.show{display:flex;}
+.print-modal-bar{width:210mm;max-width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.print-modal-bar .tag{color:#DDEAE6;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.08);padding:6px 12px;border-radius:20px;}
+.print-modal-bar .actions{display:flex;gap:10px;}
+.print-paper{background:#fff;color:#161616;width:210mm;max-width:100%;min-height:120mm;padding:16mm;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:var(--font-body);}
+.print-paper h1,.print-paper h2,.print-paper h3{font-family:var(--font-head);}
+.pp-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #161616;padding-bottom:12px;margin-bottom:16px;}
+.pp-brand{font-size:19px;font-weight:700;}
+.pp-brand span{color:#8a5a1e;}
+.pp-brand .sub{font-size:11px;color:#555;font-weight:500;margin-top:2px;}
+.pp-doc-title{text-align:right;}
+.pp-doc-title h2{font-size:16px;letter-spacing:.05em;text-transform:uppercase;}
+.pp-doc-title .sub{font-size:11.5px;color:#555;margin-top:2px;}
+.pp-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;font-size:12.5px;}
+.pp-meta div b{display:block;font-size:10.5px;color:#777;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}
+.pp-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px;}
+.pp-table th{background:#f0efe9;text-align:left;padding:8px 10px;border:1px solid #ccc;font-size:11px;text-transform:uppercase;letter-spacing:.03em;}
+.pp-table td{padding:7px 10px;border:1px solid #ddd;}
+.pp-table tfoot td{font-weight:700;background:#f7f6f2;}
+.pp-totals{margin-left:auto;width:280px;font-size:13px;margin-bottom:18px;}
+.pp-totals div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e2e2;}
+.pp-totals div.final{font-weight:700;font-size:15px;border-bottom:2px solid #161616;border-top:1px solid #161616;}
+.pp-sign{display:flex;justify-content:space-between;margin-top:50px;font-size:12px;}
+.pp-sign div{width:30%;text-align:center;border-top:1px solid #999;padding-top:6px;color:#555;}
+.pp-foot{margin-top:26px;font-size:10.5px;color:#888;text-align:center;border-top:1px solid #e2e2e2;padding-top:10px;}
+@media print{
+  body.printing > *{display:none !important;}
+  body.printing .print-modal{display:flex !important;position:static !important;background:none !important;padding:0 !important;}
+  body.printing .no-print{display:none !important;}
+  body.printing .print-paper{box-shadow:none !important;border-radius:0 !important;width:auto !important;min-height:0 !important;}
+  body.printing .print-modal-bar{display:none !important;}
+}
+
+/* ---------- Chart of Accounts (tree + drill-down) ---------- */
+.coa-layout{display:grid;grid-template-columns:1fr 1.3fr;gap:18px;align-items:start;}
+@media(max-width:1100px){.coa-layout{grid-template-columns:1fr;}}
+.coa-tree{list-style:none;}
+.coa-tree ul{list-style:none;margin-left:18px;border-left:1px dashed var(--border);padding-left:14px;}
+.coa-node-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;}
+.coa-node-row:hover{background:var(--surface2);}
+.coa-node-row.selected{background:var(--teal-dim);color:var(--teal-text);}
+.coa-node-row .twist{width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--text-faint);transition:transform .15s;}
+.coa-node-row .twist.open{transform:rotate(90deg);}
+.coa-node-row .dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex:none;}
+.coa-node-row .nm{flex:1;font-weight:500;}
+.coa-node-row .nm.grp{font-family:var(--font-head);font-weight:600;font-size:14.5px;}
+.coa-node-row .code{font-size:11px;color:var(--text-faint);font-family:var(--font-body);}
+.coa-node-row .bal{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--text-dim);}
+.coa-children{overflow:hidden;max-height:0;transition:max-height .2s ease;}
+.coa-children.open{max-height:2000px;}
+.coa-detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 20px;color:var(--text-faint);gap:10px;}
+.coa-detail-empty svg{width:38px;height:38px;opacity:.5;}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="login-brand">
+    <svg class="net-pattern" viewBox="0 0 600 800" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#C68A3E" stroke-width="1" fill="none">
+        <circle cx="520" cy="120" r="170" opacity=".14"/>
+        <circle cx="520" cy="120" r="110" opacity=".14"/>
+        <circle cx="60" cy="700" r="150" stroke="#2F9E8C" opacity=".16"/>
+        <circle cx="60" cy="700" r="95" stroke="#2F9E8C" opacity=".16"/>
+      </g>
+    </svg>
+    <div>
+      <div class="brand-mark">
+        <span class="fish-mark"><svg viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 16C10 6 24 4 34 9C34 9 30 16 34 23C24 28 10 26 2 16Z" fill="currentColor" opacity=".9"/><path d="M34 9L46 3L42 16L46 29L34 23" fill="currentColor" opacity=".6"/><circle cx="12" cy="14" r="1.6" fill="#0A1614"/></svg></span>
+        <div>
+          <div class="brand-name">ZAHID HUSSAIN <span>&amp; SONS</span></div>
+          <div class="brand-tag">FISH COMMISSION AGENTS · KARACHI FISH HARBOUR</div>
+        </div>
+      </div>
+      <div class="login-hero" style="margin-top:80px;">
+        <div class="eyebrow">Aarhat &amp; Mandi Accounts System</div>
+        <h1>Har lot ka hisaab, <br>har bill ka faisla.</h1>
+        <p>Bill, commission, expense aur ledger — sab ek jagah. Customer receivable, supplier payable aur mandi ka rozana kaam ab poori tarah digital.</p>
+      </div>
+      <div class="hero-stats">
+        <div><b>1,240+</b><span>Bills processed</span></div>
+        <div><b>86</b><span>Active suppliers</span></div>
+        <div><b>Rs 4.2Cr</b><span>Trade volume / year</span></div>
+      </div>
+    </div>
+    <div class="login-foot">© 2026 Zahid Hussain &amp; Sons · Since 1994 · Ibrahim Hyderi, Karachi</div>
+  </div>
+  <div class="login-panel">
+    <div class="login-card">
+      <div class="login-tabs">
+        <button id="tabOwnerBtn" class="active" onclick="switchLoginTab('owner')">Owner login</button>
+        <button id="tabStaffBtn" onclick="switchLoginTab('staff')">Staff login</button>
+      </div>
+      <div id="ownerLoginForm">
+        <h2>Owner panel</h2>
+        <div class="sub">Poora business ek nazar mein dekhein.</div>
+        <div class="field"><label>Username</label><input type="text" placeholder="zahid.hussain" value="zahid.hussain"></div>
+        <div class="field"><label>Password</label><input type="password" placeholder="••••••••" value="••••••••"></div>
+        <div class="row-between">
+          <label><input type="checkbox" checked style="accent-color:var(--brass);"> Yaad rakhein</label>
+          <button class="link-btn">Password bhool gaye?</button>
+        </div>
+        <button class="btn-primary" onclick="doLogin('owner')">Sign in as Owner</button>
+      </div>
+      <div id="staffLoginForm" style="display:none;">
+        <h2>Staff panel</h2>
+        <div class="sub">Bill banayein, lot darj karein.</div>
+        <div class="field"><label>Username</label><input type="text" placeholder="usman.bhai" value="usman.bhai"></div>
+        <div class="field"><label>Password</label><input type="password" placeholder="••••••••" value="••••••••"></div>
+        <div class="row-between">
+          <label><input type="checkbox" checked style="accent-color:var(--brass);"> Yaad rakhein</label>
+          <button class="link-btn">Password bhool gaye?</button>
+        </div>
+        <button class="btn-primary" onclick="doLogin('staff')">Sign in as Staff</button>
+      </div>
+      <div class="login-demo"><b>Demo access</b> — koi bhi credential dalein aur Sign in dabayein.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell">
+<div class="shell">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <div class="sidebar" id="sidebarEl">
+    <div class="sidebar-brand">
+      <span class="fish-mark"><svg viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 16C10 6 24 4 34 9C34 9 30 16 34 23C24 28 10 26 2 16Z" fill="var(--brass)"/><path d="M34 9L46 3L42 16L46 29L34 23" fill="var(--brass)" opacity=".6"/><circle cx="12" cy="14" r="1.6" fill="#0A1614"/></svg></span>
+      <div class="brand-name" style="font-size:14px;">ZAHID HUSSAIN <span style="color:var(--brass-text)">&amp; SONS</span></div>
+    </div>
+    <div class="sidebar-nav" id="sidebarNav">
+      <!-- OWNER NAV -->
+      <div id="navOwner">
+        <div class="nav-section">Overview</div>
+        <div class="nav-item active" data-page="dashboard" onclick="goPage('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</div>
+        <div class="nav-section">Setup</div>
+        <div class="nav-item" data-page="company-master" onclick="goPage('company-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>Company Master</div>
+        <div class="nav-item" data-page="user-rights" onclick="goPage('user-rights',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 11 2 2 4-4"/></svg>User Rights</div>
+        <div class="nav-section">Masters</div>
+        <div class="nav-item" data-page="customer-master" onclick="goPage('customer-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customer Master</div>
+        <div class="nav-item" data-page="supplier-master" onclick="goPage('supplier-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7V8Z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Supplier Master</div>
+        <div class="nav-item" data-page="fish-master" onclick="goPage('fish-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c4-5 11-7 16-4.5C18 7.5 17 12 18 16.5 13 19 6 17 2 12Z"/><path d="M18 7.5 22 5l-1 7 1 7-4-2.5"/><circle cx="7" cy="11.5" r=".6" fill="currentColor"/></svg>Fish Master</div>
+        <div class="nav-section">Transactions</div>
+        <div class="nav-item" data-page="daily-purchase" onclick="goPage('daily-purchase',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h4l2.4 12.4a2 2 0 0 0 2 1.6h9.2a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="9.5" cy="21" r="1.4"/><circle cx="18" cy="21" r="1.4"/></svg>Daily Purchase</div>
+        <div class="nav-item" data-page="new-bill" onclick="goPage('new-bill',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg>New Bill</div>
+        <div class="nav-item" data-page="expense-voucher" onclick="goPage('expense-voucher',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>Expense Voucher</div>
+        <div class="nav-section">Accounts</div>
+        <div class="nav-item" data-page="supplier-payable" onclick="goPage('supplier-payable',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>Supplier Payable</div>
+        <div class="nav-item" data-page="customer-receivable" onclick="goPage('customer-receivable',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>Customer Receivable</div>
+        <div class="nav-item" data-page="account-ledger" onclick="goPage('account-ledger',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>Account Ledger</div>
+        <div class="nav-item" data-page="chart-of-accounts" onclick="goPage('chart-of-accounts',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></svg>Chart of Accounts</div>
+        <div class="nav-section">Reports</div>
+        <div class="nav-item" data-page="profit-loss" onclick="goPage('profit-loss',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/></svg>Profit &amp; Loss</div>
+        <div class="nav-item" data-page="balance-sheet" onclick="goPage('balance-sheet',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 9h18M3 15h18"/></svg>Balance Sheet</div>
+        <div class="nav-item" data-page="settings" onclick="goPage('settings',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>Settings</div>
+      </div>
+      <!-- STAFF NAV -->
+      <div id="navStaff" style="display:none;">
+        <div class="nav-section">Overview</div>
+        <div class="nav-item active" data-page="dashboard" onclick="goPage('dashboard',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</div>
+        <div class="nav-section">Rozana Kaam</div>
+        <div class="nav-item" data-page="new-bill" onclick="goPage('new-bill',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h6M9 9h2"/></svg>New Bill</div>
+        <div class="nav-item" data-page="daily-purchase" onclick="goPage('daily-purchase',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h4l2.4 12.4a2 2 0 0 0 2 1.6h9.2a2 2 0 0 0 2-1.6L22 7H6"/><circle cx="9.5" cy="21" r="1.4"/><circle cx="18" cy="21" r="1.4"/></svg>Daily Purchase</div>
+        <div class="nav-item" data-page="expense-voucher" onclick="goPage('expense-voucher',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>Expense Voucher</div>
+        <div class="nav-section">Lookup</div>
+        <div class="nav-item" data-page="customer-master" onclick="goPage('customer-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Customers</div>
+        <div class="nav-item" data-page="supplier-master" onclick="goPage('supplier-master',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1.5"/><path d="M16 8h4l3 3v5h-7V8Z"/></svg>Suppliers</div>
+      </div>
+    </div>
+    <div class="sidebar-foot">v2.4 · Ibrahim Hyderi Branch</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button class="icon-btn" id="hamburgerBtn" onclick="toggleSidebar()" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <h1 id="topbarTitle">Dashboard<span id="topbarSub">Overview of today's mandi business</span></h1>
+      </div>
+      <div class="topbar-right">
+        <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+        <span class="role-pill" id="rolePill">Owner panel</span>
+        <div class="user-chip" onclick="doLogout()">
+          <div class="avatar" id="avatarInit">ZH</div>
+          <div class="who"><b id="userName">Zahid Hussain</b><span id="userRole">Owner</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="lbl">TODAY'S BILLS</div><div class="val tnum">14</div><div class="sub up">▲ 3 se zyada kal se</div></div>
+          <div class="stat-card"><div class="lbl">TODAY'S SALE</div><div class="val tnum">Rs 8.64L</div><div class="sub up">▲ 12% kal se</div></div>
+          <div class="stat-card"><div class="lbl">COMMISSION EARNED</div><div class="val tnum" style="color:var(--brass-text);">Rs 43,200</div><div class="sub">5% average rate</div></div>
+          <div class="stat-card"><div class="lbl">TOTAL RECEIVABLE</div><div class="val tnum" style="color:var(--green-text);">Rs 12.8L</div><div class="sub">31 customers</div></div>
+          <div class="stat-card"><div class="lbl">TOTAL PAYABLE</div><div class="val tnum" style="color:var(--red-text);">Rs 9.4L</div><div class="sub">22 suppliers</div></div>
+        </div>
+        <div class="dash-row">
+          <div class="card">
+            <div class="card-head"><h3>Weekly commission trend</h3><button class="link-btn" onclick="goPage('profit-loss')">Full report →</button></div>
+            <div class="bars">
+              <div class="bar-col"><div class="bar" style="height:52%;"></div><span>Mon</span></div>
+              <div class="bar-col"><div class="bar" style="height:68%;"></div><span>Tue</span></div>
+              <div class="bar-col"><div class="bar" style="height:45%;"></div><span>Wed</span></div>
+              <div class="bar-col"><div class="bar" style="height:80%;"></div><span>Thu</span></div>
+              <div class="bar-col"><div class="bar" style="height:60%;"></div><span>Fri</span></div>
+              <div class="bar-col"><div class="bar" style="height:95%;"></div><span>Sat</span></div>
+              <div class="bar-col"><div class="bar" style="height:73%;background:linear-gradient(180deg,var(--brass),var(--brass-dim));"></div><span>Today</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Top payables due</h3><button class="link-btn" onclick="goPage('supplier-payable')">See all →</button></div>
+            <div class="mini-list">
+              <div class="mini-row"><div><div class="who">Haji Karim Baksh</div><div class="meta">Keti Bandar</div></div><div class="amt red">Rs 96,400</div></div>
+              <div class="mini-row"><div><div class="who">Rasool Bux Mallah</div><div class="meta">Ibrahim Hyderi</div></div><div class="amt red">Rs 71,200</div></div>
+              <div class="mini-row"><div><div class="who">Sikandar Fisheries</div><div class="meta">Thatta</div></div><div class="amt red">Rs 58,900</div></div>
+              <div class="mini-row"><div><div class="who">Younus Boat Co.</div><div class="meta">Korangi Creek</div></div><div class="amt red">Rs 44,000</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Recent bills</h3><button class="link-btn" onclick="goPage('new-bill')">+ New bill →</button></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Lots</th><th>Total sale</th><th>Commission</th><th>Net payable</th><th>Status</th></tr></thead>
+            <tbody id="dashBillsBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ COMPANY MASTER ============ -->
+      <div class="page" id="page-company-master">
+        <div class="section-title">Company Master</div>
+        <div class="section-desc">Aap ki company ki bunyadi tafseelaat — bills aur reports par yehi print hoga.</div>
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="field"><label>Company Name</label><input value="Zahid Hussain &amp; Sons"></div>
+            <div class="field"><label>Business Type</label><input value="Fish Commission Agent (Aarhti)"></div>
+            <div class="field"><label>Mandi License No.</label><input value="KFH-AR-0219"></div>
+            <div class="field"><label>Phone</label><input value="0300-1234567"></div>
+            <div class="field"><label>WhatsApp</label><input value="0300-1234567"></div>
+            <div class="field"><label>NTN</label><input value="4471023-5"></div>
+            <div class="field" style="grid-column:span 2;"><label>Address</label><input value="Shop # 14, Fish Harbour Market, Ibrahim Hyderi, Karachi"></div>
+            <div class="field"><label>Default Commission %</label><input value="5%"></div>
+            <div class="field"><label>Bank Name</label><input value="Meezan Bank"></div>
+            <div class="field"><label>Account Title</label><input value="Zahid Hussain &amp; Sons"></div>
+            <div class="field"><label>Account No. / IBAN</label><input value="PK12 MEZN 0001 2300 4567 890"></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost">Cancel</button><button class="btn brass">Save changes</button></div>
+        </div>
+      </div>
+
+      <!-- ============ USER RIGHTS ============ -->
+      <div class="page" id="page-user-rights">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">User Rights</div><div class="section-desc" style="margin-bottom:0;">Staff accounts aur unki permissions manage karein.</div></div>
+          <button class="btn brass" onclick="toggleForm('userForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add User</button>
+        </div>
+        <div class="form-card" id="userForm" style="display:none;">
+          <div class="form-grid c4">
+            <div class="field"><label>Full Name</label><input placeholder="e.g. Usman Bhai"></div>
+            <div class="field"><label>Username</label><input placeholder="usman.bhai"></div>
+            <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+            <div class="field"><label>Role</label><select><option>Staff</option><option>Manager</option><option>Owner</option></select></div>
+          </div>
+          <div class="field" style="margin-top:4px;"><label>Module Permissions</label>
+            <div class="table-wrap"><table class="perm-table">
+              <thead><tr><th>Module</th><th>View</th><th>Add</th><th>Edit</th><th>Delete</th></tr></thead>
+              <tbody>
+                <tr><td>New Bill</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                <tr><td>Daily Purchase</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                <tr><td>Expense Voucher</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                <tr><td>Customer / Supplier Master</td><td><input type="checkbox" checked></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+                <tr><td>Reports &amp; Ledger</td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('userForm')">Cancel</button><button class="btn brass">Save user</button></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ CUSTOMER MASTER ============ -->
+      <div class="page" id="page-customer-master">
+        <div class="toolbar">
+          <div class="search"><svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Customer dhoondein..."></div>
+          <button class="btn brass" onclick="toggleForm('customerForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Customer</button>
+        </div>
+        <div class="form-card" id="customerForm" style="display:none;">
+          <div class="form-grid">
+            <div class="field"><label>Customer Name</label><input id="custName" placeholder="e.g. Al-Bahar Hotel"></div>
+            <div class="field"><label>Phone</label><input id="custPhone" placeholder="0300-0000000"></div>
+            <div class="field"><label>City / Area</label><input id="custCity" placeholder="Karachi"></div>
+            <div class="field"><label>Opening Balance (Rs)</label><input id="custOpen" type="number" placeholder="0"></div>
+            <div class="field"><label>CNIC</label><input placeholder="42101-0000000-0"></div>
+            <div class="field"><label>Status</label><select><option>Active</option><option>Inactive</option></select></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('customerForm')">Cancel</button><button class="btn brass" onclick="addCustomer()">Save customer</button></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Total Bills</th><th>Receivable</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="customerTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ SUPPLIER MASTER ============ -->
+      <div class="page" id="page-supplier-master">
+        <div class="toolbar">
+          <div class="search"><svg viewBox="0 0 24 24" width="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Supplier dhoondein..."></div>
+          <button class="btn brass" onclick="toggleForm('supplierForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Supplier</button>
+        </div>
+        <div class="form-card" id="supplierForm" style="display:none;">
+          <div class="form-grid">
+            <div class="field"><label>Supplier / Boat Name</label><input id="supName" placeholder="e.g. Younus Boat Co."></div>
+            <div class="field"><label>Phone</label><input id="supPhone" placeholder="0300-0000000"></div>
+            <div class="field"><label>Village / Jetty</label><input id="supCity" placeholder="Ibrahim Hyderi"></div>
+            <div class="field"><label>Opening Balance (Rs)</label><input id="supOpen" type="number" placeholder="0"></div>
+            <div class="field"><label>Bank / Easypaisa</label><input placeholder="Account no."></div>
+            <div class="field"><label>Status</label><select><option>Active</option><option>Inactive</option></select></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('supplierForm')">Cancel</button><button class="btn brass" onclick="addSupplier()">Save supplier</button></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Name</th><th>Phone</th><th>Village / Jetty</th><th>Total Lots</th><th>Payable</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="supplierTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ FISH MASTER ============ -->
+      <div class="page" id="page-fish-master">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">Fish Master</div><div class="section-desc" style="margin-bottom:0;">Machli ki types aur default rate manage karein.</div></div>
+          <button class="btn brass" onclick="toggleForm('fishForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Fish Type</button>
+        </div>
+        <div class="form-card" id="fishForm" style="display:none;">
+          <div class="form-grid c4">
+            <div class="field"><label>Fish Name</label><input placeholder="e.g. Sole Fish"></div>
+            <div class="field"><label>Category</label><select><option>Sea Fish</option><option>River Fish</option><option>Shrimp / Prawn</option></select></div>
+            <div class="field"><label>Unit</label><select><option>Kg</option><option>Maund</option><option>Crate</option></select></div>
+            <div class="field"><label>Default Rate (Rs)</label><input type="number" placeholder="0"></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('fishForm')">Cancel</button><button class="btn brass">Save fish type</button></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Fish Name</th><th>Category</th><th>Unit</th><th>Default Rate</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="fishTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ DAILY PURCHASE (LOT ENTRY) ============ -->
+      <div class="page" id="page-daily-purchase">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">Daily Purchase — Lot Entry</div><div class="section-desc" style="margin-bottom:0;">Supplier se aane wali har khep (lot) yahan register karein.</div></div>
+          <button class="btn brass" onclick="toggleForm('lotForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Lot</button>
+        </div>
+        <div class="form-card" id="lotForm" style="display:none;">
+          <div class="form-grid c4">
+            <div class="field"><label>Date</label><input type="date" value="2026-08-31"></div>
+            <div class="field"><label>Supplier</label><select id="lotSupplier"><option>Younus Boat Co.</option><option>Rasool Bux Mallah</option><option>Haji Karim Baksh</option><option>Sikandar Fisheries</option></select></div>
+            <div class="field"><label>Fish Type</label><select id="lotFish"><option>Rohu</option><option>Pomfret</option><option>Sole Fish</option><option>Shrimp (Jumbo)</option><option>Palla</option></select></div>
+            <div class="field"><label>Total Weight (Kg)</label><input id="lotWeight" type="number" placeholder="0"></div>
+            <div class="field"><label>No. of Crates</label><input type="number" placeholder="0"></div>
+            <div class="field"><label>Boat / Vehicle No.</label><input placeholder="optional"></div>
+            <div class="field" style="grid-column:span 2;"><label>Remarks</label><input placeholder="optional"></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('lotForm')">Cancel</button><button class="btn brass" onclick="addLot()">Save lot</button></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Lot #</th><th>Date</th><th>Supplier</th><th>Fish</th><th>Weight (Kg)</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="lotTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ NEW BILL ============ -->
+      <div class="page" id="page-new-bill">
+        <div class="section-title">New Bill</div>
+        <div class="section-desc">Customer select karein, lots jodein — commission aur expense apne aap calculate ho jayenge.</div>
+        <div class="subtabs no-print">
+          <button class="subtab-btn active" id="billTabEntryBtn" onclick="showBillTab('entry')">Bill Entry</button>
+          <button class="subtab-btn" id="billTabReportBtn" onclick="showBillTab('report')">Monthly Report</button>
+        </div>
+        <div id="newBillEntryView">
+        <div class="bill-head">
+          <div class="field" style="margin-bottom:0;"><label>Bill No.</label><input value="BL-1215" class="readonly" style="background:var(--surface2);"></div>
+          <div class="field" style="margin-bottom:0;"><label>Date</label><input type="date" value="2026-08-31"></div>
+          <div class="field" style="margin-bottom:0;"><label>Customer (Buyer)</label><select id="billCustomer"><option>Al-Bahar Hotel</option><option>Seafood Express (Pvt) Ltd</option><option>Do Darya Restaurant</option><option>Karachi Export Traders</option></select></div>
+        </div>
+        <div class="lot-table-wrap">
+          <table class="lot-table" id="lotBillTable">
+            <thead><tr><th style="width:26px;">#</th><th>Lot #</th><th>Fish</th><th>Supplier (Payable to)</th><th>Sell Weight (Kg)</th><th>Rate / Kg</th><th>Amount</th><th></th></tr></thead>
+            <tbody id="billLotBody"></tbody>
+            <tfoot><tr><td colspan="6" style="text-align:right;">Bill Total</td><td class="tnum" id="billTotalCell">Rs 0</td><td></td></tr></tfoot>
+          </table>
+        </div>
+        <div style="margin-bottom:20px;"><button class="btn ghost" onclick="addBillLotRow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Lot Row</button></div>
+
+        <div class="box-row">
+          <div class="box commission">
+            <h4><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 15h.01M15 9 9 15"/></svg></i>Box 1 · Commission</h4>
+            <div class="box-line"><label>Bill Total</label><span class="tnum" id="commBase">Rs 0</span></div>
+            <div class="box-line"><label>Commission %</label><input id="commPct" type="number" value="5" oninput="recalcBill()"></div>
+            <div class="box-line total"><label>Commission Amount</label><span class="amt tnum" id="commAmt">Rs 0</span></div>
+          </div>
+          <div class="box expense">
+            <h4><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></i>Box 2 · Expenses (3 types)</h4>
+            <div class="box-line"><label>Labour / Tulai</label><input id="expLabour" type="number" value="800" oninput="recalcBill()"></div>
+            <div class="box-line"><label>Loading / Transport</label><input id="expLoading" type="number" value="600" oninput="recalcBill()"></div>
+            <div class="box-line"><label>Market Fee / Other</label><input id="expOther" type="number" value="300" oninput="recalcBill()"></div>
+            <div class="box-line total"><label>Total Expense</label><span class="amt tnum" id="expTotal">Rs 0</span></div>
+          </div>
+          <div class="box settle">
+            <h4><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg></i>Box 3 · Settlement</h4>
+            <div class="box-line"><label>Total Sale (Receivable from customer)</label><span class="tnum" id="settleTotal">Rs 0</span></div>
+            <div class="box-line"><label>Less: Commission</label><span class="tnum" style="color:var(--brass-text);" id="settleComm">Rs 0</span></div>
+            <div class="box-line"><label>Less: Expenses</label><span class="tnum" style="color:var(--red-text);" id="settleExp">Rs 0</span></div>
+            <div class="final"><div class="box-line" style="padding:0;"><label style="color:var(--text-dim);">Net Payable to Supplier(s)</label><span class="amt tnum" id="settleNet">Rs 0</span></div></div>
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:18px;">
+          <button class="btn ghost">Save as draft</button>
+          <button class="btn brass" onclick="saveBill()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Save &amp; Print Bill</button>
+        </div>
+
+        <div class="card" style="margin-top:22px;">
+          <div class="card-head"><h3>Recent bills</h3></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Lots</th><th>Total sale</th><th>Commission</th><th>Net payable</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="billsTableBody"></tbody>
+          </table></div>
+        </div>
+        </div>
+
+        <div id="newBillReportView" style="display:none;">
+          <div class="filter-bar">
+            <div class="field"><label>Month</label><input type="month" id="billReportMonth" value="2026-08" onchange="generateBillReport()"></div>
+            <div class="field grow"><label>Customer</label><select id="billReportCustomer" onchange="generateBillReport()"><option value="">All Customers</option></select></div>
+            <div class="filter-actions">
+              <button class="btn ghost" onclick="generateBillReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21 16.65 16.65"/><circle cx="11" cy="11" r="7"/></svg>Generate</button>
+              <button class="btn brass" onclick="printBillReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Report</button>
+            </div>
+          </div>
+          <div class="report-stat-row">
+            <div class="report-stat"><div class="lbl">TOTAL BILLS</div><div class="val tnum" id="brStatCount">0</div></div>
+            <div class="report-stat"><div class="lbl">TOTAL SALE</div><div class="val tnum" id="brStatSale">Rs 0</div></div>
+            <div class="report-stat"><div class="lbl">TOTAL COMMISSION</div><div class="val tnum" style="color:var(--brass-text);" id="brStatComm">Rs 0</div></div>
+            <div class="report-stat"><div class="lbl">TOTAL NET PAYABLE</div><div class="val tnum" style="color:var(--green-text);" id="brStatNet">Rs 0</div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Monthly Bill Report</h3></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Lots</th><th>Total sale</th><th>Commission</th><th>Net payable</th><th>Status</th></tr></thead>
+              <tbody id="billReportBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ EXPENSE VOUCHER ============ -->
+      <div class="page" id="page-expense-voucher">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">Daily Expense Voucher</div><div class="section-desc" style="margin-bottom:0;">Rozana ke aam kharche darj karein — bill se alag.</div></div>
+          <button class="btn brass" onclick="toggleForm('expForm')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New Voucher</button>
+        </div>
+        <div class="form-card" id="expForm" style="display:none;">
+          <div class="form-grid c4">
+            <div class="field"><label>Date</label><input type="date" id="expDate" value="2026-08-31"></div>
+            <div class="field"><label>Category</label><select id="expCat"><option>Labour / Tulai</option><option>Loading / Transport</option><option>Ice &amp; Packing</option><option>Rent</option><option>Utilities</option><option>Other</option></select></div>
+            <div class="field"><label>Amount (Rs)</label><input type="number" id="expAmt" placeholder="0"></div>
+            <div class="field"><label>Paid Via</label><select id="expVia"><option>Cash</option><option>Bank</option><option>Easypaisa</option></select></div>
+            <div class="field" style="grid-column:span 4;"><label>Description</label><input id="expDesc" placeholder="e.g. Mazdoor mazdoori — 5 labourers"></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost" onclick="toggleForm('expForm')">Cancel</button><button class="btn brass" onclick="addVoucher()">Save voucher</button></div>
+        </div>
+        <div class="subtabs no-print">
+          <button class="subtab-btn active" id="expTabEntryBtn" onclick="showExpTab('entry')">Voucher List</button>
+          <button class="subtab-btn" id="expTabReportBtn" onclick="showExpTab('report')">Monthly Report</button>
+        </div>
+        <div id="expEntryView">
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Voucher #</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid Via</th><th>Actions</th></tr></thead>
+            <tbody id="expTableBody"></tbody>
+          </table></div>
+        </div>
+        </div>
+        <div id="expReportView" style="display:none;">
+          <div class="filter-bar">
+            <div class="field"><label>Month</label><input type="month" id="expReportMonth" value="2026-08" onchange="generateExpReport()"></div>
+            <div class="field grow"><label>Category</label><select id="expReportCat" onchange="generateExpReport()"><option value="">All Categories</option><option>Labour / Tulai</option><option>Loading / Transport</option><option>Ice &amp; Packing</option><option>Rent</option><option>Utilities</option><option>Other</option></select></div>
+            <div class="filter-actions">
+              <button class="btn ghost" onclick="generateExpReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21 16.65 16.65"/><circle cx="11" cy="11" r="7"/></svg>Generate</button>
+              <button class="btn brass" onclick="printExpReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Report</button>
+            </div>
+          </div>
+          <div class="report-stat-row">
+            <div class="report-stat"><div class="lbl">TOTAL VOUCHERS</div><div class="val tnum" id="erStatCount">0</div></div>
+            <div class="report-stat"><div class="lbl">TOTAL AMOUNT</div><div class="val tnum" style="color:var(--red-text);" id="erStatAmt">Rs 0</div></div>
+            <div class="report-stat"><div class="lbl">CASH PAID</div><div class="val tnum" id="erStatCash">Rs 0</div></div>
+            <div class="report-stat"><div class="lbl">BANK / EASYPAISA</div><div class="val tnum" id="erStatBank">Rs 0</div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Monthly Expense Report</h3></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Voucher #</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid Via</th></tr></thead>
+              <tbody id="expReportBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SUPPLIER PAYABLE ============ -->
+      <div class="page" id="page-supplier-payable">
+        <div class="section-title">Supplier Payable</div>
+        <div class="section-desc">Har supplier ko bill ke baad kitna dena hai — commission aur expense minus ho chuka hai.</div>
+        <div class="filter-bar">
+          <div class="field grow"><label>Supplier</label><select id="payableFilterSup" onchange="filterPayable()"><option value="">All Suppliers</option></select></div>
+          <div class="field"><label>Status</label><select id="payableFilterStatus" onchange="filterPayable()"><option value="">All</option><option>Due</option><option>Partial</option></select></div>
+          <div class="filter-actions">
+            <button class="btn brass" onclick="printPayableReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Report</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Supplier</th><th>Village / Jetty</th><th>Last Bill</th><th>Total Sold</th><th>Payable Balance</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="payableTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ CUSTOMER RECEIVABLE ============ -->
+      <div class="page" id="page-customer-receivable">
+        <div class="section-title">Customer Receivable</div>
+        <div class="section-desc">Har customer se bill ke against wasooli baaki hai.</div>
+        <div class="filter-bar">
+          <div class="field grow"><label>Customer</label><select id="receivableFilterCust" onchange="filterReceivable()"><option value="">All Customers</option></select></div>
+          <div class="field"><label>Status</label><select id="receivableFilterStatus" onchange="filterReceivable()"><option value="">All</option><option>Due</option><option>Partial</option></select></div>
+          <div class="filter-actions">
+            <button class="btn brass" onclick="printReceivableReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Report</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Customer</th><th>City</th><th>Last Bill</th><th>Total Purchased</th><th>Receivable Balance</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="receivableTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ ACCOUNT LEDGER ============ -->
+      <div class="page" id="page-account-ledger">
+        <div class="ledger-head">
+          <div>
+            <div class="section-title" style="margin-bottom:6px;">Account Ledger</div>
+            <select id="ledgerAccount" onchange="renderLedger()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;min-width:260px;">
+              <option>Al-Bahar Hotel (Customer)</option>
+              <option>Younus Boat Co. (Supplier)</option>
+              <option>Haji Karim Baksh (Supplier)</option>
+              <option>Cash Account</option>
+            </select>
+          </div>
+          <div class="ledger-bal">
+            <div><b style="color:var(--green-text);" id="ledgerTotDebit">Rs 1,42,600</b><span>Total Debit</span></div>
+            <div><b style="color:var(--red-text);" id="ledgerTotCredit">Rs 96,400</b><span>Total Credit</span></div>
+            <div><b style="color:var(--brass-text);" id="ledgerClosing">Rs 46,200</b><span>Closing Balance</span></div>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="field"><label>From</label><input type="date" id="ledgerFrom" onchange="renderLedger()"></div>
+          <div class="field"><label>To</label><input type="date" id="ledgerTo" onchange="renderLedger()"></div>
+          <div class="filter-actions">
+            <button class="btn ghost" onclick="document.getElementById('ledgerFrom').value='';document.getElementById('ledgerTo').value='';renderLedger();">Clear</button>
+            <button class="btn brass" onclick="printLedgerReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Ledger</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Date</th><th>Voucher / Bill #</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+            <tbody id="ledgerTableBody"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ============ PROFIT & LOSS ============ -->
+      <div class="page" id="page-profit-loss">
+        <div class="section-title" style="margin-bottom:4px;">Profit &amp; Loss</div>
+        <div class="section-desc" id="plPeriodDesc">Period: 01 Aug 2026 – 31 Aug 2026</div>
+        <div class="filter-bar">
+          <div class="field"><label>From</label><input type="date" id="plFrom" value="2026-08-01"></div>
+          <div class="field"><label>To</label><input type="date" id="plTo" value="2026-08-31"></div>
+          <div class="filter-actions">
+            <button class="btn ghost" onclick="updatePLPeriod()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v18M16 3v18"/></svg>Apply period</button>
+            <button class="btn brass" onclick="printPLReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print P&amp;L</button>
+          </div>
+        </div>
+        <div class="pl-grid">
+          <div class="card">
+            <div class="card-head"><h3>Income</h3></div>
+            <div class="pl-line"><span>Commission Earned</span><span class="amt tnum green">Rs 9,84,600</span></div>
+            <div class="pl-line"><span>Expense Recovery from Suppliers</span><span class="amt tnum green">Rs 1,12,300</span></div>
+            <div class="pl-line total"><span>Total Income</span><span class="amt tnum green">Rs 10,96,900</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Expenses</h3></div>
+            <div class="pl-line"><span>Labour / Tulai</span><span class="amt tnum red">Rs 68,400</span></div>
+            <div class="pl-line"><span>Loading / Transport</span><span class="amt tnum red">Rs 51,200</span></div>
+            <div class="pl-line"><span>Ice &amp; Packing</span><span class="amt tnum red">Rs 22,900</span></div>
+            <div class="pl-line"><span>Rent &amp; Utilities</span><span class="amt tnum red">Rs 35,000</span></div>
+            <div class="pl-line total"><span>Total Expenses</span><span class="amt tnum red">Rs 1,77,500</span></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="pl-line total" style="border-top:none;"><span>Net Profit (August 2026)</span><span class="amt tnum" style="color:var(--brass-text);font-size:22px;">Rs 9,19,400</span></div>
+        </div>
+      </div>
+
+      <!-- ============ BALANCE SHEET ============ -->
+      <div class="page" id="page-balance-sheet">
+        <div class="section-title" style="margin-bottom:4px;">Balance Sheet</div>
+        <div class="section-desc" id="bsAsOnDesc">As on 31 August 2026</div>
+        <div class="filter-bar">
+          <div class="field"><label>As on date</label><input type="date" id="bsAsOn" value="2026-08-31"></div>
+          <div class="filter-actions">
+            <button class="btn ghost" onclick="updateBSDate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v18M16 3v18"/></svg>Apply date</button>
+            <button class="btn brass" onclick="printBSReport()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Balance Sheet</button>
+          </div>
+        </div>
+        <div class="pl-grid">
+          <div class="card">
+            <div class="card-head"><h3>Assets</h3></div>
+            <div class="pl-line"><span>Cash in Hand</span><span class="amt tnum">Rs 3,40,000</span></div>
+            <div class="pl-line"><span>Bank Balance</span><span class="amt tnum">Rs 6,80,500</span></div>
+            <div class="pl-line"><span>Customer Receivables</span><span class="amt tnum">Rs 12,80,000</span></div>
+            <div class="pl-line"><span>Stock (Unsold Lots)</span><span class="amt tnum">Rs 1,15,000</span></div>
+            <div class="pl-line total"><span>Total Assets</span><span class="amt tnum">Rs 24,15,500</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Liabilities &amp; Equity</h3></div>
+            <div class="pl-line"><span>Supplier Payables</span><span class="amt tnum red">Rs 9,40,000</span></div>
+            <div class="pl-line"><span>Outstanding Expenses</span><span class="amt tnum red">Rs 24,600</span></div>
+            <div class="pl-line"><span>Owner's Equity</span><span class="amt tnum">Rs 14,50,900</span></div>
+            <div class="pl-line total"><span>Total Liabilities &amp; Equity</span><span class="amt tnum">Rs 24,15,500</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CHART OF ACCOUNTS ============ -->
+      <div class="page" id="page-chart-of-accounts">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">Chart of Accounts</div><div class="section-desc" style="margin-bottom:0;">Poora account tree — kisi bhi account par click karke ledger drill-down dekhein.</div></div>
+          <button class="btn brass" onclick="printCOA()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print Chart</button>
+        </div>
+        <div class="coa-layout">
+          <div class="card">
+            <div class="card-head"><h3>Account Tree</h3></div>
+            <div class="coa-tree" id="coaTree"></div>
+          </div>
+          <div class="card" id="coaDetailCard">
+            <div class="coa-detail-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-4 4"/></svg>
+              <div>Ledger drill-down dekhne ke liye left tree se koi account select karein.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SETTINGS ============ -->
+      <div class="page" id="page-settings">
+        <div class="section-title">Settings</div>
+        <div class="section-desc">System aur print preferences.</div>
+        <div class="form-card">
+          <div class="form-grid c2">
+            <div class="field"><label>Bill Print Format</label><select><option>Thermal (3 inch)</option><option>A5</option><option>A4</option></select></div>
+            <div class="field"><label>Currency</label><select><option>PKR (Rs)</option></select></div>
+            <div class="field"><label>Default Commission %</label><input value="5"></div>
+            <div class="field"><label>Financial Year Start</label><input type="date" value="2026-07-01"></div>
+            <div class="field"><label>Backup Frequency</label><select><option>Daily</option><option>Weekly</option></select></div>
+            <div class="field"><label>Low Stock Alert (Kg)</label><input value="50"></div>
+          </div>
+          <div class="form-actions"><button class="btn ghost">Reset</button><button class="btn brass">Save settings</button></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================= PRINT PREVIEW MODAL (shared) ================= -->
+<div class="print-modal" id="printModal">
+  <div>
+    <div class="print-modal-bar no-print">
+      <span class="tag" id="printModalTag">Print preview</span>
+      <div class="actions">
+        <button class="btn ghost" onclick="closePrint()">Close</button>
+        <button class="btn brass" onclick="doPrint()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print</button>
+      </div>
+    </div>
+    <div class="print-paper" id="printModalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- Demo data ---------------- */
+const customers = [
+  {name:'Al-Bahar Hotel', phone:'0321-2345671', city:'Clifton, Karachi', bills:38, balance:284000, status:'Active'},
+  {name:'Seafood Express (Pvt) Ltd', phone:'0333-4567890', city:'SITE, Karachi', bills:52, balance:461500, status:'Active'},
+  {name:'Do Darya Restaurant', phone:'0300-9988776', city:'Do Darya, Karachi', bills:21, balance:96200, status:'Active'},
+  {name:'Karachi Export Traders', phone:'0345-1122334', city:'Fish Harbour, Karachi', bills:14, balance:377300, status:'Active'},
+  {name:'Bismillah Fish Point', phone:'0311-7788990', city:'Lyari, Karachi', bills:9, balance:59000, status:'Inactive'},
+];
+const suppliers = [
+  {name:'Younus Boat Co.', phone:'0301-5544332', city:'Korangi Creek', lots:64, balance:44000, status:'Active'},
+  {name:'Rasool Bux Mallah', phone:'0334-8899001', city:'Ibrahim Hyderi', lots:47, balance:71200, status:'Active'},
+  {name:'Haji Karim Baksh', phone:'0322-6677889', city:'Keti Bandar', lots:81, balance:96400, status:'Active'},
+  {name:'Sikandar Fisheries', phone:'0345-9900112', city:'Thatta', lots:38, balance:58900, status:'Active'},
+];
+const fishTypes = [
+  {name:'Rohu', category:'River Fish', unit:'Kg', rate:420, status:'Active'},
+  {name:'Pomfret', category:'Sea Fish', unit:'Kg', rate:980, status:'Active'},
+  {name:'Sole Fish', category:'Sea Fish', unit:'Kg', rate:650, status:'Active'},
+  {name:'Shrimp (Jumbo)', category:'Shrimp / Prawn', unit:'Kg', rate:1450, status:'Active'},
+  {name:'Palla', category:'River Fish', unit:'Kg', rate:2200, status:'Active'},
+];
+const lots = [
+  {lotNo:'LOT-3391', date:'31-Aug-2026', supplier:'Younus Boat Co.', fish:'Pomfret', weight:220, status:'In Stock'},
+  {lotNo:'LOT-3392', date:'31-Aug-2026', supplier:'Rasool Bux Mallah', fish:'Rohu', weight:340, status:'In Stock'},
+  {lotNo:'LOT-3393', date:'31-Aug-2026', supplier:'Haji Karim Baksh', fish:'Shrimp (Jumbo)', weight:95, status:'Sold'},
+  {lotNo:'LOT-3394', date:'30-Aug-2026', supplier:'Sikandar Fisheries', fish:'Sole Fish', weight:180, status:'In Stock'},
+  {lotNo:'LOT-3395', date:'30-Aug-2026', supplier:'Younus Boat Co.', fish:'Palla', weight:60, status:'Sold'},
+];
+const users = [
+  {name:'Zahid Hussain', username:'zahid.hussain', role:'Owner', status:'Active'},
+  {name:'Usman Bhai', username:'usman.bhai', role:'Staff', status:'Active'},
+  {name:'Imran Munshi', username:'imran.munshi', role:'Manager', status:'Active'},
+  {name:'Bilal Staff', username:'bilal.s', role:'Staff', status:'Inactive'},
+];
+const expenseVouchers = [
+  {no:'EV-0451', date:'31-Aug-2026', cat:'Labour / Tulai', desc:'Mazdoor mazdoori — 6 labourers', amount:2400, via:'Cash'},
+  {no:'EV-0450', date:'31-Aug-2026', cat:'Ice & Packing', desc:'Barf 40 slabs', amount:6000, via:'Cash'},
+  {no:'EV-0449', date:'30-Aug-2026', cat:'Loading / Transport', desc:'Mazda loading Fish Harbour to SITE', amount:3500, via:'Easypaisa'},
+  {no:'EV-0448', date:'30-Aug-2026', cat:'Rent', desc:'Shop rent — August', amount:35000, via:'Bank'},
+];
+const bills = [
+  {no:'BL-1214', date:'31-Aug-2026', customer:'Seafood Express (Pvt) Ltd', lots:6, total:186400, commission:9320, netPayable:174480, status:'Paid'},
+  {no:'BL-1213', date:'31-Aug-2026', customer:'Al-Bahar Hotel', lots:4, total:96500, commission:4825, netPayable:89975, status:'Due'},
+  {no:'BL-1212', date:'30-Aug-2026', customer:'Do Darya Restaurant', lots:3, total:54200, commission:2710, netPayable:50190, status:'Partial'},
+  {no:'BL-1211', date:'30-Aug-2026', customer:'Karachi Export Traders', lots:8, total:241000, commission:12050, netPayable:224350, status:'Paid'},
+];
+const ledgerData = [
+  {date:'31-Aug-2026', ref:'BL-1213', desc:'Bill — Al-Bahar Hotel (fish sale)', debit:96500, credit:0},
+  {date:'29-Aug-2026', ref:'RCV-221', desc:'Payment received — cash', debit:0, credit:60000},
+  {date:'26-Aug-2026', ref:'BL-1198', desc:'Bill — Al-Bahar Hotel (fish sale)', debit:74200, credit:0},
+  {date:'24-Aug-2026', ref:'RCV-214', desc:'Payment received — bank transfer', debit:0, credit:36400},
+];
+
+const chartOfAccounts = [
+  {code:'1000', name:'Assets', balance:2415500, children:[
+    {code:'1010', name:'Cash in Hand', balance:340000, leaf:true},
+    {code:'1020', name:'Bank Balance', balance:680500, leaf:true},
+    {code:'1030', name:'Customer Receivables', balance:1280000, children:[
+      {code:'1031', name:'Al-Bahar Hotel', balance:284000, leaf:true},
+      {code:'1032', name:'Seafood Express (Pvt) Ltd', balance:461500, leaf:true},
+      {code:'1033', name:'Do Darya Restaurant', balance:96200, leaf:true},
+      {code:'1034', name:'Karachi Export Traders', balance:377300, leaf:true},
+    ]},
+    {code:'1040', name:'Stock (Unsold Lots)', balance:115000, leaf:true},
+  ]},
+  {code:'2000', name:'Liabilities', balance:964600, children:[
+    {code:'2010', name:'Supplier Payables', balance:940000, children:[
+      {code:'2011', name:'Younus Boat Co.', balance:44000, leaf:true},
+      {code:'2012', name:'Rasool Bux Mallah', balance:71200, leaf:true},
+      {code:'2013', name:'Haji Karim Baksh', balance:96400, leaf:true},
+      {code:'2014', name:'Sikandar Fisheries', balance:58900, leaf:true},
+    ]},
+    {code:'2020', name:'Outstanding Expenses', balance:24600, leaf:true},
+  ]},
+  {code:'3000', name:"Owner's Equity", balance:1450900, leaf:true},
+  {code:'4000', name:'Income', balance:1096900, children:[
+    {code:'4010', name:'Commission Earned', balance:984600, leaf:true},
+    {code:'4020', name:'Expense Recovery from Suppliers', balance:112300, leaf:true},
+  ]},
+  {code:'5000', name:'Expenses', balance:177500, children:[
+    {code:'5010', name:'Labour / Tulai', balance:68400, leaf:true},
+    {code:'5020', name:'Loading / Transport', balance:51200, leaf:true},
+    {code:'5030', name:'Ice &amp; Packing', balance:22900, leaf:true},
+    {code:'5040', name:'Rent &amp; Utilities', balance:35000, leaf:true},
+  ]},
+];
+function fmt(n){ return 'Rs ' + Math.round(n).toLocaleString('en-PK'); }
+const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function parseDMY(str){
+  // "31-Aug-2026" -> Date
+  const parts = str.split('-');
+  const day = Number(parts[0]);
+  const mon = monthNames.indexOf(parts[1]);
+  const year = Number(parts[2]);
+  return new Date(year, mon, day);
+}
+function inMonth(dateStr, ym){
+  if(!ym) return true;
+  const d = parseDMY(dateStr);
+  const [y,m] = ym.split('-').map(Number);
+  return d.getFullYear()===y && (d.getMonth()+1)===m;
+}
+function inRange(dateStr, from, to){
+  const d = parseDMY(dateStr);
+  if(from && d < new Date(from)) return false;
+  if(to && d > new Date(to+'T23:59:59')) return false;
+  return true;
+}
+
+/* ---------------- Print system (shared) ---------------- */
+function ppHeader(docTitle, docSub){
+  return `<div class="pp-head">
+    <div class="pp-brand">ZAHID HUSSAIN <span>&amp; SONS</span><div class="sub">Fish Commission Agents · Ibrahim Hyderi, Karachi Fish Harbour · 0300-1234567</div></div>
+    <div class="pp-doc-title"><h2>${docTitle}</h2><div class="sub">${docSub||''}</div></div>
+  </div>`;
+}
+function ppFooter(note){
+  return `<div class="pp-foot">${note || 'Computer generated document — Zahid Hussain &amp; Sons Aarhat &amp; Mandi Accounts System'}</div>`;
+}
+function openPrint(tag, html){
+  document.getElementById('printModalTag').textContent = tag;
+  document.getElementById('printModalBody').innerHTML = html;
+  document.getElementById('printModal').classList.add('show');
+}
+function closePrint(){
+  document.getElementById('printModal').classList.remove('show');
+}
+function doPrint(){
+  document.body.classList.add('printing');
+  window.print();
+}
+window.addEventListener('afterprint', ()=> document.body.classList.remove('printing'));
+
+function statusBadge(s){
+  const map = {Active:'badge-green',Inactive:'badge-gray',Paid:'badge-green',Due:'badge-red',Partial:'badge-brass','In Stock':'badge-brass',Sold:'badge-gray'};
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+function editDelBtns(){
+  return `<div class="row-actions"><button title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>`;
+}
+const printIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>';
+function coaNodeHTML(node, path){
+  const hasKids = node.children && node.children.length;
+  const twist = hasKids ? `<span class="twist" id="twist-${path}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>` : `<span class="dot"></span>`;
+  const rowClick = hasKids ? `toggleCOANode('${path}')` : `selectCOAAccount('${node.name.replace(/'/g,"\\'")}', ${node.balance}, '${path}')`;
+  const nmClass = hasKids ? 'nm grp' : 'nm';
+  let html = `<div class="coa-node-row" id="row-${path}" onclick="${rowClick}">${twist}<span class="${nmClass}">${node.name}</span><span class="code">${node.code}</span><span class="bal tnum">${fmt(node.balance)}</span></div>`;
+  if(hasKids){
+    html += `<div class="coa-children" id="kids-${path}">`;
+    node.children.forEach((child,i)=>{ html += coaNodeHTML(child, path+'-'+i); });
+    html += `</div>`;
+  }
+  return html;
+}
+function renderCOA(){
+  const el = document.getElementById('coaTree');
+  if(!el) return;
+  el.innerHTML = chartOfAccounts.map((n,i)=>coaNodeHTML(n, ''+i)).join('');
+}
+function billActionBtns(idx){
+  return `<div class="row-actions"><button title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button title="Print" onclick="printBill(${idx})">${printIconSvg}</button><button title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>`;
+}
+function voucherActionBtns(idx){
+  return `<div class="row-actions"><button title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button title="Print" onclick="printVoucher(${idx})">${printIconSvg}</button><button title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>`;
+}
+
+const payableRow = (s)=>`<tr><td style="font-weight:600;">${s.name}</td><td>${s.city}</td><td>31-Aug-2026</td><td class="tnum">${fmt(s.lots*4200)}</td><td class="tnum" style="color:var(--red-text);font-weight:700;">${fmt(s.balance)}</td><td>${s.balance>70000?statusBadge('Due'):statusBadge('Partial')}</td><td><button class="btn ghost" style="padding:7px 12px;font-size:12px;">Pay</button></td></tr>`;
+const receivableRow = (c)=>`<tr><td style="font-weight:600;">${c.name}</td><td>${c.city}</td><td>31-Aug-2026</td><td class="tnum">${fmt(c.bills*7100)}</td><td class="tnum" style="color:var(--green-text);font-weight:700;">${fmt(c.balance)}</td><td>${c.balance>200000?statusBadge('Due'):statusBadge('Partial')}</td><td><button class="btn ghost" style="padding:7px 12px;font-size:12px;">Receive</button></td></tr>`;
+
+function fillAllTables(){
+  document.getElementById('userTableBody').innerHTML = users.map(u=>`
+    <tr><td style="font-weight:600;">${u.name}</td><td class="tcode">${u.username}</td><td>${u.role}</td><td>${statusBadge(u.status)}</td><td>${editDelBtns()}</td></tr>`).join('');
+
+  document.getElementById('customerTableBody').innerHTML = customers.map(c=>`
+    <tr><td style="font-weight:600;">${c.name}</td><td>${c.phone}</td><td>${c.city}</td><td>${c.bills}</td><td class="tnum" style="color:var(--green-text);font-weight:600;">${fmt(c.balance)}</td><td>${statusBadge(c.status)}</td><td>${editDelBtns()}</td></tr>`).join('');
+
+  document.getElementById('supplierTableBody').innerHTML = suppliers.map(s=>`
+    <tr><td style="font-weight:600;">${s.name}</td><td>${s.phone}</td><td>${s.city}</td><td>${s.lots}</td><td class="tnum" style="color:var(--red-text);font-weight:600;">${fmt(s.balance)}</td><td>${statusBadge(s.status)}</td><td>${editDelBtns()}</td></tr>`).join('');
+
+  document.getElementById('fishTableBody').innerHTML = fishTypes.map(f=>`
+    <tr><td style="font-weight:600;">${f.name}</td><td>${f.category}</td><td>${f.unit}</td><td class="tnum">${fmt(f.rate)}</td><td>${statusBadge(f.status)}</td><td>${editDelBtns()}</td></tr>`).join('');
+
+  document.getElementById('lotTableBody').innerHTML = lots.map(l=>`
+    <tr><td class="tcode">${l.lotNo}</td><td>${l.date}</td><td>${l.supplier}</td><td>${l.fish}</td><td class="tnum">${l.weight}</td><td>${statusBadge(l.status)}</td><td>${editDelBtns()}</td></tr>`).join('');
+
+  document.getElementById('expTableBody').innerHTML = expenseVouchers.map((e,i)=>`
+    <tr><td class="tcode">${e.no}</td><td>${e.date}</td><td>${e.cat}</td><td>${e.desc}</td><td class="tnum" style="color:var(--red-text);">${fmt(e.amount)}</td><td>${e.via}</td><td>${voucherActionBtns(i)}</td></tr>`).join('');
+
+  const billsRow = (b)=>`<tr><td class="tcode">${b.no}</td><td>${b.date}</td><td>${b.customer}</td><td>${b.lots}</td><td class="tnum">${fmt(b.total)}</td><td class="tnum" style="color:var(--brass-text);">${fmt(b.commission)}</td><td class="tnum">${fmt(b.netPayable)}</td><td>${statusBadge(b.status)}</td>`;
+  document.getElementById('billsTableBody').innerHTML = bills.map((b,i)=>billsRow(b)+`<td>${billActionBtns(i)}</td></tr>`).join('');
+  document.getElementById('dashBillsBody').innerHTML = bills.map(b=>billsRow(b)+`</tr>`).join('');
+
+  document.getElementById('payableTableBody').innerHTML = suppliers.map(s=>payableRow(s)).join('');
+  document.getElementById('receivableTableBody').innerHTML = customers.map(c=>receivableRow(c)).join('');
+
+  fillFilterDropdowns();
+  renderLedger();
+  renderCOA();
+}
+
+function fillFilterDropdowns(){
+  const custOpts = customers.map(c=>`<option>${c.name}</option>`).join('');
+  const supOpts = suppliers.map(s=>`<option>${s.name}</option>`).join('');
+  const billReportCustomer = document.getElementById('billReportCustomer');
+  if(billReportCustomer) billReportCustomer.innerHTML = '<option value="">All Customers</option>'+custOpts;
+  const payableFilterSup = document.getElementById('payableFilterSup');
+  if(payableFilterSup) payableFilterSup.innerHTML = '<option value="">All Suppliers</option>'+supOpts;
+  const receivableFilterCust = document.getElementById('receivableFilterCust');
+  if(receivableFilterCust) receivableFilterCust.innerHTML = '<option value="">All Customers</option>'+custOpts;
+}
+
+function filterPayable(){
+  const sup = document.getElementById('payableFilterSup').value;
+  const status = document.getElementById('payableFilterStatus').value;
+  const rows = suppliers.filter(s=>{
+    if(sup && s.name!==sup) return false;
+    const st = s.balance>70000?'Due':'Partial';
+    if(status && st!==status) return false;
+    return true;
+  });
+  document.getElementById('payableTableBody').innerHTML = rows.length? rows.map(s=>payableRow(s)).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:24px;">Koi record nahi mila</td></tr>`;
+}
+function filterReceivable(){
+  const cust = document.getElementById('receivableFilterCust').value;
+  const status = document.getElementById('receivableFilterStatus').value;
+  const rows = customers.filter(c=>{
+    if(cust && c.name!==cust) return false;
+    const st = c.balance>200000?'Due':'Partial';
+    if(status && st!==status) return false;
+    return true;
+  });
+  document.getElementById('receivableTableBody').innerHTML = rows.length? rows.map(c=>receivableRow(c)).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text-faint);padding:24px;">Koi record nahi mila</td></tr>`;
+}
+
+function renderLedger(){
+  const fromEl = document.getElementById('ledgerFrom');
+  const toEl = document.getElementById('ledgerTo');
+  const from = fromEl? fromEl.value : '';
+  const to = toEl? toEl.value : '';
+  let bal = 0, totDebit=0, totCredit=0;
+  const filtered = ledgerData.filter(l=> inRange(l.date, from, to) );
+  const rows = filtered.map(l=>{
+    bal += l.debit - l.credit;
+    totDebit += l.debit; totCredit += l.credit;
+    return `<tr><td>${l.date}</td><td class="tcode">${l.ref}</td><td>${l.desc}</td><td class="tnum" style="color:var(--green-text);">${l.debit? fmt(l.debit):'—'}</td><td class="tnum" style="color:var(--red-text);">${l.credit? fmt(l.credit):'—'}</td><td class="tnum" style="font-weight:600;">${fmt(bal)}</td></tr>`;
+  }).join('');
+  const tbody = document.getElementById('ledgerTableBody');
+  if(tbody) tbody.innerHTML = rows || `<tr><td colspan="6" style="text-align:center;color:var(--text-faint);padding:24px;">Is date range mein koi entry nahi</td></tr>`;
+  const td = document.getElementById('ledgerTotDebit'); if(td) td.textContent = fmt(totDebit);
+  const tc = document.getElementById('ledgerTotCredit'); if(tc) tc.textContent = fmt(totCredit);
+  const cl = document.getElementById('ledgerClosing'); if(cl) cl.textContent = fmt(totDebit-totCredit);
+}
+fillAllTables();
+
+/* ---------------- Login flow ---------------- */
+function switchLoginTab(which){
+  document.getElementById('tabOwnerBtn').classList.toggle('active',which==='owner');
+  document.getElementById('tabStaffBtn').classList.toggle('active',which==='staff');
+  document.getElementById('ownerLoginForm').style.display = which==='owner'?'block':'none';
+  document.getElementById('staffLoginForm').style.display = which==='staff'?'block':'none';
+}
+function doLogin(role){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  if(role==='owner'){
+    document.getElementById('navOwner').style.display='block';
+    document.getElementById('navStaff').style.display='none';
+    document.getElementById('rolePill').textContent='Owner panel';
+    document.getElementById('userName').textContent='Zahid Hussain';
+    document.getElementById('userRole').textContent='Owner';
+    document.getElementById('avatarInit').textContent='ZH';
+  } else {
+    document.getElementById('navOwner').style.display='none';
+    document.getElementById('navStaff').style.display='block';
+    document.getElementById('rolePill').textContent='Staff panel';
+    document.getElementById('userName').textContent='Usman Bhai';
+    document.getElementById('userRole').textContent='Staff · Bill Counter';
+    document.getElementById('avatarInit').textContent='UB';
+  }
+  goPage('dashboard');
+}
+function doLogout(){
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+}
+
+/* ---------------- Page navigation ---------------- */
+const pageTitles = {
+  'dashboard':['Dashboard',"Overview of today's mandi business"],
+  'company-master':['Company Master','Business profile & print details'],
+  'user-rights':['User Rights','Staff accounts & permissions'],
+  'customer-master':['Customer Master','Manage buyers'],
+  'supplier-master':['Supplier Master','Manage fish suppliers'],
+  'fish-master':['Fish Master','Fish types & default rates'],
+  'daily-purchase':['Daily Purchase','Register incoming lots'],
+  'new-bill':['New Bill','Sale bill with lots, commission & expense'],
+  'expense-voucher':['Expense Voucher','Daily general expenses'],
+  'supplier-payable':['Supplier Payable','Amounts due to suppliers'],
+  'customer-receivable':['Customer Receivable','Amounts due from customers'],
+  'account-ledger':['Account Ledger','Party-wise transaction history'],
+  'chart-of-accounts':['Chart of Accounts','Full account tree — drill down for ledger detail'],
+  'profit-loss':['Profit & Loss','Commission income vs expenses'],
+  'balance-sheet':['Balance Sheet','Assets, liabilities & equity'],
+  'settings':['Settings','System & print preferences'],
+};
+function goPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el){ el.classList.add('active'); }
+  else {
+    document.querySelectorAll('.nav-item[data-page="'+id+'"]').forEach(n=>n.classList.add('active'));
+  }
+  const t = pageTitles[id];
+  if(t){ document.getElementById('topbarTitle').innerHTML = t[0] + '<span id="topbarSub">'+t[1]+'</span>'; }
+  const contentEl = document.querySelector('.content');
+  if(contentEl) contentEl.scrollTop = 0;
+  closeSidebar();
+}
+function toggleSidebar(){
+  document.getElementById('sidebarEl').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebarEl').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+/* ---------------- Generic form toggles ---------------- */
+function toggleForm(id){
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display==='none'||!el.style.display) ? 'block' : 'none';
+}
+function addCustomer(){
+  const name = document.getElementById('custName').value || 'New Customer';
+  customers.unshift({name, phone:document.getElementById('custPhone').value||'—', city:document.getElementById('custCity').value||'—', bills:0, balance:Number(document.getElementById('custOpen').value)||0, status:'Active'});
+  fillAllTables();
+  toggleForm('customerForm');
+}
+function addSupplier(){
+  const name = document.getElementById('supName').value || 'New Supplier';
+  suppliers.unshift({name, phone:document.getElementById('supPhone').value||'—', city:document.getElementById('supCity').value||'—', lots:0, balance:Number(document.getElementById('supOpen').value)||0, status:'Active'});
+  fillAllTables();
+  toggleForm('supplierForm');
+}
+function addLot(){
+  lots.unshift({lotNo:'LOT-'+(3390+lots.length+6), date:'31-Aug-2026', supplier:document.getElementById('lotSupplier').value, fish:document.getElementById('lotFish').value, weight:Number(document.getElementById('lotWeight').value)||0, status:'In Stock'});
+  fillAllTables();
+  toggleForm('lotForm');
+}
+
+/* ---------------- New Bill: dynamic lot rows + calc ---------------- */
+const fishOptions = fishTypes.map(f=>f.name);
+const supplierOptions = suppliers.map(s=>s.name);
+const lotOptions = lots.map(l=>l.lotNo);
+let billRowSeq = 0;
+
+function newBillRowHTML(idx){
+  return `<tr data-row="${idx}">
+    <td>${idx}</td>
+    <td><select onchange="onLotPick(this)">${lotOptions.map(l=>`<option>${l}</option>`).join('')}</select></td>
+    <td><input class="readonly rowFish" value="${fishTypes[idx%fishTypes.length].name}" readonly></td>
+    <td><input class="readonly rowSupplier" value="${suppliers[idx%suppliers.length].name}" readonly></td>
+    <td><input type="number" class="rowWeight" value="${(50+idx*15)}" oninput="recalcBill()"></td>
+    <td><input type="number" class="rowRate" value="${fishTypes[idx%fishTypes.length].rate}" oninput="recalcBill()"></td>
+    <td class="tnum rowAmount">Rs 0</td>
+    <td><button class="lot-remove" onclick="removeBillRow(this)" title="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></td>
+  </tr>`;
+}
+function onLotPick(sel){
+  const tr = sel.closest('tr');
+  const idx = Number(tr.dataset.row);
+  tr.querySelector('.rowFish').value = fishTypes[idx%fishTypes.length].name;
+  tr.querySelector('.rowSupplier').value = suppliers[idx%suppliers.length].name;
+  recalcBill();
+}
+function addBillLotRow(){
+  billRowSeq++;
+  document.getElementById('billLotBody').insertAdjacentHTML('beforeend', newBillRowHTML(billRowSeq));
+  recalcBill();
+}
+function removeBillRow(btn){
+  btn.closest('tr').remove();
+  recalcBill();
+}
+function recalcBill(){
+  let total = 0;
+  document.querySelectorAll('#billLotBody tr').forEach(tr=>{
+    const w = Number(tr.querySelector('.rowWeight').value)||0;
+    const r = Number(tr.querySelector('.rowRate').value)||0;
+    const amt = w*r;
+    tr.querySelector('.rowAmount').textContent = fmt(amt);
+    total += amt;
+  });
+  document.getElementById('billTotalCell').textContent = fmt(total);
+  document.getElementById('commBase').textContent = fmt(total);
+  document.getElementById('settleTotal').textContent = fmt(total);
+
+  const pct = Number(document.getElementById('commPct').value)||0;
+  const commAmt = total * pct/100;
+  document.getElementById('commAmt').textContent = fmt(commAmt);
+  document.getElementById('settleComm').textContent = fmt(commAmt);
+
+  const expL = Number(document.getElementById('expLabour').value)||0;
+  const expLo = Number(document.getElementById('expLoading').value)||0;
+  const expO = Number(document.getElementById('expOther').value)||0;
+  const expTotal = expL+expLo+expO;
+  document.getElementById('expTotal').textContent = fmt(expTotal);
+  document.getElementById('settleExp').textContent = fmt(expTotal);
+
+  const net = total - commAmt - expTotal;
+  document.getElementById('settleNet').textContent = fmt(net);
+}
+function currentBillLineItems(){
+  const items = [];
+  document.querySelectorAll('#billLotBody tr').forEach(tr=>{
+    items.push({
+      lot: tr.querySelector('select') ? tr.querySelector('select').value : '—',
+      fish: tr.querySelector('.rowFish').value,
+      supplier: tr.querySelector('.rowSupplier').value,
+      weight: Number(tr.querySelector('.rowWeight').value)||0,
+      rate: Number(tr.querySelector('.rowRate').value)||0,
+    });
+  });
+  return items;
+}
+function saveBill(){
+  const total = Number(document.getElementById('billTotalCell').textContent.replace(/[^0-9]/g,''))||0;
+  const comm = Number(document.getElementById('commAmt').textContent.replace(/[^0-9]/g,''))||0;
+  const net = Number(document.getElementById('settleNet').textContent.replace(/[^0-9]/g,''))||0;
+  const rowCount = document.querySelectorAll('#billLotBody tr').length;
+  const billNo = 'BL-'+(1215+bills.length);
+  bills.unshift({no:billNo, date:'31-Aug-2026', customer:document.getElementById('billCustomer').value, lots:rowCount, total, commission:comm, netPayable:net, status:'Due'});
+  fillAllTables();
+  printCurrentBill(billNo);
+}
+
+/* ---------------- New Bill: print + monthly report ---------------- */
+function billPrintPaper(billNo, dateStr, customer, items, commPct, commAmt, expLabour, expLoading, expOther, expTotal, total, net){
+  const rowsHtml = items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.lot}</td><td>${it.fish}</td><td>${it.supplier}</td><td class="tnum">${it.weight}</td><td class="tnum">${fmt(it.rate)}</td><td class="tnum">${fmt(it.weight*it.rate)}</td></tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:#888;">Koi lot add nahi hua</td></tr>`;
+  return `${ppHeader('Sale Bill', 'Bill # '+billNo)}
+    <div class="pp-meta">
+      <div><b>Bill No.</b>${billNo}</div>
+      <div><b>Date</b>${dateStr}</div>
+      <div><b>Customer</b>${customer}</div>
+    </div>
+    <table class="pp-table">
+      <thead><tr><th>#</th><th>Lot #</th><th>Fish</th><th>Supplier</th><th>Weight (Kg)</th><th>Rate/Kg</th><th>Amount</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td colspan="6" style="text-align:right;">Bill Total</td><td class="tnum">${fmt(total)}</td></tr></tfoot>
+    </table>
+    <div class="pp-totals">
+      <div><span>Commission (${commPct}%)</span><span>${fmt(commAmt)}</span></div>
+      <div><span>Labour / Tulai</span><span>${fmt(expLabour)}</span></div>
+      <div><span>Loading / Transport</span><span>${fmt(expLoading)}</span></div>
+      <div><span>Market Fee / Other</span><span>${fmt(expOther)}</span></div>
+      <div class="final"><span>Net Payable to Supplier(s)</span><span>${fmt(net)}</span></div>
+    </div>
+    <div class="pp-sign"><div>Prepared By</div><div>Customer Signature</div><div>Owner / Aarhati Signature</div></div>
+    ${ppFooter()}`;
+}
+function printCurrentBill(billNo){
+  const items = currentBillLineItems();
+  const dateInput = document.querySelector('.bill-head input[type="date"]');
+  const dateStr = dateInput ? dateInput.value : '31-Aug-2026';
+  const customer = document.getElementById('billCustomer').value;
+  const commPct = document.getElementById('commPct').value;
+  const commAmt = Number(document.getElementById('commAmt').textContent.replace(/[^0-9]/g,''))||0;
+  const expLabour = Number(document.getElementById('expLabour').value)||0;
+  const expLoading = Number(document.getElementById('expLoading').value)||0;
+  const expOther = Number(document.getElementById('expOther').value)||0;
+  const expTotal = Number(document.getElementById('expTotal').textContent.replace(/[^0-9]/g,''))||0;
+  const total = Number(document.getElementById('billTotalCell').textContent.replace(/[^0-9]/g,''))||0;
+  const net = Number(document.getElementById('settleNet').textContent.replace(/[^0-9]/g,''))||0;
+  openPrint('Sale Bill · '+billNo, billPrintPaper(billNo, dateStr, customer, items, commPct, commAmt, expLabour, expLoading, expOther, expTotal, total, net));
+}
+function printBill(idx){
+  const b = bills[idx];
+  if(!b) return;
+  // reconstruct an approximate line item summary (historical bills only store aggregates)
+  const items = [{lot:'—', fish:'Mixed lots', supplier:'Multiple suppliers', weight:'—', rate:'—'}];
+  const html = `${ppHeader('Sale Bill', 'Bill # '+b.no)}
+    <div class="pp-meta">
+      <div><b>Bill No.</b>${b.no}</div>
+      <div><b>Date</b>${b.date}</div>
+      <div><b>Customer</b>${b.customer}</div>
+    </div>
+    <table class="pp-table">
+      <thead><tr><th>Lots</th><th>Total Sale</th><th>Commission</th><th>Net Payable</th><th>Status</th></tr></thead>
+      <tbody><tr><td class="tnum">${b.lots}</td><td class="tnum">${fmt(b.total)}</td><td class="tnum">${fmt(b.commission)}</td><td class="tnum">${fmt(b.netPayable)}</td><td>${b.status}</td></tr></tbody>
+    </table>
+    <div class="pp-sign"><div>Prepared By</div><div>Customer Signature</div><div>Owner / Aarhati Signature</div></div>
+    ${ppFooter()}`;
+  openPrint('Sale Bill · '+b.no, html);
+}
+function showBillTab(tab){
+  document.getElementById('billTabEntryBtn').classList.toggle('active', tab==='entry');
+  document.getElementById('billTabReportBtn').classList.toggle('active', tab==='report');
+  document.getElementById('newBillEntryView').style.display = tab==='entry' ? 'block':'none';
+  document.getElementById('newBillReportView').style.display = tab==='report' ? 'block':'none';
+  if(tab==='report') generateBillReport();
+}
+let lastBillReport = [];
+function generateBillReport(){
+  const ym = document.getElementById('billReportMonth').value;
+  const cust = document.getElementById('billReportCustomer').value;
+  const rows = bills.filter(b=> inMonth(b.date, ym) && (!cust || b.customer===cust) );
+  lastBillReport = rows;
+  document.getElementById('billReportBody').innerHTML = rows.length ? rows.map(b=>`<tr><td class="tcode">${b.no}</td><td>${b.date}</td><td>${b.customer}</td><td>${b.lots}</td><td class="tnum">${fmt(b.total)}</td><td class="tnum" style="color:var(--brass-text);">${fmt(b.commission)}</td><td class="tnum">${fmt(b.netPayable)}</td><td>${statusBadge(b.status)}</td></tr>`).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text-faint);padding:24px;">Is mahine mein koi bill nahi</td></tr>`;
+  const count = rows.length;
+  const sale = rows.reduce((s,b)=>s+b.total,0);
+  const comm = rows.reduce((s,b)=>s+b.commission,0);
+  const net = rows.reduce((s,b)=>s+b.netPayable,0);
+  document.getElementById('brStatCount').textContent = count;
+  document.getElementById('brStatSale').textContent = fmt(sale);
+  document.getElementById('brStatComm').textContent = fmt(comm);
+  document.getElementById('brStatNet').textContent = fmt(net);
+}
+function printBillReport(){
+  const ym = document.getElementById('billReportMonth').value;
+  const [y,m] = ym.split('-').map(Number);
+  const label = monthNames[m-1]+' '+y;
+  const rowsHtml = lastBillReport.map(b=>`<tr><td>${b.no}</td><td>${b.date}</td><td>${b.customer}</td><td class="tnum">${b.lots}</td><td class="tnum">${fmt(b.total)}</td><td class="tnum">${fmt(b.commission)}</td><td class="tnum">${fmt(b.netPayable)}</td><td>${b.status}</td></tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:#888;">Koi record nahi</td></tr>`;
+  const sale = lastBillReport.reduce((s,b)=>s+b.total,0);
+  const comm = lastBillReport.reduce((s,b)=>s+b.commission,0);
+  const net = lastBillReport.reduce((s,b)=>s+b.netPayable,0);
+  const html = `${ppHeader('Monthly Bill Report', label)}
+    <table class="pp-table">
+      <thead><tr><th>Bill #</th><th>Date</th><th>Customer</th><th>Lots</th><th>Total Sale</th><th>Commission</th><th>Net Payable</th><th>Status</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">Totals</td><td class="tnum">${fmt(sale)}</td><td class="tnum">${fmt(comm)}</td><td class="tnum">${fmt(net)}</td><td></td></tr></tfoot>
+    </table>
+    ${ppFooter()}`;
+  openPrint('Monthly Bill Report · '+label, html);
+}
+
+/* ---------------- Expense Voucher: add + print + monthly report ---------------- */
+function addVoucher(){
+  const no = 'EV-'+(452+expenseVouchers.length);
+  expenseVouchers.unshift({
+    no, date:document.getElementById('expDate').value || '31-Aug-2026',
+    cat:document.getElementById('expCat').value,
+    desc:document.getElementById('expDesc').value || '—',
+    amount:Number(document.getElementById('expAmt').value)||0,
+    via:document.getElementById('expVia').value
+  });
+  fillAllTables();
+  toggleForm('expForm');
+  printVoucher(0);
+}
+function voucherPrintHTML(v){
+  return `${ppHeader('Expense Voucher', 'Voucher # '+v.no)}
+    <div class="pp-meta">
+      <div><b>Voucher No.</b>${v.no}</div>
+      <div><b>Date</b>${v.date}</div>
+      <div><b>Paid Via</b>${v.via}</div>
+    </div>
+    <table class="pp-table">
+      <thead><tr><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+      <tbody><tr><td>${v.cat}</td><td>${v.desc}</td><td class="tnum">${fmt(v.amount)}</td></tr></tbody>
+      <tfoot><tr><td colspan="2" style="text-align:right;">Total</td><td class="tnum">${fmt(v.amount)}</td></tr></tfoot>
+    </table>
+    <div class="pp-sign"><div>Prepared By</div><div>Approved By</div><div>Received By</div></div>
+    ${ppFooter()}`;
+}
+function printVoucher(idx){
+  const v = expenseVouchers[idx];
+  if(!v) return;
+  openPrint('Expense Voucher · '+v.no, voucherPrintHTML(v));
+}
+function showExpTab(tab){
+  document.getElementById('expTabEntryBtn').classList.toggle('active', tab==='entry');
+  document.getElementById('expTabReportBtn').classList.toggle('active', tab==='report');
+  document.getElementById('expEntryView').style.display = tab==='entry' ? 'block':'none';
+  document.getElementById('expReportView').style.display = tab==='report' ? 'block':'none';
+  if(tab==='report') generateExpReport();
+}
+let lastExpReport = [];
+function generateExpReport(){
+  const ym = document.getElementById('expReportMonth').value;
+  const cat = document.getElementById('expReportCat').value;
+  const rows = expenseVouchers.filter(e=> inMonth(e.date, ym) && (!cat || e.cat===cat) );
+  lastExpReport = rows;
+  document.getElementById('expReportBody').innerHTML = rows.length ? rows.map(e=>`<tr><td class="tcode">${e.no}</td><td>${e.date}</td><td>${e.cat}</td><td>${e.desc}</td><td class="tnum" style="color:var(--red-text);">${fmt(e.amount)}</td><td>${e.via}</td></tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--text-faint);padding:24px;">Is mahine mein koi voucher nahi</td></tr>`;
+  const count = rows.length;
+  const amt = rows.reduce((s,e)=>s+e.amount,0);
+  const cash = rows.filter(e=>e.via==='Cash').reduce((s,e)=>s+e.amount,0);
+  const bank = amt - cash;
+  document.getElementById('erStatCount').textContent = count;
+  document.getElementById('erStatAmt').textContent = fmt(amt);
+  document.getElementById('erStatCash').textContent = fmt(cash);
+  document.getElementById('erStatBank').textContent = fmt(bank);
+}
+function printExpReport(){
+  const ym = document.getElementById('expReportMonth').value;
+  const [y,m] = ym.split('-').map(Number);
+  const label = monthNames[m-1]+' '+y;
+  const rowsHtml = lastExpReport.map(e=>`<tr><td>${e.no}</td><td>${e.date}</td><td>${e.cat}</td><td>${e.desc}</td><td class="tnum">${fmt(e.amount)}</td><td>${e.via}</td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#888;">Koi record nahi</td></tr>`;
+  const total = lastExpReport.reduce((s,e)=>s+e.amount,0);
+  const html = `${ppHeader('Monthly Expense Report', label)}
+    <table class="pp-table">
+      <thead><tr><th>Voucher #</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid Via</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">Total</td><td class="tnum">${fmt(total)}</td><td></td></tr></tfoot>
+    </table>
+    ${ppFooter()}`;
+  openPrint('Monthly Expense Report · '+label, html);
+}
+
+/* ---------------- Supplier Payable / Customer Receivable print ---------------- */
+function printPayableReport(){
+  const rows = Array.from(document.querySelectorAll('#payableTableBody tr')).map(tr=>tr.children).filter(c=>c.length>1);
+  const rowsHtml = rows.map(c=>`<tr><td>${c[0].textContent}</td><td>${c[1].textContent}</td><td>${c[2].textContent}</td><td class="tnum">${c[3].textContent}</td><td class="tnum">${c[4].textContent}</td><td>${c[5].textContent.trim()}</td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#888;">Koi record nahi</td></tr>`;
+  const html = `${ppHeader('Supplier Payable Report', 'As on 31 August 2026')}
+    <table class="pp-table"><thead><tr><th>Supplier</th><th>Village / Jetty</th><th>Last Bill</th><th>Total Sold</th><th>Payable Balance</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    ${ppFooter()}`;
+  openPrint('Supplier Payable Report', html);
+}
+function printReceivableReport(){
+  const rows = Array.from(document.querySelectorAll('#receivableTableBody tr')).map(tr=>tr.children).filter(c=>c.length>1);
+  const rowsHtml = rows.map(c=>`<tr><td>${c[0].textContent}</td><td>${c[1].textContent}</td><td>${c[2].textContent}</td><td class="tnum">${c[3].textContent}</td><td class="tnum">${c[4].textContent}</td><td>${c[5].textContent.trim()}</td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#888;">Koi record nahi</td></tr>`;
+  const html = `${ppHeader('Customer Receivable Report', 'As on 31 August 2026')}
+    <table class="pp-table"><thead><tr><th>Customer</th><th>City</th><th>Last Bill</th><th>Total Purchased</th><th>Receivable Balance</th><th>Status</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    ${ppFooter()}`;
+  openPrint('Customer Receivable Report', html);
+}
+
+/* ---------------- Account Ledger print ---------------- */
+function printLedgerReport(){
+  const account = document.getElementById('ledgerAccount').value;
+  const rows = Array.from(document.querySelectorAll('#ledgerTableBody tr')).map(tr=>tr.children).filter(c=>c.length>1);
+  const rowsHtml = rows.map(c=>`<tr><td>${c[0].textContent}</td><td>${c[1].textContent}</td><td>${c[2].textContent}</td><td class="tnum">${c[3].textContent}</td><td class="tnum">${c[4].textContent}</td><td class="tnum">${c[5].textContent}</td></tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:#888;">Is range mein koi entry nahi</td></tr>`;
+  const debit = document.getElementById('ledgerTotDebit').textContent;
+  const credit = document.getElementById('ledgerTotCredit').textContent;
+  const closing = document.getElementById('ledgerClosing').textContent;
+  const html = `${ppHeader('Account Ledger', account)}
+    <table class="pp-table"><thead><tr><th>Date</th><th>Voucher / Bill #</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    <div class="pp-totals">
+      <div><span>Total Debit</span><span>${debit}</span></div>
+      <div><span>Total Credit</span><span>${credit}</span></div>
+      <div class="final"><span>Closing Balance</span><span>${closing}</span></div>
+    </div>
+    ${ppFooter()}`;
+  openPrint('Account Ledger · '+account, html);
+}
+
+/* ---------------- Profit & Loss / Balance Sheet ---------------- */
+function updatePLPeriod(){
+  const from = document.getElementById('plFrom').value;
+  const to = document.getElementById('plTo').value;
+  const fmtD = (s)=>{ const d=new Date(s); return d.getDate()+' '+monthNames[d.getMonth()]+' '+d.getFullYear(); };
+  document.getElementById('plPeriodDesc').textContent = 'Period: '+fmtD(from)+' – '+fmtD(to);
+}
+function printPLReport(){
+  const period = document.getElementById('plPeriodDesc').textContent;
+  const html = `${ppHeader('Profit &amp; Loss Statement', period)}
+    <div class="pp-meta" style="grid-template-columns:1fr;">
+      <div><b>Income</b></div>
+    </div>
+    <table class="pp-table">
+      <thead><tr><th>Head</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Commission Earned</td><td class="tnum">Rs 9,84,600</td></tr>
+        <tr><td>Expense Recovery from Suppliers</td><td class="tnum">Rs 1,12,300</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total Income</td><td class="tnum">Rs 10,96,900</td></tr></tfoot>
+    </table>
+    <table class="pp-table">
+      <thead><tr><th>Expense Head</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Labour / Tulai</td><td class="tnum">Rs 68,400</td></tr>
+        <tr><td>Loading / Transport</td><td class="tnum">Rs 51,200</td></tr>
+        <tr><td>Ice &amp; Packing</td><td class="tnum">Rs 22,900</td></tr>
+        <tr><td>Rent &amp; Utilities</td><td class="tnum">Rs 35,000</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total Expenses</td><td class="tnum">Rs 1,77,500</td></tr></tfoot>
+    </table>
+    <div class="pp-totals"><div class="final"><span>Net Profit</span><span>Rs 9,19,400</span></div></div>
+    ${ppFooter()}`;
+  openPrint('Profit & Loss Statement', html);
+}
+function updateBSDate(){
+  const d = new Date(document.getElementById('bsAsOn').value);
+  document.getElementById('bsAsOnDesc').textContent = 'As on '+d.getDate()+' '+monthNames[d.getMonth()]+' '+d.getFullYear();
+}
+function printBSReport(){
+  const asOn = document.getElementById('bsAsOnDesc').textContent;
+  const html = `${ppHeader('Balance Sheet', asOn)}
+    <table class="pp-table">
+      <thead><tr><th>Assets</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Cash in Hand</td><td class="tnum">Rs 3,40,000</td></tr>
+        <tr><td>Bank Balance</td><td class="tnum">Rs 6,80,500</td></tr>
+        <tr><td>Customer Receivables</td><td class="tnum">Rs 12,80,000</td></tr>
+        <tr><td>Stock (Unsold Lots)</td><td class="tnum">Rs 1,15,000</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total Assets</td><td class="tnum">Rs 24,15,500</td></tr></tfoot>
+    </table>
+    <table class="pp-table">
+      <thead><tr><th>Liabilities &amp; Equity</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Supplier Payables</td><td class="tnum">Rs 9,40,000</td></tr>
+        <tr><td>Outstanding Expenses</td><td class="tnum">Rs 24,600</td></tr>
+        <tr><td>Owner's Equity</td><td class="tnum">Rs 14,50,900</td></tr>
+      </tbody>
+      <tfoot><tr><td>Total Liabilities &amp; Equity</td><td class="tnum">Rs 24,15,500</td></tr></tfoot>
+    </table>
+    ${ppFooter()}`;
+  openPrint('Balance Sheet', html);
+}
+
+/* ---------------- Chart of Accounts: tree + drill-down ---------------- */
+function toggleCOANode(path){
+  const kids = document.getElementById('kids-'+path);
+  const twist = document.getElementById('twist-'+path);
+  if(!kids) return;
+  const open = kids.classList.toggle('open');
+  if(twist) twist.classList.toggle('open', open);
+}
+let selectedCOA = null;
+function selectCOAAccount(name, balance, path){
+  document.querySelectorAll('.coa-node-row').forEach(r=>r.classList.remove('selected'));
+  const row = document.getElementById('row-'+path);
+  if(row) row.classList.add('selected');
+  selectedCOA = {name, balance};
+  const sampleTx = [
+    {date:'31-Aug-2026', ref:'BL-1213', desc:name+' — transaction', debit: balance*0.35, credit:0},
+    {date:'28-Aug-2026', ref:'RCV-220', desc:name+' — settlement', debit:0, credit: balance*0.18},
+    {date:'22-Aug-2026', ref:'BL-1198', desc:name+' — transaction', debit: balance*0.28, credit:0},
+    {date:'15-Aug-2026', ref:'RCV-210', desc:name+' — settlement', debit:0, credit: balance*0.12},
+  ];
+  let bal=0;
+  const rowsHtml = sampleTx.map(t=>{ bal += t.debit-t.credit; return `<tr><td>${t.date}</td><td class="tcode">${t.ref}</td><td>${t.desc}</td><td class="tnum" style="color:var(--green-text);">${t.debit?fmt(t.debit):'—'}</td><td class="tnum" style="color:var(--red-text);">${t.credit?fmt(t.credit):'—'}</td><td class="tnum">${fmt(bal)}</td></tr>`; }).join('');
+  document.getElementById('coaDetailCard').innerHTML = `
+    <div class="card-head"><h3>${name}</h3><button class="btn ghost" style="padding:7px 12px;font-size:12px;" onclick="printCOADetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18h12v4H6zM6 14h12"/></svg>Print</button></div>
+    <div style="margin-bottom:14px;font-size:13px;color:var(--text-dim);">Current Balance: <b class="tnum" style="color:var(--brass-text);">${fmt(balance)}</b></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Ref #</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table></div>`;
+}
+function printCOA(){
+  const flat = [];
+  const walk = (n, indent)=>{ flat.push({indent, code:n.code, name:n.name, balance:n.balance}); if(n.children) n.children.forEach(c=>walk(c, indent+1)); };
+  chartOfAccounts.forEach(n=>walk(n,0));
+  const rowsHtml = flat.map(f=>`<tr><td>${f.code}</td><td style="padding-left:${12+f.indent*20}px;${f.indent===0?'font-weight:700;':''}">${f.name}</td><td class="tnum">${fmt(f.balance)}</td></tr>`).join('');
+  const html = `${ppHeader('Chart of Accounts', 'As on 31 August 2026')}
+    <table class="pp-table"><thead><tr><th>Code</th><th>Account Name</th><th>Balance</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    ${ppFooter()}`;
+  openPrint('Chart of Accounts', html);
+}
+function printCOADetail(){
+  if(!selectedCOA) return;
+  const bodyHtml = document.getElementById('coaDetailCard').querySelector('table').outerHTML;
+  const html = `${ppHeader('Account Ledger', selectedCOA.name)}
+    <div class="pp-meta" style="grid-template-columns:1fr;"><div><b>Current Balance</b>${fmt(selectedCOA.balance)}</div></div>
+    ${bodyHtml.replace('<table>','<table class="pp-table">')}
+    ${ppFooter()}`;
+  openPrint('Account Ledger · '+selectedCOA.name, html);
+}
+
+// seed 2 initial rows for the bill screen
+addBillLotRow();
+addBillLotRow();
+document.getElementById('expLabour').dispatchEvent(new Event('input'));
+</script>
+</body>
+</html>

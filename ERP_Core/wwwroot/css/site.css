@@ -1,0 +1,141 @@
+/* ==========================================================================
+   WebDesk ERP - Global Design System & Shared Theme Tokens
+   ========================================================================== */
+
+:root {
+  --ink: #0B1220;
+  --ink-2: #131C2E;
+  --ink-3: #1D2A42;
+  --canvas: #F3F5F8;
+  --surface: #FFFFFF;
+  --line: #E4E7EE;
+  --text: #12131A;
+  --muted: #697083;
+  --muted-2: #8A90A2;
+  --teal: #2F6F5E;
+  --teal-deep: #1F4E42;
+  --teal-tint: #E4F0EC;
+  --gold: #E8A33D;
+  --gold-tint: #FCF0DC;
+  --red: #D8564A;
+  --red-tint: #FBE7E4;
+  --blue: #3E6FD9;
+  --blue-tint: #E8EEFC;
+  --purple: #8A5FD9;
+  --purple-tint: #F1E9FB;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -12px rgba(15, 23, 42, .10);
+}
+
+/* Base Body Styles */
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #080E1A;
+  color: #FFFFFF;
+}
+
+/* Dark Mesh / Tech Grid Background for Auth & Portal Pages */
+.auth-bg {
+  background-color: #080E1A;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 50% 30%, #15243B 0%, #0D1626 50%, #060A13 100%);
+  background-size: 40px 40px, 40px 40px, 100% 100%;
+}
+
+/* Shared Utility Theme Classes */
+.text-muted-custom { color: var(--muted-2) !important; }
+.bg-ink-2 { background-color: var(--ink-2) !important; }
+.bg-ink-3 { background-color: var(--ink-3) !important; }
+.bg-gold { background-color: var(--gold) !important; color: var(--ink) !important; }
+
+/* Brand Logo Component */
+.brand-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius);
+  letter-spacing: -0.5px;
+  background-color: var(--gold);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.25rem;
+  box-shadow: 0 4px 12px rgba(232, 163, 61, 0.25);
+  user-select: none;
+}
+
+/* Shared Dark Form Controls */
+.form-control-dark, .form-select-dark {
+  background-color: var(--ink-3);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #FFFFFF;
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  font-size: 0.88rem;
+}
+
+.form-select-dark {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238A90A2' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 10px;
+}
+
+.form-control-dark:focus, .form-select-dark:focus {
+  background-color: #212F4B;
+  border-color: var(--teal);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(47, 111, 94, 0.28);
+}
+
+.form-select-dark option {
+  background-color: var(--ink-2);
+  color: #FFFFFF;
+}
+
+.form-control-dark::placeholder {
+  color: #556075;
+}
+
+.form-check-input:checked {
+  background-color: var(--teal);
+  border-color: var(--teal);
+}
+
+/* Shared Theme Buttons */
+.btn-teal {
+  background-color: var(--teal);
+  border-color: var(--teal);
+  border-radius: var(--radius);
+  color: #FFFFFF;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(47, 111, 94, 0.35);
+}
+
+.btn-teal:hover {
+  background-color: var(--teal-deep);
+  border-color: var(--teal-deep);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(47, 111, 94, 0.45);
+}
+
+.btn-gold {
+  background-color: var(--gold);
+  border-color: var(--gold);
+  border-radius: var(--radius);
+  color: #FFFFFF;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(232, 163, 61, 0.25);
+}
+
+.btn-gold:hover {
+  background-color: #D38E2A;
+  border-color: #D38E2A;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(232, 163, 61, 0.35);
+}
